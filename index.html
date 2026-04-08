@@ -123,12 +123,15 @@
 
         .skill-group { margin-bottom: 20px; }
         .skill-group:last-child { margin-bottom: 0; }
-        .skill-title { font-weight: 800; color: var(--text); margin-bottom: 10px; font-size: 1.05rem; }
+        .skill-title { font-weight: 800; color: var(--text); margin-bottom: 10px; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;}
+        .skill-title i { color: var(--accent); font-size: 0.9rem;}
         .tags { display: flex; flex-wrap: wrap; gap: 10px; }
         .tag { 
             background: var(--tag-bg); color: var(--text-sub); padding: 6px 14px; 
             border-radius: 8px; font-size: 0.9rem; font-weight: 700; border: 1px solid var(--border);
+            transition: all 0.2s;
         }
+        .tag:hover { background: var(--accent); color: #fff; border-color: var(--accent); transform: translateY(-2px);}
 
         .timeline-item { border-left: 2px solid var(--border); padding-left: 20px; position: relative; margin-bottom: 30px; }
         .timeline-item:last-child { margin-bottom: 0; border-left-color: transparent; }
@@ -216,33 +219,59 @@
         </section>
 
         <section>
-            <h2 class="section-title"><i class="fa-solid fa-layer-group"></i> 技术栈</h2>
+            <h2 class="section-title"><i class="fa-solid fa-layer-group"></i> 核心技术栈</h2>
             <div class="card">
                 <div class="skill-group">
-                    <div class="skill-title">网络与系统架构</div>
+                    <div class="skill-title"><i class="fa-brands fa-linux"></i> 操作系统与虚拟化</div>
                     <div class="tags">
-                        <span class="tag">Linux (Debian / Alpine)</span>
-                        <span class="tag">IDC 财务/主控系统运维</span>
-                        <span class="tag">华为 / 思科网络设备模拟</span>
-                        <span class="tag">IPv4 / IPv6 路由配置</span>
-                    </div>
-                </div>
-                <div class="skill-group">
-                    <div class="skill-title">硬件与虚拟化</div>
-                    <div class="tags">
-                        <span class="tag">戴尔 / 浪潮 / 联想等实体准系统</span>
-                        <span class="tag">LGA 3647 平台硬件维护</span>
+                        <span class="tag">Debian / RedHat 系 Linux 运维</span>
                         <span class="tag">Proxmox VE (PVE)</span>
-                        <span class="tag">KVM / 容器化技术</span>
+                        <span class="tag">VMware ESXi</span>
+                        <span class="tag">KVM 底层虚拟化</span>
+                        <span class="tag">Microsoft Hyper-V</span>
                     </div>
                 </div>
+                
                 <div class="skill-group">
-                    <div class="skill-title">编程开发</div>
+                    <div class="skill-title"><i class="fa-solid fa-network-wired"></i> 网络工程与架构</div>
+                    <div class="tags">
+                        <span class="tag">华为 / 思科交换机实操与配置</span>
+                        <span class="tag">网络拓扑与路由规划</span>
+                        <span class="tag">IPv4 / IPv6 寻址与配置</span>
+                    </div>
+                </div>
+
+                <div class="skill-group">
+                    <div class="skill-title"><i class="fa-solid fa-server"></i> IDC 运营与云平台</div>
+                    <div class="tags">
+                        <span class="tag">IDCsmart (智简魔方)</span>
+                        <span class="tag">ProKVM 主控</span>
+                        <span class="tag">WHMCS 财务系统</span>
+                        <span class="tag">ZKeys (大陆商业 IDC 系统)</span>
+                        <span class="tag">Amazon Web Services (AWS)</span>
+                        <span class="tag">Tencent Cloud (腾讯云)</span>
+                    </div>
+                </div>
+
+                <div class="skill-group">
+                    <div class="skill-title"><i class="fa-solid fa-user-secret"></i> 神秘技能 (网络代理与隧道加密)</div>
+                    <div class="tags">
+                        <span class="tag">Vless / VMess</span>
+                        <span class="tag">Hysteria II</span>
+                        <span class="tag">TUIC</span>
+                        <span class="tag">Shadowsocks</span>
+                        <span class="tag">CDN 流量伪装与优选</span>
+                    </div>
+                </div>
+
+                <div class="skill-group">
+                    <div class="skill-title"><i class="fa-solid fa-code"></i> 编程开发与边缘计算</div>
                     <div class="tags">
                         <span class="tag">Python</span>
-                        <span class="tag">Shell Script</span>
-                        <span class="tag">HTML / CSS / JS</span>
-                        <span class="tag">Cloudflare 边缘生态体系</span>
+                        <span class="tag">Java</span>
+                        <span class="tag">HTML / CSS / JS 前端开发</span>
+                        <span class="tag">Cloudflare Ecosystem (Pages / Workers)</span>
+                        <span class="tag">GitHub / Vercel 持续部署</span>
                     </div>
                 </div>
             </div>
@@ -311,9 +340,9 @@
                     </div>
                     <div class="timeline-subtitle">注册客户 500+ / 硬件大换血</div>
                     <div class="timeline-desc">
-                        业务进入高速成长期：
+                        业务进入高速成成长：
                         <ul>
-                            <li>开始建设并上线专用的 IDC 财务系统和主控系统，彻底开启了全自动化开机与自助化管理之路。</li>
+                            <li>基于 <b>IDCsmart / WHMCS / ProKVM</b> 等系统，开始建设并上线专用的 IDC 财务和主控系统，彻底开启了全自动化开机与自助化管理之路。</li>
                             <li>随着注册客户突破 500 大关，为扩充算力，大批量购入高性能实体机，包括多台浪潮 SA5112M5、联想 HR630 等 LGA 3647 平台的准系统。</li>
                         </ul>
                     </div>
@@ -327,7 +356,7 @@
                     </div>
                     <div class="timeline-subtitle">活跃客户突破 200 人</div>
                     <div class="timeline-desc">
-                        客户数量跨越 200 人里程碑。为了应对日益增长的资源需求与高可用要求，出资购买了一台超微（Supermicro）X9DRT-HF 2U 四子星准系统，大幅提升了机房的承载密度与容灾能力。
+                        客户数量跨越 200 人里程碑。为了应对日益增长的资源需求与高可用要求，出资购买了一台超微（Supermicro）X9DRT-HF 2U 四子星准系统，搭配 <b>ESXi / PVE</b> 等底层系统，大幅提升了机房的承载密度与容灾能力。
                     </div>
                 </div>
 
