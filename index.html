@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>聂凯翔 - 个人简历 / About Me</title>
+    <link rel="icon" href="https://img.i8-mc.cn/file/V4PF4kwS.ico">
+    <link rel="stylesheet" href="https://cdn.staticfile.org.i8-mc.cn/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="https://blog-assets.i8-mc.cn/nunito/nunito.css">
+    <script>
+        (function () {
+          try {
+            var t = localStorage.getItem('theme') || 'light';
+            var dark = (t === 'dark' || t === 'night');
+            document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+          } catch (e) {}
+        })();
+    </script>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #50616d;
+            --text-sub: #9aa5b1;
+            --accent: #42b983;
+            --border: #f0f2f5;
+            --tag-bg: #f8fafc;
+            --status-bg: #f7f9fa;
+        }
+        [data-theme="dark"] {
+            --bg: #1a202c;
+            --text: #e2e8f0;
+            --text-sub: #a0aec0;
+            --accent: #68d391;
+            --border: #2d3748;
+            --tag-bg: #2d3748;
+            --status-bg: #2d3748;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            transition: background-color 0.4s, color 0.4s;
+        }
+        a { text-decoration: none; color: inherit; }
+        .container { max-width: 820px; margin: 0 auto; padding: 40px 20px 100px; }
+        
+        /* 头部样式 */
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding-bottom: 20px; margin-bottom: 40px; }
+        .brand { display: flex; align-items: center; gap: 15px; }
+        .avatar { width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--border); object-fit: cover; }
+        .site-title { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+        .theme-icon { font-size: 1.3rem; color: #f6ad55; cursor: pointer; transition: transform 0.3s; }
+        .theme-icon:hover { transform: rotate(20deg) scale(1.15); }
+        
+        /* 个人简介区 */
+        .profile-section { text-align: left; margin-bottom: 40px; }
+        .name { font-size: 2.2rem; font-weight: 900; color: var(--text); margin-bottom: 5px; }
+        .subtitle { font-size: 1.1rem; color: var(--text-sub); font-weight: 700; margin-bottom: 15px; }
+        .bio { font-size: 1.05rem; font-weight: 600; max-width: 90%; line-height: 1.8; }
+        
+        /* 社交图标 */
+        .social-contact { display: flex; gap: 15px; margin-top: 20px; font-size: 1.4rem; }
+        .social-contact a { color: var(--text-sub); transition: all 0.3s; }
+        .social-contact a:hover { color: var(--accent); transform: translateY(-3px); }
+
+        /* 通用卡片区块 */
+        .section-header { font-size: 1.5rem; font-weight: 800; color: var(--accent); margin: 40px 0 20px 0; display: flex; align-items: center; gap: 10px;}
+        .card { background: var(--status-bg); border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin-bottom: 20px; transition: all 0.3s; }
+        .card:hover { border-color: var(--accent); box-shadow: 0 8px 24px rgba(0,0,0,0.04); transform: translateY(-2px); }
+        
+        .card-title { font-size: 1.15rem; font-weight: 800; color: var(--text); margin-bottom: 5px; display: flex; justify-content: space-between;}
+        .card-date { font-size: 0.9rem; color: var(--text-sub); font-weight: 700; }
+        .card-desc { font-size: 0.95rem; color: var(--text); line-height: 1.7; margin-top: 8px;}
+        
+        /* 技能标签 */
+        .skills-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+        .tag-pill { font-size: 0.9rem; color: var(--text-sub); background: var(--tag-bg); padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); font-weight: 700; transition: all 0.2s;}
+        .tag-pill:hover { background: var(--accent); color: #ffffff; border-color: var(--accent);}
+        
+        /* 底部 */
+        footer { margin-top: 60px; text-align: center; font-size: 0.9rem; color: var(--text-sub); border-top: 1px dashed var(--border); padding-top: 30px; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="brand">
+            <img src="https://img.i8-mc.cn/file/J0NJk8wH.jpeg" class="avatar" alt="avatar">
+            <span class="site-title">Resume</span>
+        </div>
+        <div>
+            <i class="fa-solid fa-sun theme-icon" onclick="toggleTheme()" title="切换主题"></i>
+        </div>
+    </header>
+
+    <div class="profile-section">
+        <div class="name">聂凯翔 (NKX)</div>
+        <div class="subtitle"><i class="fa-solid fa-graduation-cap"></i> 准大学生 / 运维与开发爱好者</div>
+        <div class="bio">
+            热爱计算机技术，热衷于折腾服务器与网络架构。目前正在为 2026 年 9 月的大学入学做准备，计划在信息技术与计算机专业方向深造。喜欢独立思考与动手实践，独立开发并维护着自己的个人博客与多节点服务器集群。
+        </div>
+        <div class="social-contact">
+            <a href="mailto:nkx080112@gmail.com" target="_blank" title="Email"><i class="fa-solid fa-envelope"></i></a>
+            <a href="https://github.com/3257085208" target="_blank" title="GitHub"><i class="fa-brands fa-github"></i></a>
+            <a href="https://t.me/MarkNKX" target="_blank" title="Telegram"><i class="fa-brands fa-telegram"></i></a>
+            <a href="tencent://message/?uin=3257085208" target="_blank" title="QQ"><i class="fa-brands fa-qq"></i></a>
+        </div>
+    </div>
+
+    <div class="section-header"><i class="fa-solid fa-screwdriver-wrench"></i> 技术栈 & 技能</div>
+    <div class="card" style="background: transparent; border: none; padding: 0;">
+        <div class="skills-grid">
+            <span class="tag-pill">Linux (Debian/Alpine)</span>
+            <span class="tag-pill">Python</span>
+            <span class="tag-pill">Docker & 容器化</span>
+            <span class="tag-pill">Proxmox VE</span>
+            <span class="tag-pill">KVM 虚拟化</span>
+            <span class="tag-pill">VPS 运维与网络架构</span>
+            <span class="tag-pill">Web 后端开发</span>
+            <span class="tag-pill">Cloudflare 生态</span>
+            <span class="tag-pill">HTML / CSS / JS</span>
+        </div>
+    </div>
+
+    <div class="section-header"><i class="fa-solid fa-briefcase"></i> 经历 & 项目</div>
+    
+    <div class="card">
+        <div class="card-title">
+            <span>个人静态博客系统 (聂.NET)</span>
+            <span class="card-date">2026.01 - 至今</span>
+        </div>
+        <div class="card-desc">
+            从零开始自主研发的 Python 静态博客生成器。抛弃繁重框架，底层通过 Python 脚本实现 Markdown 解析与 HTML 页面渲染，前端高度定制 UI 并支持深浅色模式。项目目前托管于 GitHub 并利用 Cloudflare Pages 实现自动化构建与边缘加速部署。
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">
+            <span>上林县微尘网络工作室</span>
+            <span class="card-date">2026.03</span>
+        </div>
+        <div class="card-desc">
+            <b>实习岗位：信息设备维护</b><br>
+            在实习期间，负责工作室内部及客户的信息化设备维护、网络故障排查与系统重装配置。积累了大量关于实体硬件维护、局域网调试以及客户需求沟通的一手实践经验。
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">
+            <span>全球 VPS 分布式集群管理</span>
+            <span class="card-date">日常折腾</span>
+        </div>
+        <div class="card-desc">
+            独立运维多台海内外云服务器（包含 EPYC 高性能节点）。熟练使用 Proxmox VE 及 KVM 开设及管理虚拟机，搭建内网穿透、科学的网络连通性测试环境以及日常数据备份体系，对服务器的性能评估与网络路由优化有深入研究。
+        </div>
+    </div>
+
+    <div class="section-header"><i class="fa-solid fa-map-location-dot"></i> 2026 年度计划</div>
+    <div class="card">
+        <div class="card-desc">
+            <ul>
+                <li style="margin-bottom: 8px;">顺利被省内优秀的计算机相关大学录取，开启大学生涯。</li>
+                <li style="margin-bottom: 8px;">考取机动车驾驶证。</li>
+                <li style="margin-bottom: 8px;">利用假期去不同的城市走走看看，开拓视野。</li>
+                <li>继续迭代重构博客系统，并学习更多前沿的前后端技术框架。</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 聂凯翔. All rights reserved.</p>
+        <p style="margin-top: 5px;">Powered by passion and lots of caffeine.</p>
+    </footer>
+</div>
+
+<script>
+    function toggleTheme() {
+        const root = document.documentElement;
+        const isDark = root.getAttribute('data-theme') === 'dark';
+        const newTheme = isDark ? 'light' : 'dark';
+        root.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    }
+</script>
+
+</body>
+</html>
