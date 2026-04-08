@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>聂凯翔 - 个人简历 / About Me</title>
+    <title>聂凯翔 (NKX) - 个人主页与简历</title>
     <link rel="icon" href="https://img.i8-mc.cn/file/V4PF4kwS.ico">
     <link rel="stylesheet" href="https://cdn.staticfile.org.i8-mc.cn/font-awesome/6.4.2/css/all.min.css">
-    <link rel="stylesheet" href="https://blog-assets.i8-mc.cn/nunito/nunito.css">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
     <script>
         (function () {
           try {
@@ -16,173 +17,345 @@
           } catch (e) {}
         })();
     </script>
+    
     <style>
         :root {
             --bg: #ffffff;
+            --bg-alt: #f8fafc;
             --text: #50616d;
             --text-sub: #9aa5b1;
             --accent: #42b983;
             --border: #f0f2f5;
             --tag-bg: #f8fafc;
-            --status-bg: #f7f9fa;
+            --card-bg: #ffffff;
         }
         [data-theme="dark"] {
             --bg: #1a202c;
+            --bg-alt: #111827;
             --text: #e2e8f0;
             --text-sub: #a0aec0;
             --accent: #68d391;
             --border: #2d3748;
             --tag-bg: #2d3748;
-            --status-bg: #2d3748;
+            --card-bg: #1f2937;
         }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
             font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: var(--bg);
+            background: var(--bg-alt);
             color: var(--text);
             line-height: 1.6;
             transition: background-color 0.4s, color 0.4s;
+            -webkit-font-smoothing: antialiased;
         }
-        a { text-decoration: none; color: inherit; }
-        .container { max-width: 820px; margin: 0 auto; padding: 40px 20px 100px; }
         
-        /* 头部样式 */
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border); padding-bottom: 20px; margin-bottom: 40px; }
-        .brand { display: flex; align-items: center; gap: 15px; }
-        .avatar { width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--border); object-fit: cover; }
-        .site-title { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
-        .theme-icon { font-size: 1.3rem; color: #f6ad55; cursor: pointer; transition: transform 0.3s; }
-        .theme-icon:hover { transform: rotate(20deg) scale(1.15); }
-        
-        /* 个人简介区 */
-        .profile-section { text-align: left; margin-bottom: 40px; }
-        .name { font-size: 2.2rem; font-weight: 900; color: var(--text); margin-bottom: 5px; }
-        .subtitle { font-size: 1.1rem; color: var(--text-sub); font-weight: 700; margin-bottom: 15px; }
-        .bio { font-size: 1.05rem; font-weight: 600; max-width: 90%; line-height: 1.8; }
-        
-        /* 社交图标 */
-        .social-contact { display: flex; gap: 15px; margin-top: 20px; font-size: 1.4rem; }
-        .social-contact a { color: var(--text-sub); transition: all 0.3s; }
-        .social-contact a:hover { color: var(--accent); transform: translateY(-3px); }
+        a { text-decoration: none; color: inherit; transition: color 0.2s; }
+        a:hover { color: var(--accent); }
 
-        /* 通用卡片区块 */
-        .section-header { font-size: 1.5rem; font-weight: 800; color: var(--accent); margin: 40px 0 20px 0; display: flex; align-items: center; gap: 10px;}
-        .card { background: var(--status-bg); border: 1px solid var(--border); border-radius: 14px; padding: 20px 24px; margin-bottom: 20px; transition: all 0.3s; }
-        .card:hover { border-color: var(--accent); box-shadow: 0 8px 24px rgba(0,0,0,0.04); transform: translateY(-2px); }
+        /* 宽版网格布局 */
+        .layout-wrapper {
+            max-width: 1200px; /* 铺开宽度 */
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: grid;
+            grid-template-columns: 340px 1fr; /* 左侧340px，右侧自适应撑满 */
+            gap: 40px;
+            align-items: start;
+        }
+
+        /* 左侧固定侧边栏 */
+        .sidebar {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 40px 30px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+            position: sticky;
+            top: 40px; /* 随屏幕滚动时吸顶 */
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .avatar-wrap { position: relative; display: inline-block; margin-bottom: 20px; }
+        .avatar { width: 140px; height: 140px; border-radius: 50%; border: 4px solid var(--border); object-fit: cover; }
         
-        .card-title { font-size: 1.15rem; font-weight: 800; color: var(--text); margin-bottom: 5px; display: flex; justify-content: space-between;}
-        .card-date { font-size: 0.9rem; color: var(--text-sub); font-weight: 700; }
-        .card-desc { font-size: 0.95rem; color: var(--text); line-height: 1.7; margin-top: 8px;}
-        
-        /* 技能标签 */
-        .skills-grid { display: flex; flex-wrap: wrap; gap: 10px; }
-        .tag-pill { font-size: 0.9rem; color: var(--text-sub); background: var(--tag-bg); padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); font-weight: 700; transition: all 0.2s;}
-        .tag-pill:hover { background: var(--accent); color: #ffffff; border-color: var(--accent);}
-        
-        /* 底部 */
-        footer { margin-top: 60px; text-align: center; font-size: 0.9rem; color: var(--text-sub); border-top: 1px dashed var(--border); padding-top: 30px; font-weight: 600; }
+        .name { font-size: 2rem; font-weight: 900; color: var(--text); margin-bottom: 5px; }
+        .title-badge { 
+            display: inline-block; background: color-mix(in srgb, var(--accent) 15%, transparent); 
+            color: var(--accent); padding: 5px 15px; border-radius: 50px; font-weight: 800; font-size: 0.9rem; 
+            margin-bottom: 20px;
+        }
+
+        .info-list { text-align: left; margin: 30px 0; padding-top: 30px; border-top: 1px dashed var(--border); }
+        .info-item { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; font-weight: 600; color: var(--text-sub); }
+        .info-item i { width: 20px; text-align: center; color: var(--accent); font-size: 1.1rem; }
+        .info-item span { color: var(--text); }
+
+        .social-links { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
+        .social-link { 
+            width: 40px; height: 40px; border-radius: 50%; background: var(--tag-bg); 
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+            color: var(--text-sub); transition: all 0.3s;
+        }
+        .social-link:hover { background: var(--accent); color: white; transform: translateY(-3px); }
+
+        /* 右侧主要内容区 */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .section-title { 
+            font-size: 1.8rem; font-weight: 900; color: var(--text); 
+            display: flex; align-items: center; gap: 12px; margin-bottom: 25px;
+        }
+        .section-title i { color: var(--accent); }
+
+        /* 卡片样式 */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.01);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.04); border-color: var(--accent); }
+
+        /* 技能网格 */
+        .skill-group { margin-bottom: 20px; }
+        .skill-group:last-child { margin-bottom: 0; }
+        .skill-title { font-weight: 800; color: var(--text); margin-bottom: 10px; font-size: 1.05rem; }
+        .tags { display: flex; flex-wrap: wrap; gap: 10px; }
+        .tag { 
+            background: var(--tag-bg); color: var(--text-sub); padding: 6px 14px; 
+            border-radius: 8px; font-size: 0.9rem; font-weight: 700; border: 1px solid var(--border);
+        }
+
+        /* 经历时间轴 */
+        .timeline-item { border-left: 2px solid var(--border); padding-left: 20px; position: relative; margin-bottom: 30px; }
+        .timeline-item:last-child { margin-bottom: 0; border-left-color: transparent; }
+        .timeline-dot { 
+            position: absolute; left: -7px; top: 5px; width: 12px; height: 12px; 
+            background: var(--accent); border-radius: 50%; border: 3px solid var(--card-bg);
+        }
+        .timeline-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; margin-bottom: 8px;}
+        .timeline-title { font-size: 1.25rem; font-weight: 800; color: var(--text); }
+        .timeline-date { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 800; }
+        .timeline-subtitle { font-size: 1rem; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; }
+        .timeline-desc { font-size: 0.95rem; line-height: 1.7; color: var(--text); }
+        .timeline-desc ul { padding-left: 20px; margin-top: 10px; }
+        .timeline-desc li { margin-bottom: 5px; }
+
+        /* 主题切换按钮浮动 */
+        .theme-toggle {
+            position: fixed; right: 30px; bottom: 30px; width: 50px; height: 50px;
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+            color: #f6ad55; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s; z-index: 100;
+        }
+        .theme-toggle:hover { transform: rotate(30deg) scale(1.1); border-color: var(--accent); }
+
+        /* 移动端适配 */
+        @media (max-width: 900px) {
+            .layout-wrapper { grid-template-columns: 1fr; }
+            .sidebar { position: static; top: 0; }
+            .timeline-header { flex-direction: column; gap: 5px; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <div class="brand">
-            <img src="https://img.i8-mc.cn/file/J0NJk8wH.jpeg" class="avatar" alt="avatar">
-            <span class="site-title">Resume</span>
+<div class="layout-wrapper">
+    <aside class="sidebar">
+        <div class="avatar-wrap">
+            <img src="https://img.i8-mc.cn/file/J0NJk8wH.jpeg" alt="NKX" class="avatar">
         </div>
-        <div>
-            <i class="fa-solid fa-sun theme-icon" onclick="toggleTheme()" title="切换主题"></i>
-        </div>
-    </header>
+        <h1 class="name">聂凯翔</h1>
+        <div class="title-badge">Geek / 运维开发者</div>
+        
+        <p style="color: var(--text-sub); font-size: 0.95rem; line-height: 1.6; font-weight: 600;">
+            花有重开日，人无再少年。热衷于计算机技术、网络架构与独立开发。目前正在为进入理想的大学做最后的准备。
+        </p>
 
-    <div class="profile-section">
-        <div class="name">聂凯翔 (NKX)</div>
-        <div class="subtitle"><i class="fa-solid fa-graduation-cap"></i> 准大学生 / 运维与开发爱好者</div>
-        <div class="bio">
-            热爱计算机技术，热衷于折腾服务器与网络架构。目前正在为 2026 年 9 月的大学入学做准备，计划在信息技术与计算机专业方向深造。喜欢独立思考与动手实践，独立开发并维护着自己的个人博客与多节点服务器集群。
+        <div class="info-list">
+            <div class="info-item">
+                <i class="fa-solid fa-graduation-cap"></i>
+                <span>2026届 准大学生</span>
+            </div>
+            <div class="info-item">
+                <i class="fa-solid fa-code"></i>
+                <span>Python / Web 爱好者</span>
+            </div>
+            <div class="info-item">
+                <i class="fa-solid fa-server"></i>
+                <span>独立运维多节点集群</span>
+            </div>
+            <div class="info-item">
+                <i class="fa-solid fa-envelope"></i>
+                <a href="mailto:nkx080112@gmail.com">nkx080112@gmail.com</a>
+            </div>
         </div>
-        <div class="social-contact">
-            <a href="mailto:nkx080112@gmail.com" target="_blank" title="Email"><i class="fa-solid fa-envelope"></i></a>
-            <a href="https://github.com/3257085208" target="_blank" title="GitHub"><i class="fa-brands fa-github"></i></a>
-            <a href="https://t.me/MarkNKX" target="_blank" title="Telegram"><i class="fa-brands fa-telegram"></i></a>
-            <a href="tencent://message/?uin=3257085208" target="_blank" title="QQ"><i class="fa-brands fa-qq"></i></a>
-        </div>
-    </div>
 
-    <div class="section-header"><i class="fa-solid fa-screwdriver-wrench"></i> 技术栈 & 技能</div>
-    <div class="card" style="background: transparent; border: none; padding: 0;">
-        <div class="skills-grid">
-            <span class="tag-pill">Linux (Debian/Alpine)</span>
-            <span class="tag-pill">Python</span>
-            <span class="tag-pill">Docker & 容器化</span>
-            <span class="tag-pill">Proxmox VE</span>
-            <span class="tag-pill">KVM 虚拟化</span>
-            <span class="tag-pill">VPS 运维与网络架构</span>
-            <span class="tag-pill">Web 后端开发</span>
-            <span class="tag-pill">Cloudflare 生态</span>
-            <span class="tag-pill">HTML / CSS / JS</span>
+        <div class="social-links">
+            <a href="https://github.com/3257085208" target="_blank" class="social-link" title="GitHub"><i class="fa-brands fa-github"></i></a>
+            <a href="https://t.me/MarkNKX" target="_blank" class="social-link" title="Telegram"><i class="fa-brands fa-telegram"></i></a>
+            <a href="tencent://message/?uin=3257085208" target="_blank" class="social-link" title="QQ"><i class="fa-brands fa-qq"></i></a>
+            <a href="https://www.niekaixiang.com" target="_blank" class="social-link" title="个人博客"><i class="fa-solid fa-blog"></i></a>
         </div>
-    </div>
+    </aside>
 
-    <div class="section-header"><i class="fa-solid fa-briefcase"></i> 经历 & 项目</div>
-    
-    <div class="card">
-        <div class="card-title">
-            <span>个人静态博客系统 (聂.NET)</span>
-            <span class="card-date">2026.01 - 至今</span>
-        </div>
-        <div class="card-desc">
-            从零开始自主研发的 Python 静态博客生成器。抛弃繁重框架，底层通过 Python 脚本实现 Markdown 解析与 HTML 页面渲染，前端高度定制 UI 并支持深浅色模式。项目目前托管于 GitHub 并利用 Cloudflare Pages 实现自动化构建与边缘加速部署。
-        </div>
-    </div>
+    <main class="main-content">
+        
+        <section>
+            <h2 class="section-title"><i class="fa-regular fa-address-card"></i> 关于我</h2>
+            <div class="card">
+                <p style="margin-bottom: 15px; font-size: 1.05rem;">
+                    你好！我是聂凯翔。我对计算机底层原理、系统运维以及服务端开发有着浓厚的兴趣。在这个高度数字化的时代，我喜欢通过编写代码和配置服务器来创造属于自己的“赛博空间”。
+                </p>
+                <p style="font-size: 1.05rem;">
+                    我习惯于独立解决复杂的技术难题，从阅读英文官方文档到在终端里排查网络故障。相比于使用臃肿的现成框架，我更偏爱从零开始构建系统（例如我的个人博客系统），以追求极致的性能与完全的掌控感。
+                </p>
+            </div>
+        </section>
 
-    <div class="card">
-        <div class="card-title">
-            <span>上林县微尘网络工作室</span>
-            <span class="card-date">2026.03</span>
-        </div>
-        <div class="card-desc">
-            <b>实习岗位：信息设备维护</b><br>
-            在实习期间，负责工作室内部及客户的信息化设备维护、网络故障排查与系统重装配置。积累了大量关于实体硬件维护、局域网调试以及客户需求沟通的一手实践经验。
-        </div>
-    </div>
+        <section>
+            <h2 class="section-title"><i class="fa-solid fa-layer-group"></i> 技术栈</h2>
+            <div class="card">
+                <div class="skill-group">
+                    <div class="skill-title">编程与开发</div>
+                    <div class="tags">
+                        <span class="tag">Python</span>
+                        <span class="tag">Shell Script</span>
+                        <span class="tag">HTML / CSS / JS</span>
+                        <span class="tag">Markdown 解析与生成</span>
+                    </div>
+                </div>
+                <div class="skill-group">
+                    <div class="skill-title">系统与容器化</div>
+                    <div class="tags">
+                        <span class="tag">Debian / Alpine Linux</span>
+                        <span class="tag">Docker & Docker Compose</span>
+                        <span class="tag">KVM 虚拟化技术</span>
+                        <span class="tag">Proxmox VE (PVE)</span>
+                    </div>
+                </div>
+                <div class="skill-group">
+                    <div class="skill-title">网络与运维</div>
+                    <div class="tags">
+                        <span class="tag">VPS 集群管理</span>
+                        <span class="tag">IPv4 / IPv6 网络配置</span>
+                        <span class="tag">Nginx / 反向代理</span>
+                        <span class="tag">Cloudflare 边缘生态体系</span>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    <div class="card">
-        <div class="card-title">
-            <span>全球 VPS 分布式集群管理</span>
-            <span class="card-date">日常折腾</span>
-        </div>
-        <div class="card-desc">
-            独立运维多台海内外云服务器（包含 EPYC 高性能节点）。熟练使用 Proxmox VE 及 KVM 开设及管理虚拟机，搭建内网穿透、科学的网络连通性测试环境以及日常数据备份体系，对服务器的性能评估与网络路由优化有深入研究。
-        </div>
-    </div>
+        <section>
+            <h2 class="section-title"><i class="fa-solid fa-folder-open"></i> 核心项目</h2>
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="timeline-header">
+                    <div class="timeline-title">聂.NET - 高性能纯静态博客系统</div>
+                    <div class="timeline-date">2026.01 至今</div>
+                </div>
+                <div class="timeline-subtitle">独立全栈开发 / 架构设计</div>
+                <div class="timeline-desc">
+                    不满于传统博客系统（如 WordPress, Hexo）的臃肿与受限，我从零开始用 Python 手写了一套静态页面生成器（SSG）。
+                    <ul>
+                        <li><b>底层构建：</b> 使用 Python 编写核心逻辑，实现 Markdown 文件的毫秒级解析、渲染与元数据提取。</li>
+                        <li><b>前端体验：</b> 零依赖手写响应式前端 UI，深度整合自适应暗黑模式、无刷新状态切换，并实现了复杂的文章目录（TOC）挂载与代码高亮。</li>
+                        <li><b>CI/CD 部署：</b> 结合 GitHub 仓库，利用 Cloudflare Pages 实现了代码推送后的自动化边缘节点构建与全球分发，极大提升了站点的访问速度与抗 D 攻击能力。</li>
+                    </ul>
+                </div>
+            </div>
 
-    <div class="section-header"><i class="fa-solid fa-map-location-dot"></i> 2026 年度计划</div>
-    <div class="card">
-        <div class="card-desc">
-            <ul>
-                <li style="margin-bottom: 8px;">顺利被省内优秀的计算机相关大学录取，开启大学生涯。</li>
-                <li style="margin-bottom: 8px;">考取机动车驾驶证。</li>
-                <li style="margin-bottom: 8px;">利用假期去不同的城市走走看看，开拓视野。</li>
-                <li>继续迭代重构博客系统，并学习更多前沿的前后端技术框架。</li>
-            </ul>
-        </div>
-    </div>
+            <div class="card">
+                <div class="timeline-header">
+                    <div class="timeline-title">全球分布式 VPS 集群运维</div>
+                    <div class="timeline-date">日常维护</div>
+                </div>
+                <div class="timeline-subtitle">Linux 系统管理 / 网络优化</div>
+                <div class="timeline-desc">
+                    独立管理多台位于欧洲、北美及亚太地区的云服务器，包括高配 EPYC 节点。
+                    <ul>
+                        <li>通过 Proxmox VE 和 KVM 进行底层硬件资源的虚拟化切分与系统级优化。</li>
+                        <li>熟练配置纯 IPv6 节点网络，解决跨地域网络连通性问题与 DNS 寻址优化。</li>
+                        <li>搭建并维护内部测速探针、数据自动化备份服务及网络穿透隧道。</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
 
-    <footer>
-        <p>&copy; 2026 聂凯翔. All rights reserved.</p>
-        <p style="margin-top: 5px;">Powered by passion and lots of caffeine.</p>
-    </footer>
+        <section>
+            <h2 class="section-title"><i class="fa-solid fa-timeline"></i> 经历 & 规划</h2>
+            <div class="card">
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-header">
+                        <div class="timeline-title">年度目标规划</div>
+                        <div class="timeline-date">2026 年度</div>
+                    </div>
+                    <div class="timeline-desc">
+                        1. 顺利进入理想的大学，开启计算机及信息技术专业的系统性学习。<br>
+                        2. 考取机动车驾驶证。<br>
+                        3. 利用假期时间外出旅行，拓宽视野。<br>
+                        4. 持续学习后端开发框架与新的技术栈。
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-header">
+                        <div class="timeline-title">上林县微尘网络工作室</div>
+                        <div class="timeline-date">2026.03</div>
+                    </div>
+                    <div class="timeline-subtitle">实习生 - 信息设备维护</div>
+                    <div class="timeline-desc">
+                        深入一线了解实体 IT 维护工作。主要负责工作室内部及客户硬件设备的基础维护、操作系统重装优化、局域网网络排障。这次实习极大提升了我处理实际物理硬件和与客户沟通需求的经验。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<div class="theme-toggle" onclick="toggleTheme()" title="切换深浅色模式">
+    <i class="fa-solid fa-sun" id="theme-icon-main"></i>
 </div>
 
 <script>
     function toggleTheme() {
         const root = document.documentElement;
+        const icon = document.getElementById('theme-icon-main');
         const isDark = root.getAttribute('data-theme') === 'dark';
-        const newTheme = isDark ? 'light' : 'dark';
-        root.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
+        
+        if (isDark) {
+            root.setAttribute('data-theme', 'light');
+            localStorage.setItem('theme', 'light');
+            icon.className = 'fa-solid fa-sun';
+            icon.style.color = '#f6ad55';
+        } else {
+            root.setAttribute('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+            icon.className = 'fa-solid fa-moon';
+            icon.style.color = '#e2e8f0';
+        }
+    }
+
+    // 初始化图标状态
+    window.onload = function() {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const icon = document.getElementById('theme-icon-main');
+        if (isDark) {
+            icon.className = 'fa-solid fa-moon';
+            icon.style.color = '#e2e8f0';
+        }
     }
 </script>
 
