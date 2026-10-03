@@ -51,6 +51,7 @@
     --tx-feature-scale:.76;
     --tx-feature-rotate:10deg;
     --tx-feature-copy-x:-4vw;
+    --tx-ink-opacity:1;
   }
 
   html.cinematic-works-ready .tx-home-frame{
@@ -145,6 +146,20 @@
     filter:blur(12px);
     opacity:.6;
   }
+
+
+  html.cinematic-works-ready .tx-ink-canvas{
+    position:absolute;
+    z-index:7;
+    inset:14px;
+    width:calc(100% - 28px);
+    height:calc(100% - 28px);
+    border-radius:24px;
+    pointer-events:none;
+    opacity:var(--tx-ink-opacity,1);
+    will-change:opacity;
+  }
+
 
   html.cinematic-works-ready .tx-paper-portrait{
     position:absolute;
