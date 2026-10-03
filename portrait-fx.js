@@ -7,7 +7,8 @@
 
   if (!home || !host || !sourceImg || !canvas || !cross) return;
 
-  if (matchMedia('(hover:none),(pointer:coarse),(max-width:760px),(prefers-reduced-motion:reduce)').matches) {
+  const MOBILE_INPUT = matchMedia('(hover:none),(pointer:coarse),(max-width:760px)').matches;
+  if (matchMedia('(prefers-reduced-motion:reduce)').matches) {
     return;
   }
 
@@ -20,7 +21,7 @@
    * - draw only a scissored box around the ink blob
    * - 3-octave edge noise + 1 detail noise instead of two 5-octave FBMs
    */
-  const MAX_DPR = 1.25;
+  const MAX_DPR = MOBILE_INPUT ? 1.0 : 1.25;
 
   const gl = canvas.getContext('webgl', {
     alpha: true,
@@ -227,7 +228,13 @@
   if(sourceImg.complete&&sourceImg.naturalWidth)loadTexture();
   else sourceImg.addEventListener('load',loadTexture,{once:true});
 
-  const params={
+  const params=MOBILE_INPUT ? {
+    radius:.145,
+    ragged:.080,
+    disp:.060,
+    decay:.900,
+    follow:10.0
+  } : {
     radius:.165,
     ragged:.095,
     disp:.090,
@@ -381,21 +388,54 @@
     mouse.prevY=y;
   }
 
-  host.addEventListener('pointerenter',event=>{
-    mouse.prevX=0;
-    mouse.prevY=0;
-    queuePointer(event);
-  },{passive:true});
+  if(MOBILE_INPUT){
+    let touchActive=false;
+    let fadeTimer=0;
 
-  host.addEventListener('pointermove',queuePointer,{passive:true});
+    const endTouch=()=>{
+      touchActive=false;
+      clearTimeout(fadeTimer);
+      fadeTimer=setTimeout(()=>{
+        pendingPointer=null;
+        activeTarget=0;
+        mouse.prevX=0;
+        mouse.prevY=0;
+      },420);
+    };
 
-  host.addEventListener('pointerleave',()=>{
-    pendingPointer=null;
-    activeTarget=0;
-    cross.classList.remove('is-active');
-    mouse.prevX=0;
-    mouse.prevY=0;
-  },{passive:true});
+    host.addEventListener('pointerdown',event=>{
+      if(event.pointerType!=='touch'&&event.pointerType!=='pen')return;
+      clearTimeout(fadeTimer);
+      touchActive=true;
+      mouse.prevX=0;
+      mouse.prevY=0;
+      queuePointer(event);
+    },{passive:true});
+
+    host.addEventListener('pointermove',event=>{
+      if(!touchActive)return;
+      queuePointer(event);
+    },{passive:true});
+
+    host.addEventListener('pointerup',endTouch,{passive:true});
+    host.addEventListener('pointercancel',endTouch,{passive:true});
+  }else{
+    host.addEventListener('pointerenter',event=>{
+      mouse.prevX=0;
+      mouse.prevY=0;
+      queuePointer(event);
+    },{passive:true});
+
+    host.addEventListener('pointermove',queuePointer,{passive:true});
+
+    host.addEventListener('pointerleave',()=>{
+      pendingPointer=null;
+      activeTarget=0;
+      cross.classList.remove('is-active');
+      mouse.prevX=0;
+      mouse.prevY=0;
+    },{passive:true});
+  }
 
   function updateScissor(){
     const minRes=Math.min(canvas.width,canvas.height);
