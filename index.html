@@ -1,426 +1,79 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>聂凯翔 (NKX) - 个人主页与简历</title>
-    <link rel="icon" href="https://img.i8-mc.cn/file/V4PF4kwS.ico">
-    <link rel="stylesheet" href="https://cdn.staticfile.org.i8-mc.cn/font-awesome/6.4.2/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    
-    <script>
-        (function () {
-          try {
-            var t = localStorage.getItem('theme') || 'light';
-            var dark = (t === 'dark' || t === 'night');
-            document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-          } catch (e) {}
-        })();
-    </script>
-    
-    <style>
-        :root {
-            --bg: #ffffff;
-            --bg-alt: #f8fafc;
-            --text: #50616d;
-            --text-sub: #9aa5b1;
-            --accent: #42b983;
-            --border: #f0f2f5;
-            --tag-bg: #f8fafc;
-            --card-bg: #ffffff;
-        }
-        [data-theme="dark"] {
-            --bg: #1a202c;
-            --bg-alt: #111827;
-            --text: #e2e8f0;
-            --text-sub: #a0aec0;
-            --accent: #68d391;
-            --border: #2d3748;
-            --tag-bg: #2d3748;
-            --card-bg: #1f2937;
-        }
-        
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: var(--bg-alt);
-            color: var(--text);
-            line-height: 1.6;
-            transition: background-color 0.4s, color 0.4s;
-            -webkit-font-smoothing: antialiased;
-        }
-        
-        a { text-decoration: none; color: inherit; transition: color 0.2s; }
-        a:hover { color: var(--accent); }
-
-        .layout-wrapper {
-            max-width: 1200px; 
-            margin: 0 auto;
-            padding: 40px 20px;
-            display: grid;
-            grid-template-columns: 340px 1fr; 
-            gap: 40px;
-            align-items: start;
-        }
-
-        .sidebar {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 40px 30px;
-            border: 1px solid var(--border);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
-            position: sticky;
-            top: 40px; 
-            text-align: center;
-            transition: all 0.3s;
-        }
-
-        .avatar-wrap { position: relative; display: inline-block; margin-bottom: 20px; }
-        .avatar { width: 140px; height: 140px; border-radius: 50%; border: 4px solid var(--border); object-fit: cover; }
-        
-        .name { font-size: 2rem; font-weight: 900; color: var(--text); margin-bottom: 5px; }
-        .title-badge { 
-            display: inline-block; background: color-mix(in srgb, var(--accent) 15%, transparent); 
-            color: var(--accent); padding: 5px 15px; border-radius: 50px; font-weight: 800; font-size: 0.9rem; 
-            margin-bottom: 20px;
-        }
-
-        .info-list { text-align: left; margin: 30px 0; padding-top: 30px; border-top: 1px dashed var(--border); }
-        .info-item { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; font-weight: 600; color: var(--text-sub); }
-        .info-item i { width: 20px; text-align: center; color: var(--accent); font-size: 1.1rem; }
-        .info-item span { color: var(--text); }
-
-        .social-links { display: flex; justify-content: center; gap: 15px; margin-top: 20px; }
-        .social-link { 
-            width: 40px; height: 40px; border-radius: 50%; background: var(--tag-bg); 
-            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-            color: var(--text-sub); transition: all 0.3s;
-        }
-        .social-link:hover { background: var(--accent); color: white; transform: translateY(-3px); }
-
-        .main-content {
-            display: flex;
-            flex-direction: column;
-            gap: 40px;
-        }
-
-        .section-title { 
-            font-size: 1.8rem; font-weight: 900; color: var(--text); 
-            display: flex; align-items: center; gap: 12px; margin-bottom: 25px;
-        }
-        .section-title i { color: var(--accent); }
-
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.01);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        .card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.04); border-color: var(--accent); }
-
-        .skill-group { margin-bottom: 20px; }
-        .skill-group:last-child { margin-bottom: 0; }
-        .skill-title { font-weight: 800; color: var(--text); margin-bottom: 10px; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;}
-        .skill-title i { color: var(--accent); font-size: 0.9rem;}
-        .tags { display: flex; flex-wrap: wrap; gap: 10px; }
-        .tag { 
-            background: var(--tag-bg); color: var(--text-sub); padding: 6px 14px; 
-            border-radius: 8px; font-size: 0.9rem; font-weight: 700; border: 1px solid var(--border);
-            transition: all 0.2s;
-        }
-        .tag:hover { background: var(--accent); color: #fff; border-color: var(--accent); transform: translateY(-2px);}
-
-        .timeline-item { border-left: 2px solid var(--border); padding-left: 20px; position: relative; margin-bottom: 30px; }
-        .timeline-item:last-child { margin-bottom: 0; border-left-color: transparent; }
-        .timeline-dot { 
-            position: absolute; left: -7px; top: 5px; width: 12px; height: 12px; 
-            background: var(--accent); border-radius: 50%; border: 3px solid var(--card-bg);
-        }
-        .timeline-header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; margin-bottom: 8px;}
-        .timeline-title { font-size: 1.25rem; font-weight: 800; color: var(--text); }
-        .timeline-date { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 800; }
-        .timeline-subtitle { font-size: 1rem; color: var(--text-sub); font-weight: 700; margin-bottom: 10px; }
-        .timeline-desc { font-size: 0.95rem; line-height: 1.7; color: var(--text); }
-        .timeline-desc ul { padding-left: 20px; margin-top: 10px; }
-        .timeline-desc li { margin-bottom: 5px; }
-
-        .theme-toggle {
-            position: fixed; right: 30px; bottom: 30px; width: 50px; height: 50px;
-            background: var(--card-bg); border: 1px solid var(--border); border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-            color: #f6ad55; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            transition: all 0.3s; z-index: 100;
-        }
-        .theme-toggle:hover { transform: rotate(30deg) scale(1.1); border-color: var(--accent); }
-
-        @media (max-width: 900px) {
-            .layout-wrapper { grid-template-columns: 1fr; }
-            .sidebar { position: static; top: 0; }
-            .timeline-header { flex-direction: column; gap: 5px; }
-        }
-    </style>
-</head>
-<body>
-
-<div class="layout-wrapper">
-    <aside class="sidebar">
-        <div class="avatar-wrap">
-            <img src="https://img.i8-mc.cn/file/J0NJk8wH.jpeg" alt="NKX" class="avatar">
-        </div>
-        <h1 class="name">聂凯翔</h1>
-        <div class="title-badge">Geek / 青年 IDC 创业者</div>
-        
-        <p style="color: var(--text-sub); font-size: 0.95rem; line-height: 1.6; font-weight: 600;">
-            花有重开日，人无再少年。热衷于底层硬件、网络架构与独立开发。18岁正式成年，正在为更高的学业与创业目标狂奔。
-        </p>
-
-        <div class="info-list">
-            <div class="info-item">
-                <i class="fa-solid fa-graduation-cap"></i>
-                <span>2026届 准专升本学生</span>
-            </div>
-            <div class="info-item">
-                <i class="fa-solid fa-server"></i>
-                <span>6年 服务器与网络折腾史</span>
-            </div>
-            <div class="info-item">
-                <i class="fa-solid fa-code"></i>
-                <span>Python / Web 爱好者</span>
-            </div>
-            <div class="info-item">
-                <i class="fa-solid fa-envelope"></i>
-                <a href="mailto:nkx080112@gmail.com">nkx080112@gmail.com</a>
-            </div>
-        </div>
-
-        <div class="social-links">
-            <a href="https://github.com/3257085208" target="_blank" class="social-link" title="GitHub"><i class="fa-brands fa-github"></i></a>
-            <a href="https://t.me/MarkNKX" target="_blank" class="social-link" title="Telegram"><i class="fa-brands fa-telegram"></i></a>
-            <a href="tencent://message/?uin=3257085208" target="_blank" class="social-link" title="QQ"><i class="fa-brands fa-qq"></i></a>
-            <a href="https://www.niekaixiang.com" target="_blank" class="social-link" title="个人博客"><i class="fa-solid fa-blog"></i></a>
-        </div>
-    </aside>
-
-    <main class="main-content">
-        
-        <section>
-            <h2 class="section-title"><i class="fa-regular fa-address-card"></i> 关于我</h2>
-            <div class="card">
-                <p style="margin-bottom: 15px; font-size: 1.05rem;">
-                    你好！我是聂凯翔。我对计算机底层硬件、系统运维以及服务端开发有着浓厚的兴趣。在这个高度数字化的时代，我喜欢通过编写代码、配置路由和搭建物理服务器来创造属于自己的“赛博空间”。
-                </p>
-                <p style="font-size: 1.05rem;">
-                    从组装第一台实体服务器到运维海内外多节点集群，我习惯于独立解决复杂的技术难题。无论是研究思科/华为的网络架构，还是从零手写静态博客生成器，我都偏爱追根溯源，以追求极致的性能与完全的掌控感。
-                </p>
-            </div>
-        </section>
-
-        <section>
-            <h2 class="section-title"><i class="fa-solid fa-layer-group"></i> 核心技术栈</h2>
-            <div class="card">
-                <div class="skill-group">
-                    <div class="skill-title"><i class="fa-brands fa-linux"></i> 操作系统与虚拟化</div>
-                    <div class="tags">
-                        <span class="tag">Debian / RedHat 系 Linux 运维</span>
-                        <span class="tag">Proxmox VE (PVE)</span>
-                        <span class="tag">VMware ESXi</span>
-                        <span class="tag">KVM 底层虚拟化</span>
-                        <span class="tag">Microsoft Hyper-V</span>
-                    </div>
-                </div>
-                
-                <div class="skill-group">
-                    <div class="skill-title"><i class="fa-solid fa-network-wired"></i> 网络工程与架构</div>
-                    <div class="tags">
-                        <span class="tag">华为 / 思科交换机实操与配置</span>
-                        <span class="tag">网络拓扑与路由规划</span>
-                        <span class="tag">IPv4 / IPv6 寻址与配置</span>
-                    </div>
-                </div>
-
-                <div class="skill-group">
-                    <div class="skill-title"><i class="fa-solid fa-server"></i> IDC 运营与云平台</div>
-                    <div class="tags">
-                        <span class="tag">IDCsmart (智简魔方)</span>
-                        <span class="tag">ProKVM 主控</span>
-                        <span class="tag">WHMCS 财务系统</span>
-                        <span class="tag">ZKeys (大陆商业 IDC 系统)</span>
-                        <span class="tag">Amazon Web Services (AWS)</span>
-                        <span class="tag">Tencent Cloud (腾讯云)</span>
-                    </div>
-                </div>
-
-                <div class="skill-group">
-                    <div class="skill-title"><i class="fa-solid fa-user-secret"></i> 神秘技能 (网络代理与隧道加密)</div>
-                    <div class="tags">
-                        <span class="tag">Vless / VMess</span>
-                        <span class="tag">Hysteria II</span>
-                        <span class="tag">TUIC</span>
-                        <span class="tag">Shadowsocks</span>
-                        <span class="tag">CDN 流量伪装与优选</span>
-                    </div>
-                </div>
-
-                <div class="skill-group">
-                    <div class="skill-title"><i class="fa-solid fa-code"></i> 编程开发与边缘计算</div>
-                    <div class="tags">
-                        <span class="tag">Python</span>
-                        <span class="tag">Java</span>
-                        <span class="tag">HTML / CSS / JS 前端开发</span>
-                        <span class="tag">Cloudflare Ecosystem (Pages / Workers)</span>
-                        <span class="tag">GitHub / Vercel 持续部署</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section>
-            <h2 class="section-title"><i class="fa-solid fa-folder-open"></i> 独立开源项目</h2>
-            <div class="card">
-                <div class="timeline-header">
-                    <div class="timeline-title">
-                        <a href="https://www.niekaixiang.com" target="_blank" style="text-decoration: underline; text-underline-offset: 4px; display: inline-flex; align-items: center; gap: 6px;">
-                            聂.NET - 高性能纯静态博客系统 <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.9rem;"></i>
-                        </a>
-                    </div>
-                    <div class="timeline-date">2026.01 至今</div>
-                </div>
-                <div class="timeline-subtitle">独立全栈开发 / 架构设计</div>
-                <div class="timeline-desc" style="margin-top: 15px;">
-                    不满于传统博客系统的臃肿与受限，我从零开始用 Python 手写了一套静态页面生成器（SSG）。
-                    <ul>
-                        <li><b>底层构建：</b> 使用 Python 编写核心逻辑，实现 Markdown 文件的毫秒级解析、渲染与元数据提取。</li>
-                        <li><b>前端体验：</b> 零依赖手写响应式前端 UI，深度整合自适应暗黑模式、无刷新状态切换。</li>
-                        <li><b>CI/CD 部署：</b> 结合 GitHub 仓库，利用 Cloudflare Pages 实现了代码推送后的自动化边缘节点构建与全球分发，极大提升了访问速度。</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-
-        <section>
-            <h2 class="section-title"><i class="fa-solid fa-timeline"></i> IDC 创业与历程</h2>
-            <div class="card">
-                <div class="timeline-item">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-header">
-                        <div class="timeline-title">成年礼与公司化运作</div>
-                        <div class="timeline-date">2026 年（进行中）</div>
-                    </div>
-                    <div class="timeline-subtitle">十八岁的新起点</div>
-                    <div class="timeline-desc">
-                        今年正式成年，开启人生的全新阶段，年度核心规划如下：
-                        <ul>
-                            <li><b>商业运作：</b> 创办「福建省苏晨互联有限公司」，将多年的 IDC 运营经验正规化与企业化。</li>
-                            <li><b>学业提升：</b> 全力备考专升本，在学历和理论知识上继续深造。</li>
-                            <li><b>个人技能：</b> 争取一次性考取 C1 驾照；持续学习新的技术栈，并耐心维护我的个人博客。</li>
-                            <li><b>生活小目标：</b> 准备... 找个对象？🤣</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-header">
-                        <div class="timeline-title">拓展海外与网络进阶</div>
-                        <div class="timeline-date">2025 年</div>
-                    </div>
-                    <div class="timeline-desc">
-                        在国内业务稳定的基础上，正式开始布局海外服务市场。为适应复杂的网络环境，深入学习并使用思科（Cisco）与华为模拟器进行配置练习，提升了大型网络路由与交换的实战能力。
-                    </div>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-header">
-                        <div class="timeline-title">全自动化与规模化爆发</div>
-                        <div class="timeline-date">2023 年</div>
-                    </div>
-                    <div class="timeline-subtitle">注册客户 500+ / 硬件大换血</div>
-                    <div class="timeline-desc">
-                        业务进入高速成成长：
-                        <ul>
-                            <li>基于 <b>IDCsmart / WHMCS / ProKVM</b> 等系统，开始建设并上线专用的 IDC 财务和主控系统，彻底开启了全自动化开机与自助化管理之路。</li>
-                            <li>随着注册客户突破 500 大关，为扩充算力，大批量购入高性能实体机，包括多台浪潮 SA5112M5、联想 HR630 等 LGA 3647 平台的准系统。</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-header">
-                        <div class="timeline-title">引入高密度四子星架构</div>
-                        <div class="timeline-date">2022 年</div>
-                    </div>
-                    <div class="timeline-subtitle">活跃客户突破 200 人</div>
-                    <div class="timeline-desc">
-                        客户数量跨越 200 人里程碑。为了应对日益增长的资源需求与高可用要求，出资购买了一台超微（Supermicro）X9DRT-HF 2U 四子星准系统，搭配 <b>ESXi / PVE</b> 等底层系统，大幅提升了机房的承载密度与容灾能力。
-                    </div>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-header">
-                        <div class="timeline-title">百人里程碑与硬件迭代</div>
-                        <div class="timeline-date">2021 年</div>
-                    </div>
-                    <div class="timeline-subtitle">活跃客户 120 人</div>
-                    <div class="timeline-desc">
-                        凭借服务口碑积累，业务量稳步上升，客户数达到 120 人。期间根据用户反馈与市场需求，对底层服务器的硬件配置进行了全面升级。
-                    </div>
-                </div>
-
-                <div class="timeline-item">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-header">
-                        <div class="timeline-title">梦开始的地方</div>
-                        <div class="timeline-date">2020 年 5 月</div>
-                    </div>
-                    <div class="timeline-subtitle">第一台实体服务器 Dell R620</div>
-                    <div class="timeline-desc">
-                        在父母的大力支持下，获得了人生中第一台戴尔（Dell）R620 服务器。正是这台机器的轰鸣声，正式开启了我兜售 VPS 并踏入网络运维世界的探索之路。
-                    </div>
-                </div>
-            </div>
-        </section>
-
-    </main>
-</div>
-
-<div class="theme-toggle" onclick="toggleTheme()" title="切换深浅色模式">
-    <i class="fa-solid fa-sun" id="theme-icon-main"></i>
-</div>
-
-<script>
-    function toggleTheme() {
-        const root = document.documentElement;
-        const icon = document.getElementById('theme-icon-main');
-        const isDark = root.getAttribute('data-theme') === 'dark';
-        
-        if (isDark) {
-            root.setAttribute('data-theme', 'light');
-            localStorage.setItem('theme', 'light');
-            icon.className = 'fa-solid fa-sun';
-            icon.style.color = '#f6ad55';
-        } else {
-            root.setAttribute('data-theme', 'dark');
-            localStorage.setItem('theme', 'dark');
-            icon.className = 'fa-solid fa-moon';
-            icon.style.color = '#e2e8f0';
-        }
-    }
-
-    window.onload = function() {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        const icon = document.getElementById('theme-icon-main');
-        if (isDark) {
-            icon.className = 'fa-solid fa-moon';
-            icon.style.color = '#e2e8f0';
-        }
-    }
-</script>
-
-</body>
-</html>
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080808"><meta name="description" content="Kaixiang Nie / NKX — 作品、代码与网络印记。"><title>QQ.SG — Kaixiang Nie</title><link rel="stylesheet" href="scroll.css"><link rel="stylesheet" href="scenes.css"><link rel="stylesheet" href="cinema.css"></head>
+<body class="cinema-edition">
+<a class="skip-link" href="#works">跳到作品</a>
+<header class="site-header"><a class="brand" href="#home" aria-label="QQ.SG 首页">QQ.SG</a><nav class="site-nav" aria-label="章节导航"><a href="#home" aria-current="page">Home</a><a href="#works">Works</a><a href="#imprints">Imprints</a><a href="#about">About</a></nav></header>
+<main class="story">
+<section class="chapter home-chapter" id="home" data-nav="home" data-label="Introduction"><div class="stage home-stage"><div class="hero-canvas">
+<div class="portrait-layer portrait-light"><img src="portrait-retouched-v4.png" alt="Kaixiang Nie 的美化黑白人像" fetchpriority="high" width="1308" height="1202"></div><div class="portrait-layer portrait-dark" aria-hidden="true"><img src="portrait-retouched-v4.png" alt="" width="1308" height="1202"></div>
+<section class="hero" data-hero-copy aria-labelledby="name">
+<p class="eyebrow">A personal portfolio · 2026</p>
+<svg xmlns="http://www.w3.org/2000/svg" class="signature" viewBox="75 55 630 228" role="img" aria-label="Kaixiang Nie signature">
+        <path class="sig" pathLength="1" d="M87 252 C105 220 125 182 145 142 C162 108 175 82 184 64"/>
+        <path class="sig" pathLength="1" d="M108 213 C143 184 188 155 260 111"/>
+        <path class="sig" pathLength="1" d="M108 213 C129 207 147 213 164 227 C181 242 198 252 223 258"/>
+        <path class="sig" pathLength="1" d="M188 226 C197 210 208 202 219 202 C229 202 233 210 228 218 C223 226 211 230 203 226 C196 222 198 214 205 209 C214 202 223 207 231 217 C237 224 244 225 251 220 C258 215 262 204 268 197 C264 207 261 217 263 223 C265 229 271 229 278 223 C285 217 291 207 298 199 C304 193 309 195 307 202 C305 211 297 220 295 225 C294 230 300 230 307 224 C315 217 323 206 331 200 C338 195 344 196 342 203 C340 211 333 218 329 223 C336 218 345 207 354 202 C362 198 368 201 366 208 C363 216 356 223 352 227 C360 221 369 209 378 204 C386 200 392 202 390 210 C387 219 380 225 377 229 C385 223 394 211 403 207 C410 203 416 206 415 212 C413 221 406 227 400 230 C393 233 387 230 388 224 C390 217 398 212 406 214 C414 216 419 226 416 237 C412 251 403 263 392 271 C381 278 373 275 375 267 C378 254 391 242 406 233 C421 225 438 217 456 212"/>
+        <path class="sig" pathLength="1" d="M247 185 L249 181"/>
+        <path class="sig" pathLength="1" d="M307 184 L309 180"/>
+        <path class="sig" pathLength="1" d="M442 231 C458 198 477 158 498 122 L490 263 L562 91"/>
+        <path class="sig" pathLength="1" d="M519 226 C527 216 533 203 538 194 C541 188 544 190 542 197 C539 206 535 216 537 221 C539 225 545 223 551 217 C557 211 564 205 570 204 C576 203 579 207 577 213 C574 220 567 224 560 222 C554 220 555 213 561 209 C568 205 576 209 582 214 C588 219 595 220 603 217 C611 214 618 208 625 205 C632 202 639 205 639 211 C639 217 633 221 626 220 C619 219 619 212 625 209 C633 205 641 210 650 213 C662 217 675 214 691 207"/>
+        <path class="sig" pathLength="1" d="M538 175 L540 171"/>
+      </svg>
+<h1 class="name" id="name">Kaixiang Nie</h1>
+<div class="signature-controls"><span class="control-line" aria-hidden="true"></span><button class="replay" id="replay" type="button" aria-label="重播签名动画"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7a7 7 0 1 1-1 7M4 2v5H0" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>Replay signature</button></div>
+</section>
+<a class="home-scroll" href="#works"><span class="scroll-line"></span>Scroll to explore <span class="down">↓</span></a><span class="home-credit">Kaixiang Nie · 2026</span>
+</div></div></section>
+<section class="chapter works-chapter paper" id="works" data-nav="works" data-label="Selected works"><div class="stage works-stage"><p class="kicker">02 / Selected works &amp; digital imprints</p><h2 class="works-title"><span>Works</span><span class="offset">&amp; <em>imprints.</em></span></h2><div class="works-caption"><p>从写下一个想法，<br>到做出一个自己的东西。</p><span>博客 / 探针 / 界面</span></div><div class="work-index"><a href="#project-blog"><span>01</span>聶.NET <i>↓</i></a><a href="#project-sla"><span>02</span>NIE-SLA <i>↓</i></a><a href="#project-nodeget"><span>03</span>NIE Theme <i>↓</i></a></div></div></section>
+<section class="chapter project-chapter paper blog-scene" id="project-blog" data-nav="works" data-label="01 / 聶.NET" data-scene="blog">
+<div class="stage project-stage blog-stage"><div class="film-word write-word" aria-hidden="true"><span>Write</span><em>.</em></div><span class="film-number" aria-hidden="true">01</span>
+<div class="project-copy"><p class="kicker">01 / Writing</p><h3>聶.NET</h3><p class="project-lead">记录生活，<br>也记录折腾。</p><p class="project-desc">自己的博客，也是自己写的博客系统。<br>从一段文字，到一个可以被看见的页面。</p><div class="project-links"><a href="https://www.niekaixiang.com" target="_blank" rel="noopener noreferrer">访问网站 <span>↗</span></a><a href="https://github.com/3257085208/NIE-Higan-Blog" target="_blank" rel="noopener noreferrer">源码 <span>↗</span></a></div></div>
+<div class="paper-guide" aria-hidden="true"><span>WORDS</span><i></i><span>PAGES</span></div>
+<figure class="blog-book">
+<div class="book-stack" aria-hidden="true"></div>
+<div class="book-page"><div class="sheet-header"><span>聶.NET</span><span>ONLINE JOURNAL</span></div><div class="blog-window"><img src="assets/blog.jpg" alt="聶.NET 博客的公开界面截图" width="1200" height="800" loading="lazy"></div><div class="sheet-footer"><span>niekaixiang.com</span><span>界面截图 · 2026.10.03</span></div></div>
+<div class="book-cover" aria-hidden="true"><span class="cover-number">01 / PERSONAL JOURNAL</span><div class="cover-title">聶.NET<br><span>Personal journal</span></div><div class="cover-rule"></div><p>技术文章、生活随笔。<br>生活与代码，放在一起。</p><span class="cover-bottom">KAIXIANG NIE <i>↗</i></span></div>
+<figcaption>文字的另一面，是自己做的博客。</figcaption>
+</figure>
+<div class="scene-steps blog-steps" aria-hidden="true"><span data-step="0">写下文字</span><i></i><span data-step="1">生成页面</span><i></i><span data-step="2">留下记录</span></div>
+<a class="chapter-next" href="#project-sla">继续向下 <span>↓</span></a>
+</div></section>
+<section class="chapter project-chapter ink sla-scene" id="project-sla" data-nav="works" data-label="02 / NIE-SLA" data-scene="sla">
+<div class="stage project-stage sla-stage">
+<div class="sla-word" aria-hidden="true">Observe<span>.</span></div><span class="film-number" aria-hidden="true">02</span>
+<div class="project-copy"><p class="kicker">02 / Monitoring</p><h3>NIE-SLA</h3><p class="project-lead">把运行状态，<br>放到眼前。</p><p class="project-desc">从网站可用性，到 VPS 的系统数据。<br>一个用来观察服务与网络的入口。</p><div class="project-links"><a href="https://sla.niekaixiang.com" target="_blank" rel="noopener noreferrer">访问网站 <span>↗</span></a><a href="https://github.com/3257085208/NIE-SLA" target="_blank" rel="noopener noreferrer">源码 <span>↗</span></a></div></div>
+<figure class="sla-monitor"><div class="display-top"><span>MONITOR / NIE-SLA</span><span class="scan-counter" aria-hidden="true">01 / 03</span></div><div class="monitor-screen"><img src="assets/sla.jpg" alt="NIE-SLA 的公开界面截图" width="1200" height="800" loading="lazy"><div class="scan-veil" aria-hidden="true"></div><div class="scan-line" aria-hidden="true"><i></i><span>READING</span></div><div class="monitor-cross cross-a" aria-hidden="true"></div><div class="monitor-cross cross-b" aria-hidden="true"></div></div><figcaption>界面截图 · 2026.10.03 · 非实时状态</figcaption></figure>
+<div class="signal-path" aria-hidden="true"><svg viewBox="0 0 1000 90" preserveAspectRatio="none"><path class="signal-wire" pathLength="1" d="M0 45 H160 L174 45 L185 28 L199 69 L212 11 L225 59 L239 45 H460 L475 45 L486 28 L500 69 L513 11 L526 59 L540 45 H760 L775 45 L786 28 L800 69 L813 11 L826 59 L840 45 H1000"/></svg><span class="signal-dot"></span></div>
+<div class="scene-steps sla-steps" aria-hidden="true"><span data-step="0"><small>01</small>网站可用性</span><span data-step="1"><small>02</small>节点资源</span><span data-step="2"><small>03</small>历史状态</span></div>
+<a class="chapter-next" href="#project-nodeget">继续向下 <span>↓</span></a>
+</div></section>
+<section class="chapter project-chapter split node-scene" id="project-nodeget" data-nav="works" data-label="03 / NIE Theme" data-scene="node">
+<div class="stage project-stage node-stage"><div class="film-word order-word" aria-hidden="true"><span>Order</span><em>.</em></div><span class="film-number" aria-hidden="true">03</span>
+<div class="node-grid" aria-hidden="true"></div><div class="node-rule" aria-hidden="true"></div>
+<div class="project-copy"><p class="kicker">03 / Interface</p><h3>NIE Theme</h3><p class="project-lead">数据很多，<br>界面可以清楚一点。</p><p class="project-desc">基于 NodeGet 的前端主题改造。<br>用卡片、表格和地图，<br>把服务器状态展示清楚。</p><div class="project-links"><a href="https://status.qq.sg" target="_blank" rel="noopener noreferrer">访问网站 <span>↗</span></a><a href="https://github.com/3257085208/NIE-Theme-NodeGet" target="_blank" rel="noopener noreferrer">源码 <span>↗</span></a></div></div>
+<figure class="node-board"><div class="display-top"><span>NIE-THEME-NODEGET</span><span>03 / SELECTED WORK</span></div><div class="tile-stage" role="img" aria-label="NIE Theme 的 README 界面截图切片，随滚动拼合"><div class="node-underlay" aria-hidden="true"></div><div class="node-tile tile-0" aria-hidden="true"><img src="assets/nodeget.jpg" alt="" width="1200" height="675" loading="lazy"></div><div class="node-tile tile-1" aria-hidden="true"><img src="assets/nodeget.jpg" alt="" width="1200" height="675" loading="lazy"></div><div class="node-tile tile-2" aria-hidden="true"><img src="assets/nodeget.jpg" alt="" width="1200" height="675" loading="lazy"></div><div class="node-tile tile-3" aria-hidden="true"><img src="assets/nodeget.jpg" alt="" width="1200" height="675" loading="lazy"></div><div class="node-frame" aria-hidden="true"></div></div><figcaption>项目 README 展示图</figcaption></figure>
+<div class="node-caption" aria-hidden="true"><span class="node-phase">各自清楚。</span><span class="node-phase-end">放在一起，也清楚。</span></div>
+<a class="chapter-next" href="#imprints">继续向下 <span>↓</span></a>
+</div></section>
+<section class="chapter imprint-chapter ink network-scene" id="imprints" data-nav="imprints" data-label="Digital imprints" data-scene="network">
+<div class="stage imprint-stage network-stage"><div class="network-grid" aria-hidden="true"></div><div class="network-watermark" aria-hidden="true">QQ.SG</div><div class="imprint-copy"><p class="kicker">03 / Digital footprints</p><h2>Somewhere<br>on the<br><em>internet.</em></h2><p class="imprint-description">域名、网络，还有自己的入口。<br>这些是我留下的印记。</p></div>
+<svg class="network-lines" viewBox="0 0 1200 800" preserveAspectRatio="none" aria-hidden="true"><path class="network-wire wire-0" pathLength="1" d="M468 608 C540 608 665 200 768 200"/><circle class="network-endpoint endpoint-0" cx="768" cy="200" r="3"/><path class="network-wire wire-1" pathLength="1" d="M468 608 C552 608 521 320 624 320"/><circle class="network-endpoint endpoint-1" cx="624" cy="320" r="3"/><path class="network-wire wire-2" pathLength="1" d="M468 608 C564 608 701 440 804 440"/><circle class="network-endpoint endpoint-2" cx="804" cy="440" r="3"/><path class="network-wire wire-3" pathLength="1" d="M468 608 C576 608 557 560 660 560"/><circle class="network-endpoint endpoint-3" cx="660" cy="560" r="3"/><path class="network-wire wire-4" pathLength="1" d="M468 608 C588 608 797 656 900 656"/><circle class="network-endpoint endpoint-4" cx="900" cy="656" r="3"/></svg>
+<a class="asn network-hub" href="https://bgp.he.net/AS218834" target="_blank" rel="noopener noreferrer"><span class="hub-orbit" aria-hidden="true"><i></i><b></b></span><span>NKX NETWORKS</span><strong>AS218834 <i>↗</i></strong><span class="hub-caption">Autonomous system</span></a>
+<div class="domain-list"><div class="domain-label"><span>MY DOMAINS</span><span>05 ADDRESSES</span></div><a class="domain domain-0" href="https://xn--7z0a.net" target="_blank" rel="noopener noreferrer" style="--x:65%;--y:25%"><span class="domain-pin" aria-hidden="true"></span><span class="domain-index">01</span><span class="domain-name">聶.NET</span><span class="domain-arrow" aria-hidden="true">↗</span></a><a class="domain domain-1" href="https://www.niekaixiang.com" target="_blank" rel="noopener noreferrer" style="--x:53%;--y:40%"><span class="domain-pin" aria-hidden="true"></span><span class="domain-index">02</span><span class="domain-name">niekaixiang.com</span><span class="domain-arrow" aria-hidden="true">↗</span></a><a class="domain domain-2" href="https://080112.xyz" target="_blank" rel="noopener noreferrer" style="--x:68%;--y:55%"><span class="domain-pin" aria-hidden="true"></span><span class="domain-index">03</span><span class="domain-name">080112.xyz</span><span class="domain-arrow" aria-hidden="true">↗</span></a><a class="domain domain-3" href="https://as6.org" target="_blank" rel="noopener noreferrer" style="--x:56%;--y:70%"><span class="domain-pin" aria-hidden="true"></span><span class="domain-index">04</span><span class="domain-name">as6.org</span><span class="domain-arrow" aria-hidden="true">↗</span></a><a class="domain domain-4" href="https://qq.sg" target="_blank" rel="noopener noreferrer" style="--x:76%;--y:82%"><span class="domain-pin" aria-hidden="true"></span><span class="domain-index">05</span><span class="domain-name">QQ.SG</span><span class="domain-arrow" aria-hidden="true">↗</span></a><p class="domain-foot">代码留在 GitHub。日常留在博客。</p></div><a class="chapter-next" href="#about">往下，是我 <span>↓</span></a>
+</div></section>
+<section class="chapter about-chapter" id="about" data-nav="about" data-label="Behind the signature"><div class="stage about-stage"><div class="hero-canvas closing-canvas"><div class="portrait-layer portrait-light"><img src="portrait-retouched-v4.png" alt="" width="1308" height="1202" loading="lazy"></div><div class="portrait-layer portrait-dark" aria-hidden="true"><img src="portrait-retouched-v4.png" alt="" width="1308" height="1202" loading="lazy"></div><div class="closing-copy"><p class="kicker">04 / Behind the signature</p><h2>Kaixiang<br>Nie<span>.</span></h2><p class="closing-intro">也可以叫我 NKX。<br>我折腾网站、服务器和网络，<br>也把生活记在博客里。</p><div class="closing-signature"><svg xmlns="http://www.w3.org/2000/svg" class="signature" viewBox="75 55 630 228" role="img" aria-label="Kaixiang Nie signature">
+        <path class="sig" pathLength="1" d="M87 252 C105 220 125 182 145 142 C162 108 175 82 184 64"/>
+        <path class="sig" pathLength="1" d="M108 213 C143 184 188 155 260 111"/>
+        <path class="sig" pathLength="1" d="M108 213 C129 207 147 213 164 227 C181 242 198 252 223 258"/>
+        <path class="sig" pathLength="1" d="M188 226 C197 210 208 202 219 202 C229 202 233 210 228 218 C223 226 211 230 203 226 C196 222 198 214 205 209 C214 202 223 207 231 217 C237 224 244 225 251 220 C258 215 262 204 268 197 C264 207 261 217 263 223 C265 229 271 229 278 223 C285 217 291 207 298 199 C304 193 309 195 307 202 C305 211 297 220 295 225 C294 230 300 230 307 224 C315 217 323 206 331 200 C338 195 344 196 342 203 C340 211 333 218 329 223 C336 218 345 207 354 202 C362 198 368 201 366 208 C363 216 356 223 352 227 C360 221 369 209 378 204 C386 200 392 202 390 210 C387 219 380 225 377 229 C385 223 394 211 403 207 C410 203 416 206 415 212 C413 221 406 227 400 230 C393 233 387 230 388 224 C390 217 398 212 406 214 C414 216 419 226 416 237 C412 251 403 263 392 271 C381 278 373 275 375 267 C378 254 391 242 406 233 C421 225 438 217 456 212"/>
+        <path class="sig" pathLength="1" d="M247 185 L249 181"/>
+        <path class="sig" pathLength="1" d="M307 184 L309 180"/>
+        <path class="sig" pathLength="1" d="M442 231 C458 198 477 158 498 122 L490 263 L562 91"/>
+        <path class="sig" pathLength="1" d="M519 226 C527 216 533 203 538 194 C541 188 544 190 542 197 C539 206 535 216 537 221 C539 225 545 223 551 217 C557 211 564 205 570 204 C576 203 579 207 577 213 C574 220 567 224 560 222 C554 220 555 213 561 209 C568 205 576 209 582 214 C588 219 595 220 603 217 C611 214 618 208 625 205 C632 202 639 205 639 211 C639 217 633 221 626 220 C619 219 619 212 625 209 C633 205 641 210 650 213 C662 217 675 214 691 207"/>
+        <path class="sig" pathLength="1" d="M538 175 L540 171"/>
+      </svg></div><div class="closing-links"><a href="https://github.com/3257085208" target="_blank" rel="noopener noreferrer">GitHub ↗</a><a href="https://www.niekaixiang.com" target="_blank" rel="noopener noreferrer">聶.NET ↗</a></div></div><a class="back-top" href="#home">Back to the beginning <span>↑</span></a><span class="home-credit">© 2026 QQ.SG</span></div></div></section>
+</main>
+<div class="journey" aria-hidden="true"><span class="journey-index">01</span><span class="journey-line"><i></i></span><span class="journey-label">Introduction</span></div>
+<div class="film-grain" aria-hidden="true"></div><div class="frame" aria-hidden="true"></div>
+<script src="scroll.js"></script>
+</body></html>
