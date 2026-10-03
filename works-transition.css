@@ -55,7 +55,34 @@
     --tx-ink-opacity:1;
   }
 
+  html.cinematic-works-ready .works-transition-chapter.is-active .works-transition-stage{
+    opacity:1;
+    visibility:visible;
+  }
+
+  /* The transition acts on the ORIGINAL Home below it, so there is never a
+     second copy of the portrait/signature entering from the bottom. */
+  html.cinematic-works-ready #home .hero{
+    opacity:var(--tx-home-copy-opacity,1)!important;
+    transform:translate3d(0,calc(-45% + var(--tx-home-copy-y,0px)),0)!important;
+    will-change:opacity,transform;
+  }
+
+  html.cinematic-works-ready #home .portrait-layer{
+    opacity:var(--tx-portrait-opacity,1)!important;
+    transform:
+      translate3d(var(--tx-portrait-x,0vw),0,0)
+      scale(var(--tx-portrait-scale,1))!important;
+    will-change:opacity,transform;
+  }
+
+  html.cinematic-works-ready #home .home-scroll,
+  html.cinematic-works-ready #home .home-credit{
+    opacity:var(--tx-home-copy-opacity,1);
+  }
+
   html.cinematic-works-ready .tx-home-frame{
+    display:none;
     position:absolute;
     z-index:1;
     inset:14px;
@@ -148,6 +175,7 @@
     pointer-events:none;
     overflow:hidden;
     will-change:opacity;
+    mix-blend-mode:multiply;
   }
 
   html.cinematic-works-ready .tx-paper-portrait img{
@@ -295,7 +323,10 @@
   html.cinematic-works-ready .tx-sheet-b{z-index:2;transform:rotate(1.2deg) translate(8px,3px);background:#e0ded5}
 
   /* The actual Works screen starts where the transition ends. */
-  html.cinematic-works-ready .works-chapter{scroll-margin-top:0}
+  html.cinematic-works-ready .works-chapter{
+    margin-top:-100svh!important;
+    scroll-margin-top:0;
+  }
   html.cinematic-works-ready .works-stage{
     opacity:1!important;
     overflow:hidden;
