@@ -18,7 +18,7 @@
 /* A short typographic opening sets the visual language of the chapters. */
 .works-chapter{height:165svh}
 .cinema-edition .works-stage{position:sticky;top:0;padding:135px 7% 95px;background:var(--paper)}
-.cinema-edition .works-stage::before{content:'';position:absolute;inset:0 0 0 48%;background:url('portrait-new.webp') center/cover no-repeat;filter:grayscale(1);mix-blend-mode:multiply;opacity:calc(.06*(1 - var(--works-p,0)));transform:translateY(calc(var(--works-p,0)*-35px));pointer-events:none}
+.cinema-edition .works-stage::before{content:'';position:absolute;inset:0 0 0 48%;background:url('portrait-cutout-clean.png') center/cover no-repeat;filter:grayscale(1);mix-blend-mode:multiply;opacity:calc(.06*(1 - var(--works-p,0)));transform:translateY(calc(var(--works-p,0)*-35px));pointer-events:none}
 .cinema-edition .works-title{font-family:var(--serif);font-size:clamp(110px,20vw,330px);line-height:.85;letter-spacing:-.065em;font-weight:400;margin-top:25px}
 .cinema-edition .works-title>span{transform:translateX(calc(var(--works-p,0)*-30px))}
 .cinema-edition .works-title .offset{margin-left:10%;transform:translateX(calc((1 - var(--works-p,0))*-30px))}
