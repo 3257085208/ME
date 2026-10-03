@@ -1,0 +1,149 @@
+/* Mobile-only art direction for the homepage hero.
+   Loaded after scroll.css so phone composition can be tuned independently. */
+@media (max-width:760px){
+  :root{
+    --mobile-gutter:clamp(22px,6.6vw,28px);
+    --mobile-bottom:max(22px,env(safe-area-inset-bottom));
+    --split:63%;
+    --split-feather:7px;
+    --portrait-width:min(128vw,76svh);
+  }
+
+  /* Let the real phone viewport decide the composition. The old 716px floor
+     made short Safari/Edge viewports feel vertically stretched. */
+  #home.home-chapter,
+  #home .home-stage{
+    height:100svh;
+    min-height:0;
+  }
+  @supports(height:100dvh){
+    #home.home-chapter,
+    #home .home-stage{height:100dvh}
+  }
+
+  .site-header{
+    top:max(27px,calc(env(safe-area-inset-top) + 14px));
+    left:var(--mobile-gutter);
+    right:var(--mobile-gutter);
+  }
+  .brand{font-size:12.5px;letter-spacing:.22em}
+  .site-nav{
+    gap:clamp(8px,2.6vw,11px);
+    font-size:clamp(6.7px,2vw,7.5px);
+    letter-spacing:.085em;
+  }
+  .site-nav a{padding:7px 0}
+
+  #home .hero-canvas{
+    inset:8px;
+    border-radius:18px;
+    background:#000;
+  }
+
+  /* Portrait is no longer a separate top card. It extends behind the copy and
+     dissolves into the black field, so portrait + signature read as one cover. */
+  #home .portrait-layer{
+    top:74px;
+    right:0;
+    bottom:auto;
+    left:0;
+    height:69%;
+    overflow:hidden;
+    background:linear-gradient(to right,#000 0 calc(var(--split) - var(--split-feather)),#fff calc(var(--split) + var(--split-feather)) 100%);
+    transform:none;
+    -webkit-mask-image:linear-gradient(to bottom,#000 0,#000 64%,rgba(0,0,0,.98) 72%,rgba(0,0,0,.72) 84%,rgba(0,0,0,.18) 96%,transparent 100%);
+    mask-image:linear-gradient(to bottom,#000 0,#000 64%,rgba(0,0,0,.98) 72%,rgba(0,0,0,.72) 84%,rgba(0,0,0,.18) 96%,transparent 100%);
+  }
+  #home .portrait-layer img{
+    width:var(--portrait-width);
+    left:calc(var(--split) - var(--portrait-width)*.445);
+    bottom:-1.5svh;
+  }
+
+  #home .hero{
+    left:0;
+    top:auto;
+    bottom:clamp(76px,11svh,102px);
+    width:100%;
+    padding:0 var(--mobile-gutter) 6px;
+    transform:none;
+    background:transparent;
+    opacity:1;
+  }
+  #home .hero::before{
+    content:'';
+    position:absolute;
+    z-index:-1;
+    left:0;
+    right:0;
+    top:-112px;
+    height:176px;
+    background:linear-gradient(to bottom,transparent 0,rgba(0,0,0,.45) 35%,#000 78%);
+  }
+  #home .eyebrow{
+    margin:0 0 7px;
+    font-size:clamp(6.6px,1.9vw,7.4px);
+    letter-spacing:.18em;
+    color:#aaa9a2;
+  }
+  #home .signature{
+    width:min(70vw,34svh,258px);
+    max-width:none;
+    margin-left:-5px;
+  }
+  #home .name{
+    margin-top:5px;
+    font-size:clamp(7.5px,2.25vw,8.5px);
+    letter-spacing:.21em;
+  }
+  #home .signature-controls{
+    gap:12px;
+    margin-top:5px;
+  }
+  #home .control-line{width:24px}
+  #home .replay{
+    gap:7px;
+    padding:6px 0;
+    font-size:clamp(6.5px,1.9vw,7.3px);
+    letter-spacing:.11em;
+  }
+  #home .replay svg{width:11px;height:11px}
+
+  #home .home-scroll{
+    right:var(--mobile-gutter);
+    bottom:var(--mobile-bottom);
+    gap:7px;
+    color:#8e8e88;
+    font-size:6.4px;
+    letter-spacing:.15em;
+  }
+  #home .home-scroll .down{font-size:14px}
+  .journey{
+    left:var(--mobile-gutter);
+    bottom:var(--mobile-bottom);
+    gap:7px;
+    font-size:6.4px;
+    letter-spacing:.11em;
+  }
+  .journey-line{width:26px}
+
+  /* On short phones preserve the hierarchy instead of forcing the desktop
+     proportions into a cramped viewport. */
+  @media (max-height:680px){
+    :root{--portrait-width:min(118vw,72svh)}
+    #home .portrait-layer{top:68px;height:66%}
+    #home .hero{bottom:68px}
+    #home .signature{width:min(64vw,31svh,230px)}
+    #home .eyebrow{margin-bottom:4px}
+    #home .name{margin-top:3px}
+    #home .signature-controls{margin-top:2px}
+  }
+
+  @media (max-width:370px){
+    :root{--mobile-gutter:21px;--split:65%}
+    .site-header{left:21px;right:21px}
+    .brand{font-size:11.5px}
+    .site-nav{gap:7px;font-size:6.4px;letter-spacing:.07em}
+    #home .signature{width:min(67vw,238px)}
+  }
+}
