@@ -46,7 +46,10 @@
   opacity:.92;
   transform:translate3d(var(--fx-x,0px),var(--fx-y,0px),0) translate(-50%,-50%) scale(1);
 }
-@media (hover:none),(pointer:coarse),(max-width:760px),(prefers-reduced-motion:reduce){
+@media (hover:none),(pointer:coarse),(max-width:760px){
+  #home .portrait-fx-cross{display:none!important}
+}
+@media (prefers-reduced-motion:reduce){
   #home .portrait-fx,
   #home .hero-ink-fx,
   #home .portrait-fx-cross{display:none!important}
