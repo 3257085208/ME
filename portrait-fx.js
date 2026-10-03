@@ -7,8 +7,9 @@
 
   if (!home || !host || !sourceImg || !canvas || !cross) return;
 
-  const disabled = matchMedia('(hover:none),(pointer:coarse),(max-width:760px),(prefers-reduced-motion:reduce)');
-  if (disabled.matches) return;
+  if (matchMedia('(hover:none),(pointer:coarse),(max-width:760px),(prefers-reduced-motion:reduce)').matches) {
+    return;
+  }
 
   const gl = canvas.getContext('webgl', {
     alpha: true,
@@ -29,6 +30,7 @@
 
   const FRAG = `
     precision highp float;
+
     varying vec2 v_uv;
     uniform sampler2D u_image;
     uniform sampler2D u_disp;
@@ -71,33 +73,32 @@
     void main(){
       vec2 frag = vec2(gl_FragCoord.x, u_resolution.y-gl_FragCoord.y);
       vec2 imgUV = (frag-u_imgRect.xy)/u_imgRect.zw;
+
       if(imgUV.x<0.0||imgUV.x>1.0||imgUV.y<0.0||imgUV.y>1.0){
         gl_FragColor=vec4(0.0);
         return;
       }
 
-      /* Keep the same orientation as the working test page. */
-      vec2 texUV = imgUV;
+      /* One shared 16x16 field across the whole hero, not a separate portrait field. */
+      vec2 heroUV = frag/u_resolution;
+      vec2 dv = texture2D(u_disp, heroUV).rg*2.0-1.0;
 
-      /* 16x16 nearest-neighbour displacement field: visible grid while moving. */
-      vec2 dv = texture2D(u_disp, texUV).rg*2.0-1.0;
-      vec2 shifted = clamp(texUV - dv*u_dispStrength, .002, .998);
+      /* Keep the orientation from the working test. */
+      vec2 shifted = clamp(imgUV - dv*u_dispStrength, .002, .998);
       vec4 src = texture2D(u_image, shifted);
-      if(src.a < .015){
-        gl_FragColor=vec4(0.0);
-        return;
-      }
 
-      /* Organic noisy ink edge around the smoothed cursor position. */
-      vec2 p = (frag-u_mouse)/min(u_resolution.x,u_resolution.y);
+      /* Same organic mask math used by the page-wide layer. */
+      float minRes = min(u_resolution.x,u_resolution.y);
+      vec2 p = (frag-u_mouse)/minRes;
       float d = length(p);
-      vec2 nUV = frag/min(u_resolution.x,u_resolution.y);
+      vec2 nUV = frag/minRes;
       float n1 = fbm(nUV*10.0 + vec2(u_time*-.025,u_time*.018));
       float n2 = fbm(nUV*23.0 + vec2(-u_time*.012,u_time*.009));
       float edge = (n1-.5)*u_ragged + (n2-.5)*u_ragged*.38;
       float radius = u_radius + edge;
       float mask = 1.0-smoothstep(radius-.012,radius+.008,d);
       mask *= u_active;
+
       if(mask < .002){
         gl_FragColor=vec4(0.0);
         return;
@@ -109,7 +110,7 @@
       float grain = (hash(frag+u_time*37.0)-.5)*.025;
       inv = clamp(inv+grain,0.0,1.0);
 
-      gl_FragColor = vec4(inv, src.a*mask);
+      gl_FragColor = vec4(inv, mask);
     }
   `;
 
@@ -146,6 +147,7 @@
     new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),
     gl.STATIC_DRAW
   );
+
   const aPos = gl.getAttribLocation(program,'a_pos');
   gl.enableVertexAttribArray(aPos);
   gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,0,0);
@@ -154,7 +156,6 @@
   ['u_image','u_disp','u_resolution','u_imgRect','u_mouse','u_time','u_active','u_radius','u_ragged','u_dispStrength']
     .forEach(name => U[name] = gl.getUniformLocation(program,name));
 
-  /* Portrait texture. */
   const imageTex = gl.createTexture();
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D,imageTex);
@@ -164,11 +165,11 @@
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
   gl.uniform1i(U.u_image,0);
 
-  /* Dynamic 16x16 displacement texture. 128 means zero displacement. */
   const N = 16;
   const field = new Float32Array(N*N*2);
   const dispBytes = new Uint8Array(N*N*4);
   const dispTex = gl.createTexture();
+
   gl.activeTexture(gl.TEXTURE1);
   gl.bindTexture(gl.TEXTURE_2D,dispTex);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
@@ -186,6 +187,7 @@
       dispBytes[i*4+2]=128;
       dispBytes[i*4+3]=255;
     }
+
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D,dispTex);
     gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,N,N,0,gl.RGBA,gl.UNSIGNED_BYTE,dispBytes);
@@ -205,6 +207,7 @@
       console.warn('[portrait-fx] portrait texture failed:', err);
     }
   }
+
   if(sourceImg.complete && sourceImg.naturalWidth) loadTexture();
   else sourceImg.addEventListener('load',loadTexture,{once:true});
 
@@ -232,8 +235,24 @@
   let hostRect = {left:0,top:0,width:1,height:1};
   let homeVisible = true;
 
+  const shared = window.__NKX_HERO_FX__ = {
+    N,
+    field,
+    params,
+    mouse,
+    active:0,
+    time:0,
+    dpr:1,
+    imgRect,
+    hostRect,
+    homeVisible:true,
+    ready:true
+  };
+
   const observer = new IntersectionObserver(entries => {
     homeVisible = entries[0]?.isIntersecting ?? true;
+    shared.homeVisible = homeVisible;
+
     if(!homeVisible){
       activeTarget = 0;
       cross.classList.remove('is-active');
@@ -260,11 +279,10 @@
       w:r.width,
       h:r.height
     };
-  }
 
-  function inPortraitBox(event){
-    const r = sourceImg.getBoundingClientRect();
-    return event.clientX>=r.left && event.clientX<=r.right && event.clientY>=r.top && event.clientY<=r.bottom;
+    shared.hostRect = hostRect;
+    shared.imgRect = imgRect;
+    shared.dpr = dpr;
   }
 
   function inject(uvx,uvy,vx,vy){
@@ -277,6 +295,7 @@
         const dx=gx-x;
         const dy=gy-y;
         const dist2=dx*dx+dy*dy;
+
         if(dist2<rad*rad){
           const dist=Math.max(.35,Math.sqrt(dist2));
           const fall=Math.min(10,rad/dist);
@@ -288,32 +307,41 @@
     }
   }
 
-  host.addEventListener('pointermove', event => {
+  function updatePointer(event){
     if(!homeVisible) return;
+
     syncSize();
 
     const x=event.clientX-hostRect.left;
     const y=event.clientY-hostRect.top;
+
     mouse.targetX=x;
     mouse.targetY=y;
+    activeTarget=1;
 
-    const inside=inPortraitBox(event);
-    activeTarget=inside?1:0;
-    cross.classList.toggle('is-active',inside);
+    cross.classList.add('is-active');
     cross.style.left=x+'px';
     cross.style.top=y+'px';
 
-    if(inside){
-      const uvx=(x-imgRect.x)/imgRect.w;
-      const uvy=(y-imgRect.y)/imgRect.h;
-      const vx=(x-mouse.prevX)/Math.max(1,imgRect.w);
-      const vy=(y-mouse.prevY)/Math.max(1,imgRect.h);
-      if(mouse.prevX!==0 || mouse.prevY!==0) inject(uvx,uvy,vx,vy);
+    if(mouse.prevX!==0 || mouse.prevY!==0){
+      const uvx=x/Math.max(1,hostRect.width);
+      const uvy=y/Math.max(1,hostRect.height);
+      const vx=(x-mouse.prevX)/Math.max(1,hostRect.width);
+      const vy=(y-mouse.prevY)/Math.max(1,hostRect.height);
+      inject(uvx,uvy,vx,vy);
     }
 
     mouse.prevX=x;
     mouse.prevY=y;
+  }
+
+  host.addEventListener('pointerenter', event => {
+    mouse.prevX=0;
+    mouse.prevY=0;
+    updatePointer(event);
   },{passive:true});
+
+  host.addEventListener('pointermove', updatePointer,{passive:true});
 
   host.addEventListener('pointerleave',()=>{
     activeTarget=0;
@@ -337,16 +365,24 @@
     uploadField();
 
     const follow=1-Math.exp(-params.follow*dt);
+
     if(mouse.x < -9000){
       mouse.x=mouse.targetX;
       mouse.y=mouse.targetY;
     }
+
     mouse.x+=(mouse.targetX-mouse.x)*follow;
     mouse.y+=(mouse.targetY-mouse.y)*follow;
     active+=(activeTarget-active)*(1-Math.exp(-10*dt));
 
+    shared.active = active;
+    shared.time = now/1000;
+    shared.homeVisible = homeVisible;
+
     gl.useProgram(program);
+
     const dpr=canvas.width/Math.max(1,hostRect.width);
+
     gl.uniform2f(U.u_resolution,canvas.width,canvas.height);
     gl.uniform4f(U.u_imgRect,imgRect.x*dpr,imgRect.y*dpr,imgRect.w*dpr,imgRect.h*dpr);
     gl.uniform2f(U.u_mouse,mouse.x*dpr,mouse.y*dpr);
@@ -358,6 +394,7 @@
 
     gl.clearColor(0,0,0,0);
     gl.clear(gl.COLOR_BUFFER_BIT);
+
     if(textureReady) gl.drawArrays(gl.TRIANGLES,0,6);
   }
 
