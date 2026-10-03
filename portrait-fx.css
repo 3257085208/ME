@@ -9,6 +9,8 @@
   height:100%;
   pointer-events:none;
   background:transparent;
+  contain:strict;
+  transform:translateZ(0);
 }
 #home .portrait-fx{z-index:2}
 #home .hero-ink-fx{
@@ -24,10 +26,10 @@
   height:12px;
   pointer-events:none;
   opacity:0;
-  transform:translate(-50%,-50%) scale(.75);
-  transition:opacity .18s ease,transform .25s ease;
+  transform:translate3d(var(--fx-x,0px),var(--fx-y,0px),0) translate(-50%,-50%) scale(.75);
+  transition:opacity .18s ease;
   mix-blend-mode:difference;
-  will-change:left,top,opacity,transform;
+  will-change:transform,opacity;
 }
 #home .portrait-fx-cross::before,
 #home .portrait-fx-cross::after{
@@ -42,7 +44,7 @@
 #home .portrait-fx-cross::after{width:1px;height:10px}
 #home .portrait-fx-cross.is-active{
   opacity:.92;
-  transform:translate(-50%,-50%) scale(1);
+  transform:translate3d(var(--fx-x,0px),var(--fx-y,0px),0) translate(-50%,-50%) scale(1);
 }
 @media (hover:none),(pointer:coarse),(max-width:760px),(prefers-reduced-motion:reduce){
   #home .portrait-fx,
