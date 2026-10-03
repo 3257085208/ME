@@ -18,6 +18,7 @@
     position:relative!important;
     top:auto!important;
     height:100svh;
+    opacity:1!important;
   }
 
   html.cinematic-works-ready .works-transition-chapter{
