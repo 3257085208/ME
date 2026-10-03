@@ -2,9 +2,10 @@
   const home=document.getElementById('home');
   const host=home?.querySelector('.hero-canvas');
   const canvas=document.getElementById('heroInkFx');
+  const sourceImg=home?.querySelector('.portrait-light img');
   const shared=window.__NKX_HERO_FX__;
 
-  if(!home||!host||!canvas||!shared?.ready)return;
+  if(!home||!host||!canvas||!sourceImg||!shared?.ready)return;
 
   if(matchMedia('(hover:none),(pointer:coarse),(max-width:760px),(prefers-reduced-motion:reduce)').matches){
     return;
@@ -31,7 +32,10 @@
     precision mediump float;
 
     uniform sampler2D u_disp;
+    uniform sampler2D u_portrait;
     uniform vec2 u_resolution;
+    uniform vec4 u_imgRect;
+    uniform vec2 u_imgTexel;
     uniform vec2 u_mouse;
     uniform float u_time;
     uniform float u_active;
@@ -89,6 +93,29 @@
         return;
       }
 
+      /* Keep the page inversion off the portrait itself, plus a tiny
+         dilated guard band around its alpha edge. This prevents the
+         moving white field from reading as a glow/outline on face,
+         glasses and clothing. */
+      float portraitA=0.0;
+      vec2 imgUV=(frag-u_imgRect.xy)/u_imgRect.zw;
+      if(imgUV.x>=0.0&&imgUV.x<=1.0&&imgUV.y>=0.0&&imgUV.y<=1.0){
+        vec2 shifted=clamp(imgUV-dv*u_dispStrength,.002,.998);
+        vec2 px=u_imgTexel*2.0;
+        portraitA=max(portraitA,texture2D(u_portrait,shifted).a);
+        portraitA=max(portraitA,texture2D(u_portrait,shifted+vec2(px.x,0.0)).a);
+        portraitA=max(portraitA,texture2D(u_portrait,shifted-vec2(px.x,0.0)).a);
+        portraitA=max(portraitA,texture2D(u_portrait,shifted+vec2(0.0,px.y)).a);
+        portraitA=max(portraitA,texture2D(u_portrait,shifted-vec2(0.0,px.y)).a);
+      }
+
+      mask*=1.0-smoothstep(.01,.12,portraitA);
+
+      if(mask<.002){
+        gl_FragColor=vec4(0.0);
+        return;
+      }
+
       gl_FragColor=vec4(vec3(mask),mask);
     }
   `;
@@ -132,7 +159,7 @@
   gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,0,0);
 
   const U={};
-  ['u_disp','u_resolution','u_mouse','u_time','u_active','u_radius','u_ragged','u_dispStrength']
+  ['u_disp','u_portrait','u_resolution','u_imgRect','u_imgTexel','u_mouse','u_time','u_active','u_radius','u_ragged','u_dispStrength']
     .forEach(name=>U[name]=gl.getUniformLocation(program,name));
 
   const N=shared.N;
@@ -147,8 +174,37 @@
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,N,N,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
   gl.uniform1i(U.u_disp,0);
 
+  const portraitTex=gl.createTexture();
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D,portraitTex);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texImage2D(
+    gl.TEXTURE_2D,0,gl.RGBA,1,1,0,gl.RGBA,gl.UNSIGNED_BYTE,
+    new Uint8Array([0,0,0,0])
+  );
+  gl.uniform1i(U.u_portrait,1);
+
+  function loadPortraitTexture(){
+    try{
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D,portraitTex);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL,false);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,sourceImg);
+    }catch(err){
+      console.warn('[hero-ink-fx] portrait alpha texture failed:',err);
+    }
+  }
+  if(sourceImg.complete&&sourceImg.naturalWidth)loadPortraitTexture();
+  else sourceImg.addEventListener('load',loadPortraitTexture,{once:true});
+
   let seenLayoutVersion=-1;
   let hadPixels=false;
+  let imgRect={x:0,y:0,w:1,h:1};
+  let imgTexel={x:1,y:1};
 
   function syncCanvas(){
     if(seenLayoutVersion===shared.layoutVersion)return;
@@ -159,6 +215,19 @@
       canvas.height=shared.renderH;
       gl.viewport(0,0,canvas.width,canvas.height);
     }
+
+    const hr=host.getBoundingClientRect();
+    const ir=sourceImg.getBoundingClientRect();
+    imgRect={
+      x:(ir.left-hr.left)*shared.dpr,
+      y:(ir.top-hr.top)*shared.dpr,
+      w:ir.width*shared.dpr,
+      h:ir.height*shared.dpr
+    };
+    imgTexel={
+      x:1/Math.max(1,sourceImg.naturalWidth||1),
+      y:1/Math.max(1,sourceImg.naturalHeight||1)
+    };
   }
 
   function clear(){
@@ -199,6 +268,8 @@
 
     gl.useProgram(program);
     gl.uniform2f(U.u_resolution,canvas.width,canvas.height);
+    gl.uniform4f(U.u_imgRect,imgRect.x,imgRect.y,imgRect.w,imgRect.h);
+    gl.uniform2f(U.u_imgTexel,imgTexel.x,imgTexel.y);
     gl.uniform2f(U.u_mouse,shared.mouse.x*shared.dpr,shared.mouse.y*shared.dpr);
     gl.uniform1f(U.u_time,shared.time);
     gl.uniform1f(U.u_active,shared.active);
