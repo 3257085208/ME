@@ -7,16 +7,15 @@
 .works-side-index{display:none}
 
 @media (min-width:761px) and (prefers-reduced-motion:no-preference){
-  html.cinematic-works-ready .cinema-edition .home-chapter,
   html.cinematic-works-ready .home-chapter{
-    height:100svh!important;
+    height:400svh!important;
     margin-bottom:0!important;
     scroll-margin-top:0!important;
   }
 
   html.cinematic-works-ready .home-stage{
-    position:relative!important;
-    top:auto!important;
+    position:sticky!important;
+    top:0!important;
     height:100svh;
     opacity:1!important;
   }
@@ -26,16 +25,23 @@
     position:relative;
     z-index:8;
     height:300svh;
-    background:#080808;
+    margin-top:-300svh;
+    background:transparent;
+    pointer-events:none;
   }
 
   html.cinematic-works-ready .works-transition-stage{
-    position:sticky;
-    top:0;
+    position:fixed;
+    z-index:8;
+    inset:0;
     height:100svh;
     overflow:hidden;
     isolation:isolate;
-    background:#080808;
+    background:transparent;
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transition:none;
     --tx-paper-left:100%;
     --tx-home-copy-opacity:1;
     --tx-home-copy-y:0px;
