@@ -118,7 +118,7 @@
       float grain = (hash(frag+u_time*37.0)-.5)*.022;
       vec3 positive = clamp(vec3(gray)+grain,0.0,1.0);
 
-      gl_FragColor=vec4(positive,mask);
+      gl_FragColor=vec4(positive*mask,mask);
     }
   `;
 
