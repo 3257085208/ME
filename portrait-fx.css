@@ -51,24 +51,3 @@
 }
 
 
-/* New portrait has an opaque rectangular canvas.
-   Feather only its exposed left edge into the black half so the shoulder
-   never starts with a hard vertical cut. */
-#home .portrait-light img{
-  -webkit-mask-image:linear-gradient(
-    to right,
-    transparent 0%,
-    rgba(0,0,0,.18) 2.5%,
-    rgba(0,0,0,.72) 6%,
-    #000 11%
-  );
-  mask-image:linear-gradient(
-    to right,
-    transparent 0%,
-    rgba(0,0,0,.18) 2.5%,
-    rgba(0,0,0,.72) 6%,
-    #000 11%
-  );
-  -webkit-mask-repeat:no-repeat;
-  mask-repeat:no-repeat;
-}
