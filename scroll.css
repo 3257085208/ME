@@ -1,4 +1,4 @@
-:root{--black:#000;--white:#fff;--paper:#eeede7;--split:65%;--portrait-width:min(76vw,110svh);--ease:cubic-bezier(.19,1,.22,1)}
+:root{--black:#000;--white:#fff;--paper:#eeede7;--split:65%;--split-feather:clamp(14px,1.4vw,28px);--portrait-width:min(76vw,110svh);--ease:cubic-bezier(.19,1,.22,1)}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:0}
 body{margin:0;background:#080808;color:#f4f1e9;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow-x:hidden}
@@ -19,7 +19,7 @@ a{color:inherit;text-decoration:none}button{font:inherit}button,a{-webkit-tap-hi
 .stage{position:relative;height:100svh;min-height:600px;overflow:hidden}
 .home-chapter{height:145svh}
 .home-stage{position:sticky;top:0;background:#000}
-.hero-canvas{position:absolute;inset:14px;overflow:hidden;border-radius:24px;background:linear-gradient(to right,var(--black) 0 var(--split),var(--white) var(--split) 100%)}
+.hero-canvas{position:absolute;inset:14px;overflow:hidden;border-radius:24px;background:linear-gradient(to right,var(--black) 0 calc(var(--split) - var(--split-feather)),var(--white) calc(var(--split) + var(--split-feather)) 100%)}
 .portrait-layer{position:absolute;inset:0;pointer-events:none;will-change:transform;transform:translateY(calc(var(--hero-p,0)*-45px)) scale(calc(1 + var(--hero-p,0)*.025));transform-origin:65% 55%}
 .portrait-layer img{position:absolute;width:var(--portrait-width);height:auto;max-width:none;left:calc(var(--split) - var(--portrait-width)*.3887);bottom:-3.5svh;user-select:none}
 .portrait-light{clip-path:inset(0 calc(100% - var(--split)) 0 0)}
@@ -99,7 +99,7 @@ a{color:inherit;text-decoration:none}button{font:inherit}button,a{-webkit-tap-hi
 .site-header{top:30px;left:28px;right:28px}.brand{font-size:13px}.site-nav{font-size:8px;gap:12px;letter-spacing:.1em}
 .frame{border-width:8px;border-radius:25px;outline-offset:-9px}
 .stage{min-height:700px}.home-chapter{height:100svh;min-height:716px}.home-stage{position:relative}.hero-canvas{inset:8px;border-radius:17px;background:#000}
-.portrait-layer{bottom:auto;height:66%;overflow:hidden;background:linear-gradient(to right,#000 0 var(--split),#fff var(--split));transform:none}
+.portrait-layer{bottom:auto;height:66%;overflow:hidden;background:linear-gradient(to right,#000 0 calc(var(--split) - var(--split-feather)),#fff calc(var(--split) + var(--split-feather)) 100%);transform:none}
 .portrait-layer img{bottom:-14vw}
 .hero{left:0;top:auto;bottom:72px;transform:none;width:100%;padding:32px 24px 8px;background:#000;opacity:1}
 .hero::before{content:'';position:absolute;left:0;right:0;top:-45px;height:45px;background:linear-gradient(transparent,#000);z-index:-1}
