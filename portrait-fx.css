@@ -1,18 +1,23 @@
 /* Homepage portrait ink reveal. Kept isolated from the main layout. */
 #home .hero-canvas{isolation:isolate}
-#home .portrait-fx{
+#home .portrait-fx,
+#home .hero-ink-fx{
   position:absolute;
   inset:0;
-  z-index:2;
   display:block;
   width:100%;
   height:100%;
   pointer-events:none;
   background:transparent;
 }
+#home .portrait-fx{z-index:2}
+#home .hero-ink-fx{
+  z-index:5;
+  mix-blend-mode:difference;
+}
 #home .portrait-fx-cross{
   position:absolute;
-  z-index:4;
+  z-index:6;
   left:0;
   top:0;
   width:12px;
@@ -41,5 +46,6 @@
 }
 @media (hover:none),(pointer:coarse),(max-width:760px),(prefers-reduced-motion:reduce){
   #home .portrait-fx,
+  #home .hero-ink-fx,
   #home .portrait-fx-cross{display:none!important}
 }
