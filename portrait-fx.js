@@ -106,11 +106,16 @@
 
       float gray = dot(src.rgb,vec3(.299,.587,.114));
       gray = clamp((gray-.5)*1.22+.5,0.0,1.0);
-      vec3 inv = vec3(1.0-gray);
+      /*
+       * This layer stays positive. The page-wide white difference layer
+       * above it performs the single shared inversion for portrait + text +
+       * background. That keeps the whole cursor effect visually continuous.
+       */
+      vec3 positive = vec3(gray);
       float grain = (hash(frag+u_time*37.0)-.5)*.025;
-      inv = clamp(inv+grain,0.0,1.0);
+      positive = clamp(positive+grain,0.0,1.0);
 
-      gl_FragColor = vec4(inv, mask);
+      gl_FragColor = vec4(positive, mask);
     }
   `;
 
