@@ -7,7 +7,7 @@
 
   if(!home||!host||!canvas||!sourceImg||!shared?.ready)return;
 
-  if(matchMedia('(hover:none),(pointer:coarse),(max-width:760px),(prefers-reduced-motion:reduce)').matches){
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches){
     return;
   }
 
