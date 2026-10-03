@@ -89,7 +89,7 @@
         return;
       }
 
-      gl_FragColor=vec4(1.0,1.0,1.0,mask);
+      gl_FragColor=vec4(vec3(mask),mask);
     }
   `;
 
