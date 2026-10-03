@@ -82,16 +82,17 @@
       /* One shared 16x16 field across the whole hero, not a separate portrait field. */
       vec2 heroUV = frag/u_resolution;
       vec2 dv = texture2D(u_disp, heroUV).rg*2.0-1.0;
+      float minRes = min(u_resolution.x,u_resolution.y);
+      vec2 warpedFrag = frag - dv*u_dispStrength*minRes;
 
       /* Keep the orientation from the working test. */
       vec2 shifted = clamp(imgUV - dv*u_dispStrength, .002, .998);
       vec4 src = texture2D(u_image, shifted);
 
-      /* Same organic mask math used by the page-wide layer. */
-      float minRes = min(u_resolution.x,u_resolution.y);
-      vec2 p = (frag-u_mouse)/minRes;
+      /* Exactly the same warped mask used by the page-wide layer. */
+      vec2 p = (warpedFrag-u_mouse)/minRes;
       float d = length(p);
-      vec2 nUV = frag/minRes;
+      vec2 nUV = warpedFrag/minRes;
       float n1 = fbm(nUV*10.0 + vec2(u_time*-.025,u_time*.018));
       float n2 = fbm(nUV*23.0 + vec2(-u_time*.012,u_time*.009));
       float edge = (n1-.5)*u_ragged + (n2-.5)*u_ragged*.38;
