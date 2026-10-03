@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080808"><meta name="description" content="Kaixiang Nie / NKX — 作品、代码与网络印记。"><title>QQ.SG — Kaixiang Nie</title><link rel="stylesheet" href="scroll.css"><link rel="stylesheet" href="scenes.css"><link rel="stylesheet" href="cinema.css"></head>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080808"><meta name="description" content="Kaixiang Nie / NKX — 作品、代码与网络印记。"><title>QQ.SG — Kaixiang Nie</title><link rel="stylesheet" href="scroll.css"><link rel="stylesheet" href="scenes.css"><link rel="stylesheet" href="cinema.css"><link rel="stylesheet" href="portrait-fx.css"></head>
 <body class="cinema-edition">
 <a class="skip-link" href="#works">跳到作品</a>
 <header class="site-header"><a class="brand" href="#home" aria-label="QQ.SG 首页">QQ.SG</a><nav class="site-nav" aria-label="章节导航"><a href="#home" aria-current="page">Home</a><a href="#works">Works</a><a href="#imprints">Imprints</a><a href="#about">About</a></nav></header>
 <main class="story">
 <section class="chapter home-chapter" id="home" data-nav="home" data-label="Introduction"><div class="stage home-stage"><div class="hero-canvas">
 <div class="portrait-layer portrait-light"><img src="portrait-retouched-v4.png" alt="Kaixiang Nie 的美化黑白人像" fetchpriority="high" width="1308" height="1202"></div><div class="portrait-layer portrait-dark" aria-hidden="true"><img src="portrait-retouched-v4.png" alt="" width="1308" height="1202"></div>
+<canvas class="portrait-fx" id="portraitFx" aria-hidden="true"></canvas><span class="portrait-fx-cross" id="portraitFxCross" aria-hidden="true"></span>
 <section class="hero" data-hero-copy aria-labelledby="name">
 <p class="eyebrow">A personal portfolio · 2026</p>
 <svg xmlns="http://www.w3.org/2000/svg" class="signature" viewBox="75 55 630 228" role="img" aria-label="Kaixiang Nie signature">
@@ -75,5 +76,5 @@
 </main>
 <div class="journey" aria-hidden="true"><span class="journey-index">01</span><span class="journey-line"><i></i></span><span class="journey-label">Introduction</span></div>
 <div class="film-grain" aria-hidden="true"></div><div class="frame" aria-hidden="true"></div>
-<script src="scroll.js"></script>
+<script src="scroll.js"></script><script src="portrait-fx.js"></script>
 </body></html>
