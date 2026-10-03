@@ -121,10 +121,13 @@
       float gray = dot(src.rgb,vec3(.299,.587,.114));
       gray = clamp((gray-.5)*1.22+.5,0.0,1.0);
       float grain = (hash(frag+u_time*37.0)-.5)*.022;
-      vec3 positive = clamp(vec3(gray)+grain,0.0,1.0);
+
+      /* The portrait reveal should be the opposite tone of the base
+         portrait, while still respecting its alpha edge. */
+      vec3 inverted = clamp(vec3(1.0-gray)+grain,0.0,1.0);
 
       float outAlpha = mask*src.a;
-      gl_FragColor=vec4(positive*outAlpha,outAlpha);
+      gl_FragColor=vec4(inverted*outAlpha,outAlpha);
     }
   `;
 
