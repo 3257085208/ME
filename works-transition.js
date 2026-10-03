@@ -28,7 +28,8 @@
     return p * p * (3 - 2 * p);
   };
   const phase = (value, from, to) => smooth((value - from) / Math.max(.0001, to - from));
-  const set = (name, value) => txStage.style.setProperty(name, value);
+  const setStage = (name, value) => txStage.style.setProperty(name, value);
+  const setHome = (name, value) => home.style.setProperty(name, value);
 
   const gl = inkCanvas.getContext('webgl', {
     alpha: true,
@@ -240,7 +241,12 @@
 
   function reset(){
     root.classList.remove('cinematic-works-ready');
+    transition.classList.remove('is-active');
     txStage.removeAttribute('style');
+    [
+      '--tx-home-copy-opacity','--tx-home-copy-y',
+      '--tx-portrait-x','--tx-portrait-scale','--tx-portrait-opacity'
+    ].forEach(name=>home.style.removeProperty(name));
     if(inkReady){
       gl.clear(gl.COLOR_BUFFER_BIT);
     }
@@ -260,6 +266,8 @@
     const rect=transition.getBoundingClientRect();
     const travel=Math.max(1,transition.offsetHeight-height);
     const p=clamp(-rect.top/travel);
+    const active = rect.top <= 0 && rect.bottom >= height;
+    transition.classList.toggle('is-active',active);
 
     /*
      * The transition itself is the animation:
@@ -277,27 +285,29 @@
     const featureIn=phase(p,.66,.93);
     const copyIn=phase(p,.71,.94);
 
-    drawInk(inkIn);
+    if(active){
+      drawInk(inkIn);
+    }else if(inkReady){
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
 
-    set('--tx-home-copy-opacity',(1-homeCopyOut).toFixed(4));
-    set('--tx-home-copy-y',`${(-30*homeCopyOut).toFixed(2)}px`);
+    setHome('--tx-home-copy-opacity',(1-homeCopyOut).toFixed(4));
+    setHome('--tx-home-copy-y',`${(-30*homeCopyOut).toFixed(2)}px`);
+    setHome('--tx-portrait-x',`${(7.4*portraitShift).toFixed(3)}vw`);
+    setHome('--tx-portrait-scale',(1-.066*portraitShift).toFixed(4));
+    setHome('--tx-portrait-opacity',(1-.62*phase(p,.40,.72)).toFixed(4));
 
-    set('--tx-portrait-x',`${(7.4*portraitShift).toFixed(3)}vw`);
-    set('--tx-portrait-scale',(1-.066*portraitShift).toFixed(4));
-    set('--tx-portrait-opacity',(1-.62*phase(p,.40,.72)).toFixed(4));
+    setStage('--tx-paper-portrait-opacity',(.24*printIn*(1-.50*featureIn)).toFixed(4));
+    setStage('--tx-works-opacity',worksIn.toFixed(4));
+    setStage('--tx-works-y',`${(56*(1-worksIn)).toFixed(3)}vh`);
+    setStage('--tx-meta-opacity',metaIn.toFixed(4));
 
-    set('--tx-paper-portrait-opacity',(.24*printIn*(1-.50*featureIn)).toFixed(4));
-
-    set('--tx-works-opacity',worksIn.toFixed(4));
-    set('--tx-works-y',`${(56*(1-worksIn)).toFixed(3)}vh`);
-    set('--tx-meta-opacity',metaIn.toFixed(4));
-
-    set('--tx-feature-opacity',featureIn.toFixed(4));
-    set('--tx-feature-x',`${(12*(1-featureIn)).toFixed(3)}vw`);
-    set('--tx-feature-y',`${(7*(1-featureIn)).toFixed(3)}vh`);
-    set('--tx-feature-scale',(.76+.24*featureIn).toFixed(4));
-    set('--tx-feature-rotate',`${(10*(1-featureIn)).toFixed(3)}deg`);
-    set('--tx-feature-copy-x',`${(-4*(1-copyIn)).toFixed(3)}vw`);
+    setStage('--tx-feature-opacity',featureIn.toFixed(4));
+    setStage('--tx-feature-x',`${(12*(1-featureIn)).toFixed(3)}vw`);
+    setStage('--tx-feature-y',`${(7*(1-featureIn)).toFixed(3)}vh`);
+    setStage('--tx-feature-scale',(.76+.24*featureIn).toFixed(4));
+    setStage('--tx-feature-rotate',`${(10*(1-featureIn)).toFixed(3)}deg`);
+    setStage('--tx-feature-copy-x',`${(-4*(1-copyIn)).toFixed(3)}vw`);
   }
 
   function schedule(){
