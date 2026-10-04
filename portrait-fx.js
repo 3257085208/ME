@@ -253,6 +253,7 @@
 
   let activeTarget=0;
   let active=0;
+  let transitionPaused=false;
   let last=performance.now();
   let imgRect={x:0,y:0,w:1,h:1};
   let hostRect={left:0,top:0,width:1,height:1};
@@ -459,6 +460,23 @@
 
     const dt=Math.min(.05,Math.max(.001,(now-last)/1000));
     last=now;
+
+    const pauseForTransition=document.documentElement.classList.contains('ink-transition-active');
+    if(pauseForTransition){
+      if(!transitionPaused){
+        transitionPaused=true;
+        activeTarget=0;
+        active=0;
+        field.fill(0);
+        shared.active=0;
+        cross.classList.remove('is-active');
+        gl.disable(gl.SCISSOR_TEST);
+        gl.clearColor(0,0,0,0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      }
+      return;
+    }
+    transitionPaused=false;
 
     if(!homeVisible)return;
 
