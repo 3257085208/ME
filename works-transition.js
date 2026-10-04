@@ -8,29 +8,8 @@
   const txStage = transition?.querySelector('.works-transition-stage');
   const txHomeCopy = transition?.querySelector('.tx-home-copy');
   const inkCanvas = document.getElementById('txInkCanvas');
-  const realWorksStage = works?.querySelector('.works-stage');
 
-  if (!home || !transition || !works || !realWorksStage || !txStage || !txHomeCopy || !inkCanvas) return;
-
-  /*
-   * Use a pixel-identical clone of the REAL Works stage for the last part of
-   * the transition. This removes the final typography/layout swap entirely:
-   * the handoff is now Works -> the same Works, rather than a hand-built
-   * imitation -> Works.
-   */
-  const worksSnapshot = realWorksStage.cloneNode(true);
-  worksSnapshot.classList.add('tx-works-snapshot');
-  worksSnapshot.setAttribute('aria-hidden','true');
-  worksSnapshot.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
-  worksSnapshot.querySelectorAll('a,button').forEach(el=>{
-    el.tabIndex=-1;
-    el.setAttribute('aria-hidden','true');
-  });
-  worksSnapshot.querySelectorAll('img').forEach(img=>{
-    img.loading='eager';
-    img.decoding='async';
-  });
-  txStage.appendChild(worksSnapshot);
+  if (!home || !transition || !works || !txStage || !txHomeCopy || !inkCanvas) return;
 
   const sourceHero = home.querySelector('.hero');
   if (sourceHero && !txHomeCopy.childElementCount) {
@@ -311,7 +290,6 @@
     const finalSurface=phase(p,.84,.95);
     const noteOut=phase(p,.78,.92);
     const sideIn=phase(p,.80,.94);
-    const snapshotIn=phase(p,.82,.955);
 
     if(active){
       drawInk(inkIn);
@@ -335,7 +313,6 @@
     setStage('--tx-side-opacity',sideIn.toFixed(4));
     setStage('--tx-final-paper-opacity',finalSurface.toFixed(4));
     setStage('--tx-ink-opacity',(1-phase(p,.87,.96)).toFixed(4));
-    setStage('--tx-snapshot-opacity',snapshotIn.toFixed(4));
 
     setStage('--tx-feature-opacity',featureIn.toFixed(4));
     setStage('--tx-feature-x',`${(12*(1-featureIn)).toFixed(3)}vw`);
