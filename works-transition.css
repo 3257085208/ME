@@ -62,7 +62,6 @@
     --tx-final-paper-opacity:0;
     --tx-note-opacity:0;
     --tx-side-opacity:0;
-    --tx-snapshot-opacity:0;
   }
 
   html.cinematic-works-ready .works-transition-chapter.is-active .works-transition-stage{
@@ -354,23 +353,6 @@
   html.cinematic-works-ready .tx-sheet-b{z-index:2;transform:rotate(1.2deg) translate(8px,3px);background:#e0ded5}
 
 
-  html.cinematic-works-ready .tx-works-snapshot{
-    position:absolute!important;
-    z-index:30;
-    inset:0;
-    width:100%;
-    height:100svh!important;
-    min-height:0!important;
-    opacity:var(--tx-snapshot-opacity,0)!important;
-    pointer-events:none!important;
-    overflow:hidden;
-    will-change:opacity;
-  }
-
-  html.cinematic-works-ready .tx-works-snapshot,
-  html.cinematic-works-ready .tx-works-snapshot *{
-    pointer-events:none!important;
-  }
 
   /* The actual Works screen starts where the transition ends. */
   html.cinematic-works-ready .works-chapter{
