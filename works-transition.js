@@ -4,11 +4,12 @@
   const root = document.documentElement;
   const home = document.getElementById('home');
   const transition = document.getElementById('works-transition');
+  const works = document.getElementById('works');
   const txStage = transition?.querySelector('.works-transition-stage');
   const txHomeCopy = transition?.querySelector('.tx-home-copy');
   const inkCanvas = document.getElementById('txInkCanvas');
 
-  if (!home || !transition || !txStage || !txHomeCopy || !inkCanvas) return;
+  if (!home || !transition || !works || !txStage || !txHomeCopy || !inkCanvas) return;
 
   const sourceHero = home.querySelector('.hero');
   if (sourceHero && !txHomeCopy.childElementCount) {
@@ -264,7 +265,17 @@
     const rect=transition.getBoundingClientRect();
     const travel=Math.max(1,transition.offsetHeight-height);
     const p=clamp(-rect.top/travel);
-    const active = rect.top <= 0 && rect.bottom >= height;
+    const worksRect=works.getBoundingClientRect();
+
+    /* The real Works chapter overlaps the last viewport of the transition
+       scroll-space. Never render both at the same time: as soon as Works
+       reaches the viewport top, hand the frame over completely. */
+    const active =
+      rect.top <= 0 &&
+      rect.bottom >= height &&
+      worksRect.top > 1 &&
+      p < .997;
+
     transition.classList.toggle('is-active',active);
     root.classList.toggle('ink-transition-active',active);
 
