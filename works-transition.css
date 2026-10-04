@@ -361,7 +361,7 @@
     width:100%;
     height:100svh!important;
     min-height:0!important;
-    opacity:var(--tx-snapshot-opacity,0);
+    opacity:var(--tx-snapshot-opacity,0)!important;
     pointer-events:none!important;
     overflow:hidden;
     will-change:opacity;
