@@ -239,6 +239,14 @@
   function render(){
     requestAnimationFrame(render);
 
+    if(document.documentElement.classList.contains('ink-transition-active')){
+      if(hadPixels){
+        clear();
+        hadPixels=false;
+      }
+      return;
+    }
+
     if(!shared.homeVisible){
       if(hadPixels){
         clear();
