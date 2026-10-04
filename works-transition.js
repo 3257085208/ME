@@ -263,18 +263,11 @@
 
     const height=Math.max(1,innerHeight);
     const rect=transition.getBoundingClientRect();
-    const travel=Math.max(1,transition.offsetHeight-height);
-    const p=clamp(-rect.top/travel);
-    const worksRect=works.getBoundingClientRect();
 
-    /* The real Works chapter overlaps the last viewport of the transition
-       scroll-space. Never render both at the same time: as soon as Works
-       reaches the viewport top, hand the frame over completely. */
-    const active =
-      rect.top <= 0 &&
-      rect.bottom >= height &&
-      worksRect.top > 1 &&
-      p < .997;
+    /* The transition now owns its full 300svh scroll range and ends BEFORE
+       the real Works chapter begins. There is no overlap to manage. */
+    const p=clamp(-rect.top/Math.max(1,transition.offsetHeight));
+    const active=rect.top<=0&&rect.bottom>0&&p<.9995;
 
     transition.classList.toggle('is-active',active);
     root.classList.toggle('ink-transition-active',active);
@@ -286,14 +279,14 @@
      * 40–72% WORKS rises through the spreading texture
      * 64–100% project 01 takes over the same composition
      */
-    const inkIn=phase(p,.18,.66);
-    const homeCopyOut=phase(p,.20,.42);
-    const portraitShift=phase(p,.20,.62);
-    const worksIn=phase(p,.39,.70);
-    const metaIn=phase(p,.47,.69);
-    const printIn=phase(p,.61,.79);
-    const featureIn=phase(p,.66,.93);
-    const copyIn=phase(p,.71,.94);
+    const inkIn=phase(p,.10,.54);
+    const homeCopyOut=phase(p,.13,.34);
+    const portraitShift=phase(p,.13,.48);
+    const worksIn=phase(p,.29,.56);
+    const metaIn=phase(p,.34,.56);
+    const printIn=phase(p,.44,.66);
+    const featureIn=phase(p,.58,.84);
+    const copyIn=phase(p,.62,.86);
 
     if(active){
       drawInk(inkIn);
