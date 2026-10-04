@@ -74,84 +74,70 @@
         );
       }
 
-      float fbm(vec2 p){
-        float v=0.0;
-        float a=.5;
-        mat2 r=mat2(.87758,.47942,-.47942,.87758);
-        for(int i=0;i<4;i++){
-          v += a*noise(p);
-          p = r*p*2.03 + 31.7;
-          a *= .5;
-        }
-        return v;
+      /* Two octaves are enough at the deliberately low render resolution.
+         The previous shader evaluated many 4-octave FBMs per pixel, which
+         was the main GPU cost while scrolling. */
+      float fbm2(vec2 p){
+        float v=.5*noise(p);
+        p=mat2(.87758,.47942,-.47942,.87758)*p*2.03+31.7;
+        v+=.25*noise(p);
+        return v/.75;
       }
 
       void main(){
-        vec2 uv = gl_FragCoord.xy/u_resolution;
-        float p = clamp(u_progress,0.0,1.0);
+        vec2 uv=gl_FragCoord.xy/u_resolution;
+        float p=clamp(u_progress,0.0,1.0);
 
-        if(p < .002){
-          gl_FragColor = vec4(0.0);
+        if(p<.002){
+          gl_FragColor=vec4(0.0);
           return;
         }
 
-        /*
-         * This is a dissolve FIELD, not a moving rectangle.
-         * Every pixel decides independently when the paper reaches it.
-         */
-        float low = fbm(vec2(uv.x*1.65,uv.y*2.25)+vec2(p*.08,-p*.035));
-        float mid = fbm(vec2(uv.x*6.0,uv.y*8.4)+vec2(-p*.12,p*.055));
-        float dry = fbm(vec2(uv.x*15.0,uv.y*3.0)+vec2(p*.18,4.1));
-        float fine = noise(uv*52.0+vec2(p*.33,-p*.17));
+        float low=fbm2(vec2(uv.x*1.7,uv.y*2.35)+vec2(p*.07,-p*.03));
+        float mid=fbm2(vec2(uv.x*7.0,uv.y*8.8)+vec2(-p*.10,p*.05));
+        float fine=hash(floor(uv*u_resolution*.065)+vec2(p*17.0,9.0));
 
-        float field = uv.x;
-        field += (low-.5)*.34;
-        field += (mid-.5)*.13;
-        field += (dry-.5)*.085;
-        field += (fine-.5)*.026;
+        float field=uv.x;
+        field+=(low-.5)*.36;
+        field+=(mid-.5)*.14;
+        field+=(fine-.5)*.022;
 
-        /* Starts outside the right edge and sweeps all the way left. */
-        float front = 1.10 - p*1.22;
-        float mask = smoothstep(front-.026,front+.025,field);
+        float front=1.10-p*1.22;
+        float mask=smoothstep(front-.029,front+.025,field);
 
-        /* Ragged holes and dry brush erosion only around the moving front. */
-        float distanceToFront = abs(field-front);
-        float edgeBand = 1.0-smoothstep(.015,.15,distanceToFront);
-        float erosionNoise = fbm(uv*19.0+vec2(8.0+p*.25,-3.0));
-        float erosion = smoothstep(.28,.66,erosionNoise);
-        mask *= mix(1.0,erosion,edgeBand*.68);
+        float distanceToFront=abs(field-front);
+        float edgeBand=1.0-smoothstep(.014,.145,distanceToFront);
 
-        /* Separate islands ahead of the main mass make it feel splashed, not clipped. */
-        float islandField = uv.x
-          + (fbm(uv*3.8+vec2(2.2,-p*.11))-.5)*.48
-          + (fbm(uv*11.0+vec2(-7.0,p*.19))-.5)*.12;
-        float islands = smoothstep(front+.035,front+.105,islandField);
-        islands *= smoothstep(.12,.42,p) * (1.0-smoothstep(.72,.93,p));
-        mask = max(mask,islands*.88);
+        float erosion=fbm2(uv*18.0+vec2(8.0+p*.18,-3.0));
+        mask*=mix(1.0,smoothstep(.27,.65,erosion),edgeBand*.64);
 
-        /* Fully settle into the clean paper frame at the end of the scene. */
-        mask = mix(mask,1.0,smoothstep(.93,1.0,p));
+        float islandField=uv.x
+          +(fbm2(uv*4.2+vec2(2.2,-p*.09))-.5)*.50
+          +(noise(uv*12.0+vec2(-7.0,p*.16))-.5)*.12;
+        float islands=smoothstep(front+.035,front+.11,islandField);
+        islands*=smoothstep(.12,.42,p)*(1.0-smoothstep(.72,.93,p));
+        mask=max(mask,islands*.88);
 
-        if(mask < .002){
-          gl_FragColor = vec4(0.0);
+        mask=mix(mask,1.0,smoothstep(.93,1.0,p));
+
+        if(mask<.002){
+          gl_FragColor=vec4(0.0);
           return;
         }
 
-        float paperGrain = noise(uv*170.0+17.0);
-        vec3 paper = vec3(.925,.917,.885) + (paperGrain-.5)*.022;
+        float grain=hash(floor(uv*u_resolution*.32)+17.0);
+        vec3 paper=vec3(.925,.917,.885)+(grain-.5)*.018;
 
-        /* Dark ink granulation rides the wet edge and disappears once dry. */
-        float inkNoise = fbm(uv*24.0+vec2(p*.28,9.0));
-        float blackFleck = smoothstep(.57,.78,inkNoise)*edgeBand;
-        blackFleck *= 1.0-smoothstep(.76,.94,p);
+        float inkNoise=fbm2(uv*22.0+vec2(p*.22,9.0));
+        float blackFleck=smoothstep(.58,.78,inkNoise)*edgeBand;
+        blackFleck*=1.0-smoothstep(.76,.94,p);
 
-        float scratch = noise(vec2(uv.x*95.0,uv.y*430.0)+vec2(p*.5,0.0));
-        scratch = smoothstep(.84,.94,scratch)*edgeBand;
-        blackFleck = max(blackFleck,scratch*.72);
+        float scratch=hash(floor(vec2(uv.x*u_resolution.x*.09,uv.y*u_resolution.y*.42))+vec2(p*41.0,3.0));
+        scratch=smoothstep(.91,.975,scratch)*edgeBand;
+        blackFleck=max(blackFleck,scratch*.62);
 
-        vec3 color = mix(paper,vec3(.025,.024,.021),clamp(blackFleck*.82,0.0,1.0));
-
-        gl_FragColor = vec4(color*mask,mask);
+        vec3 color=mix(paper,vec3(.025,.024,.021),clamp(blackFleck*.80,0.0,1.0));
+        gl_FragColor=vec4(color*mask,mask);
       }
     `;
 
@@ -206,34 +192,45 @@
 
   let inkW=0;
   let inkH=0;
-  let inkDpr=1;
+  let lastInkProgress=-1;
 
   function sizeInk(){
     if(!inkReady)return;
     const rect=inkCanvas.getBoundingClientRect();
-    const dpr=Math.min(devicePixelRatio||1,1.25);
-    const w=Math.max(1,Math.round(rect.width*dpr));
-    const h=Math.max(1,Math.round(rect.height*dpr));
+
+    /* The ink edge is intentionally grainy, so rendering it below CSS pixel
+       resolution is visually almost free but dramatically cheaper on Retina. */
+    const scale=innerWidth>=1800?.52:innerWidth>=1300?.60:.68;
+    const w=Math.max(1,Math.round(rect.width*scale));
+    const h=Math.max(1,Math.round(rect.height*scale));
 
     if(w!==inkW||h!==inkH){
       inkW=w;
       inkH=h;
-      inkDpr=dpr;
       inkCanvas.width=w;
       inkCanvas.height=h;
       gl.viewport(0,0,w,h);
+      lastInkProgress=-1;
     }
   }
 
   function drawInk(progress){
     if(!inkReady)return;
     sizeInk();
+
+    /* At most ~500 visually distinct transition frames across the whole
+       sequence. Do not redraw the full-screen shader for sub-pixel scroll
+       changes that the eye cannot see. */
+    const quantized=Math.round(progress*500)/500;
+    if(Math.abs(quantized-lastInkProgress)<.0005)return;
+    lastInkProgress=quantized;
+
     gl.useProgram(inkProgram);
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.SCISSOR_TEST);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.uniform2f(U.resolution,inkW,inkH);
-    gl.uniform1f(U.progress,progress);
+    gl.uniform1f(U.progress,quantized);
     gl.drawArrays(gl.TRIANGLES,0,6);
   }
 
@@ -242,6 +239,7 @@
   function reset(){
     root.classList.remove('cinematic-works-ready');
     transition.classList.remove('is-active');
+    root.classList.remove('ink-transition-active');
     txStage.removeAttribute('style');
     [
       '--tx-home-copy-opacity','--tx-home-copy-y',
@@ -268,6 +266,7 @@
     const p=clamp(-rect.top/travel);
     const active = rect.top <= 0 && rect.bottom >= height;
     transition.classList.toggle('is-active',active);
+    root.classList.toggle('ink-transition-active',active);
 
     /*
      * The transition itself is the animation:
@@ -287,8 +286,9 @@
 
     if(active){
       drawInk(inkIn);
-    }else if(inkReady){
+    }else if(inkReady&&lastInkProgress!==-1){
       gl.clear(gl.COLOR_BUFFER_BIT);
+      lastInkProgress=-1;
     }
 
     setHome('--tx-home-copy-opacity',(1-homeCopyOut).toFixed(4));
