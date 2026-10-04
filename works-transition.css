@@ -169,7 +169,8 @@
     pointer-events:none;
     background:transparent;
     opacity:1;
-    will-change:contents;
+    contain:strict;
+    transform:translateZ(0);
   }
 
 
@@ -181,7 +182,6 @@
     pointer-events:none;
     overflow:hidden;
     will-change:opacity;
-    mix-blend-mode:multiply;
   }
 
   html.cinematic-works-ready .tx-paper-portrait img{
