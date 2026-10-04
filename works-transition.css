@@ -330,7 +330,7 @@
 
   /* The actual Works screen starts where the transition ends. */
   html.cinematic-works-ready .works-chapter{
-    margin-top:-100svh!important;
+    margin-top:0!important;
     scroll-margin-top:0;
   }
   html.cinematic-works-ready .works-stage{
