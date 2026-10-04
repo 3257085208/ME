@@ -43,7 +43,19 @@
   let scheduled = false, currentNav = '';
   const smooth = n => { const p = clamp(n); return p*p*(3-2*p); };
   const phase = (p,a,b) => smooth((p-a)/(b-a));
-  const prop = (element,name,value,unit='') => element.style.setProperty(name, `${Number(value.toFixed(4))}${unit}`);
+  const propCache = new WeakMap();
+  const prop = (element,name,value,unit='') => {
+    if(!element)return;
+    const next=`${Number(value.toFixed(4))}${unit}`;
+    let cache=propCache.get(element);
+    if(!cache){
+      cache=new Map();
+      propCache.set(element,cache);
+    }
+    if(cache.get(name)===next)return;
+    cache.set(name,next);
+    element.style.setProperty(name,next);
+  };
   const tileVectors = [[-66,-76,-9],[110,-40,7],[-35,95,-6],[80,60,11]];
   const scenes = new Map([...document.querySelectorAll('[data-scene]')].map(chapter => [chapter, {
     stage:chapter.querySelector('.stage'),
@@ -167,7 +179,12 @@
         prop(stage,'--chapter-copy-opacity',1);
         chapter.dataset.transition = 'present';
       }
-      if (chapter.dataset.scene) animateScene(chapter, rect, height);
+      /* Scene internals used to update for every project on every scroll
+         event, including chapters several screens away. Keep the expensive
+         per-scene transforms local to a small viewport window. */
+      if (chapter.dataset.scene && rect.top < height*1.35 && rect.bottom > -height*.35) {
+        animateScene(chapter, rect, height);
+      }
       if (chapter.id === 'works') prop(chapter,'--works-p',motion.matches ? 1 : mobile.matches ? 0 : clamp((-rect.top-height)/Math.max(1,rect.height-height*3)));
 
     });
