@@ -287,6 +287,9 @@
     const printIn=phase(p,.44,.66);
     const featureIn=phase(p,.58,.84);
     const copyIn=phase(p,.62,.86);
+    const finalSurface=phase(p,.84,.95);
+    const noteOut=phase(p,.78,.92);
+    const sideIn=phase(p,.80,.94);
 
     if(active){
       drawInk(inkIn);
@@ -301,10 +304,15 @@
     setHome('--tx-portrait-scale',(1-.066*portraitShift).toFixed(4));
     setHome('--tx-portrait-opacity',(1-.62*phase(p,.40,.72)).toFixed(4));
 
-    setStage('--tx-paper-portrait-opacity',(.24*printIn*(1-.50*featureIn)).toFixed(4));
+    const printOpacity=.24*printIn*(1-featureIn)+.075*featureIn;
+    setStage('--tx-paper-portrait-opacity',printOpacity.toFixed(4));
     setStage('--tx-works-opacity',worksIn.toFixed(4));
     setStage('--tx-works-y',`${(56*(1-worksIn)).toFixed(3)}vh`);
     setStage('--tx-meta-opacity',metaIn.toFixed(4));
+    setStage('--tx-note-opacity',(metaIn*(1-noteOut)).toFixed(4));
+    setStage('--tx-side-opacity',sideIn.toFixed(4));
+    setStage('--tx-final-paper-opacity',finalSurface.toFixed(4));
+    setStage('--tx-ink-opacity',(1-phase(p,.87,.96)).toFixed(4));
 
     setStage('--tx-feature-opacity',featureIn.toFixed(4));
     setStage('--tx-feature-x',`${(12*(1-featureIn)).toFixed(3)}vw`);
