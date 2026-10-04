@@ -153,7 +153,10 @@
       const stage = chapter.querySelector('.stage');
       if (!mobile.matches && !motion.matches) {
         const last = chapter === chapters[chapters.length-1];
-        const enterRaw = chapter === chapters[0] ? 1 : clamp(-rect.top/height);
+        /* Fade a chapter in while it is entering the viewport, not only
+           after its top has already passed the viewport top. The old formula
+           created a full black "dead frame" at every chapter boundary. */
+        const enterRaw = chapter === chapters[0] ? 1 : clamp((height - rect.top)/height);
         const exitRaw = last ? 0 : clamp((height*2-rect.bottom)/height);
         const enter = smooth(enterRaw);
         prop(stage,'--chapter-opacity',!last && rect.bottom<=height ? 0 : enter);
@@ -170,7 +173,13 @@
     });
     document.body.dataset.headerTone = headerChapter.classList.contains('paper') ? 'light' : 'dark';
     const home = chapters[0];
-    const homeProgress = !mobile.matches && !motion.matches ? clamp(y/Math.max(1,home.offsetHeight-height*2)) : 0;
+    /* The dedicated hero->Works scene owns the desktop home transition.
+       Do not run the legacy 245svh hero drift against the shortened 100svh
+       home chapter, otherwise --hero-p jumps to 1 almost immediately. */
+    const cinematicWorks = document.documentElement.classList.contains('cinematic-works-ready');
+    const homeProgress = !mobile.matches && !motion.matches && !cinematicWorks
+      ? clamp(y/Math.max(1,home.offsetHeight-height*2))
+      : 0;
     prop(hero,'--hero-p',homeProgress);
     const nav = current.dataset.nav;
     if (nav !== currentNav) {

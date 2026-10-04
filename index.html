@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080808"><meta name="description" content="Kaixiang Nie / NKX — 作品、代码与网络印记。"><title>QQ.SG — Kaixiang Nie</title><link rel="stylesheet" href="scroll.css"><link rel="stylesheet" href="scenes.css"><link rel="stylesheet" href="cinema.css"><link rel="stylesheet" href="portrait-fx.css"></head>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080808"><meta name="description" content="Kaixiang Nie / NKX — 作品、代码与网络印记。"><title>QQ.SG — Kaixiang Nie</title><link rel="stylesheet" href="scroll.css"><link rel="stylesheet" href="scenes.css"><link rel="stylesheet" href="cinema.css"><link rel="stylesheet" href="portrait-fx.css"><link rel="stylesheet" href="works-transition.css"></head>
 <body class="cinema-edition">
 <a class="skip-link" href="#works">跳到作品</a>
 <header class="site-header"><a class="brand" href="#home" aria-label="QQ.SG 首页">QQ.SG</a><nav class="site-nav" aria-label="章节导航"><a href="#home" aria-current="page">Home</a><a href="#works">Works</a><a href="#imprints">Imprints</a><a href="#about">About</a></nav></header>
@@ -23,9 +23,60 @@
 <h1 class="name" id="name">Kaixiang Nie</h1>
 <div class="signature-controls"><span class="control-line" aria-hidden="true"></span><button class="replay" id="replay" type="button" aria-label="重播签名动画"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7a7 7 0 1 1-1 7M4 2v5H0" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>Replay signature</button></div>
 </section>
-<a class="home-scroll" href="#works"><span class="scroll-line"></span>Scroll to explore <span class="down">↓</span></a><span class="home-credit">Kaixiang Nie · 2026</span>
+<a class="home-scroll" href="#works-transition"><span class="scroll-line"></span>Scroll to explore <span class="down">↓</span></a><span class="home-credit">Kaixiang Nie · 2026</span>
 </div></div></section>
-<section class="chapter works-chapter paper" id="works" data-nav="works" data-label="Selected works"><div class="stage works-stage"><p class="kicker">02 / Selected works &amp; digital imprints</p><h2 class="works-title"><span>Works</span><span class="offset">&amp; <em>imprints.</em></span></h2><div class="works-caption"><p>从写下一个想法，<br>到做出一个自己的东西。</p><span>博客 / 探针 / 界面</span></div><div class="work-index"><a href="#project-blog"><span>01</span>聶.NET <i>↓</i></a><a href="#project-sla"><span>02</span>NIE-SLA <i>↓</i></a><a href="#project-nodeget"><span>03</span>NIE Theme <i>↓</i></a></div></div></section>
+<section class="works-transition-chapter" id="works-transition" aria-hidden="true">
+  <div class="works-transition-stage">
+    <div class="tx-home-frame">
+      <div class="tx-portrait tx-portrait-light"><img src="portrait-cutout-clean.png" alt=""></div>
+      <div class="tx-portrait tx-portrait-dark"><img src="portrait-cutout-clean.png" alt=""></div>
+      <div class="tx-home-copy"></div>
+    </div>
+    <div class="tx-paper"></div>
+    <canvas class="tx-ink-canvas" id="txInkCanvas" aria-hidden="true"></canvas>
+    <div class="tx-paper-portrait"><img src="portrait-cutout-clean.png" alt=""></div>
+    <span class="tx-kicker">02 / Selected works</span>
+    <span class="tx-note">From self<br>to creations</span>
+    <strong class="tx-works-word">WORKS</strong>
+    <a class="tx-feature" href="#works">
+      <span class="tx-feature-copy">
+        <small>01 / 03 · Personal journal</small>
+        <b>聶.NET</b>
+        <span>记录一些想法。<br>关于学习、服务器和生活的碎念。</span>
+        <i>View project ↘</i>
+      </span>
+      <figure class="tx-feature-media">
+        <span class="tx-sheet tx-sheet-a"></span>
+        <span class="tx-sheet tx-sheet-b"></span>
+        <img src="assets/blog.jpg" alt="" width="1200" height="800" loading="lazy">
+      </figure>
+    </a>
+  </div>
+</section>
+<section class="chapter works-chapter paper" id="works" data-nav="works" data-label="Selected works"><div class="stage works-stage">
+<p class="kicker">02 / Selected works &amp; digital imprints</p>
+<h2 class="works-title"><span>Works</span><span class="offset">&amp; <em>imprints.</em></span></h2>
+<div class="works-caption"><p>从写下一个想法，<br>到做出一个自己的东西。</p><span>博客 / 探针 / 界面</span></div>
+<div class="work-index"><a href="#project-blog"><span>01</span>聶.NET <i>↓</i></a><a href="#project-sla"><span>02</span>NIE-SLA <i>↓</i></a><a href="#project-nodeget"><span>03</span>NIE Theme <i>↓</i></a></div>
+<a class="works-feature" href="#project-blog" aria-label="查看第一个作品：聶.NET">
+  <span class="works-feature-copy">
+    <small>01 / 03 · Personal journal</small>
+    <strong>聶.NET</strong>
+    <span class="works-feature-desc">记录一些想法。<br>关于学习、服务器和生活的碎念。</span>
+    <span class="works-feature-link">View project <i>↘</i></span>
+  </span>
+  <figure class="works-feature-media">
+    <span class="works-feature-sheet works-feature-sheet-a" aria-hidden="true"></span>
+    <span class="works-feature-sheet works-feature-sheet-b" aria-hidden="true"></span>
+    <img src="assets/blog.jpg" alt="" width="1200" height="800" loading="lazy">
+    <figcaption>niekaixiang.com · 2026</figcaption>
+  </figure>
+</a>
+<nav class="works-side-index" aria-label="其他精选作品">
+  <a href="#project-sla"><span>02</span><b>NIE-SLA</b><i>Monitoring</i></a>
+  <a href="#project-nodeget"><span>03</span><b>NIE Theme</b><i>Interface</i></a>
+</nav>
+</div></section>
 <section class="chapter project-chapter paper blog-scene" id="project-blog" data-nav="works" data-label="01 / 聶.NET" data-scene="blog">
 <div class="stage project-stage blog-stage"><div class="film-word write-word" aria-hidden="true"><span>Write</span><em>.</em></div><span class="film-number" aria-hidden="true">01</span>
 <div class="project-copy"><p class="kicker">01 / Writing</p><h3>聶.NET</h3><p class="project-lead">记录生活，<br>也记录折腾。</p><p class="project-desc">自己的博客，也是自己写的博客系统。<br>从一段文字，到一个可以被看见的页面。</p><div class="project-links"><a href="https://www.niekaixiang.com" target="_blank" rel="noopener noreferrer">访问网站 <span>↗</span></a><a href="https://github.com/3257085208/NIE-Higan-Blog" target="_blank" rel="noopener noreferrer">源码 <span>↗</span></a></div></div>
@@ -76,5 +127,5 @@
 </main>
 <div class="journey" aria-hidden="true"><span class="journey-index">01</span><span class="journey-line"><i></i></span><span class="journey-label">Introduction</span></div>
 <div class="film-grain" aria-hidden="true"></div><div class="frame" aria-hidden="true"></div>
-<script src="scroll.js"></script><script src="portrait-fx.js"></script><script src="hero-ink-fx.js"></script>
+<script src="scroll.js"></script><script src="works-transition.js"></script><script src="portrait-fx.js"></script><script src="hero-ink-fx.js"></script>
 </body></html>
