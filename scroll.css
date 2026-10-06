@@ -25,7 +25,7 @@ a{color:inherit;text-decoration:none}button{font:inherit}button,a{-webkit-tap-hi
 .portrait-light{clip-path:inset(0 calc(100% - var(--split)) 0 0)}
 .portrait-light img{filter:grayscale(1) contrast(1.10)}
 .portrait-dark{clip-path:inset(0 0 0 var(--split))}
-.portrait-dark img{filter:grayscale(1) contrast(1.10)}
+.portrait-dark img{filter:grayscale(1) contrast(1.10) invert(1)}
 .hero{position:absolute;z-index:3;left:6%;top:50%;width:36%;transform:translateY(calc(-45% - var(--hero-p,0)*30px));opacity:calc(1 - var(--hero-p,0)*.5)}
 .eyebrow,.kicker{margin:0 0 26px;font-size:9px;letter-spacing:.2em;line-height:1.5;color:#95958f;text-transform:uppercase}
 .signature{display:block;width:100%;height:auto;overflow:visible}
