@@ -16,7 +16,8 @@
     });
   }
   document.getElementById('replay').addEventListener('click',play);
-  play();
+  if (document.documentElement.classList.contains('js-splash')) addEventListener('qqsg:reveal',play,{once:true});
+  else play();
 
   // Reveal content in its natural flow on smaller screens.
   const reveals = [...document.querySelectorAll('.works-title,.project-copy,.imprint-copy,.closing-copy')];
