@@ -51,8 +51,7 @@
     mask-image:none;
     background:
       linear-gradient(to bottom,#000 0,rgba(0,0,0,.92) 5%,rgba(0,0,0,0) 18%),
-      linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 61%,rgba(0,0,0,.18) 72%,rgba(0,0,0,.68) 87%,#000 100%),
-      linear-gradient(to right,#000 0 calc(var(--split) - var(--split-feather)),#fff calc(var(--split) + var(--split-feather)) 100%);
+      linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 61%,rgba(0,0,0,.18) 72%,rgba(0,0,0,.68) 87%,#000 100%);
   }
 
   /* Fade only the transparent portrait bitmap. Do not mask the entire layer:
