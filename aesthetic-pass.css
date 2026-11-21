@@ -323,13 +323,31 @@ body {
   list-style: none;
   margin: clamp(24px, 3.6vh, 40px) 0 0;
   padding: 0;
-  border-top: 1px solid var(--hairline-light);
+  position: relative;
 }
 
 .work-item {
+  position: relative;
   border-bottom: 1px solid rgba(244, 243, 238, .12);
   opacity: .5;
   transition: opacity .45s var(--page-ease);
+}
+
+.work-item::before {
+  content: "";
+  position: absolute;
+  left: clamp(-18px, -1.4vw, -10px);
+  top: 18%;
+  bottom: 18%;
+  width: 1px;
+  background: rgba(244, 243, 238, .55);
+  transform: scaleY(0);
+  transform-origin: center top;
+  transition: transform .5s var(--page-ease);
+}
+
+.work-item.is-active::before {
+  transform: scaleY(1);
 }
 
 .work-item.is-active {
@@ -439,6 +457,7 @@ body {
 
 .works-meta,
 .plate-caption {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -452,12 +471,10 @@ body {
 
 .works-meta {
   padding-top: 12px;
-  border-top: 1px solid var(--hairline-dark);
 }
 
 .plate-caption {
   padding-top: 12px;
-  border-top: 1px solid var(--hairline-dark);
 }
 
 .works-year {
@@ -483,8 +500,13 @@ body {
   overflow: hidden;
   border: 1px solid rgba(6, 6, 6, .14);
   background: #eceae3;
+  transform-origin: center top;
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 1.15s var(--page-ease), transform 1.15s var(--page-ease);
+  transition-delay: .18s;
 }
 
+/* Darkroom shutter: the incoming plate develops upward over the previous one. */
 .plate-img {
   position: absolute;
   inset: 0;
@@ -492,18 +514,49 @@ body {
   height: 100%;
   object-fit: cover;
   object-position: top center;
+  z-index: 0;
   opacity: 0;
-  transform: scale(1.03);
+  clip-path: inset(100% 0 0 0);
+  scale: 1.05;
   filter: grayscale(1) contrast(1.06);
-  transition: opacity .7s var(--page-ease), transform 1.1s var(--page-ease), filter .7s ease;
+  transition: clip-path .85s var(--page-ease), scale .55s var(--page-ease), opacity .3s ease, filter .7s ease;
+  will-change: clip-path, scale;
+}
+
+.plate-img.is-prev {
+  opacity: 1;
+  z-index: 1;
+  clip-path: inset(0 0 0 0);
+  scale: 1;
+  animation: none;
 }
 
 .plate-img.is-active {
   opacity: 1;
-  transform: none;
+  z-index: 2;
+  clip-path: inset(0 0 0 0);
+  scale: 1;
+  animation: plate-develop .85s var(--page-ease);
+}
+
+@keyframes plate-develop {
+  from {
+    clip-path: inset(100% 0 0 0);
+    scale: 1.05;
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    scale: 1;
+  }
 }
 
 .plate-stack:hover .plate-img.is-active {
+  scale: 1.035;
+}
+
+.plate-stack:hover .plate-img.is-active,
+.plate-stack:hover .plate-img.is-prev {
   filter: grayscale(0) contrast(1) brightness(1);
 }
 
@@ -556,8 +609,8 @@ body {
 }
 
 .imprint-list {
+  position: relative;
   margin-top: clamp(30px, 4.4vh, 48px);
-  border-top: 1px solid var(--hairline-light);
 }
 
 .imprint-row {
@@ -603,6 +656,13 @@ body {
   opacity: .55;
 }
 
+/* Architectural nameplate numerals: lining figures align on the baseline. */
+.imprint-asn-name,
+.wall-name,
+.imprint-name {
+  font-variant-numeric: lining-nums;
+}
+
 .imprint-arrow {
   justify-self: end;
   font-size: 13px;
@@ -613,7 +673,6 @@ body {
 .imprint-row:hover .imprint-arrow,
 .imprint-row:focus-visible .imprint-arrow {
   opacity: 1;
-  transform: translate(3px, -3px);
 }
 
 /* right: breathing white wall with live coordinates */
@@ -636,23 +695,28 @@ body {
   color: rgba(6, 6, 6, .05);
   pointer-events: none;
   user-select: none;
-  transition: opacity .4s ease;
+  will-change: opacity, scale;
+  transition: opacity .9s ease, scale .6s var(--page-ease);
 }
 
 .imprint-wall-inner {
   position: relative;
   z-index: 1;
   max-width: 26em;
-  transition: opacity .28s ease, transform .45s var(--page-ease);
+  clip-path: inset(0 0 0 0);
+  transition: opacity .28s ease, transform .45s var(--page-ease), clip-path .4s var(--page-ease);
 }
 
+/* The wall copy is clipped upward and develops back in, never a hard flash. */
 .imprint-wall.is-swapping .imprint-wall-inner {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(-8px);
+  clip-path: inset(0 0 100% 0);
 }
 
 .imprint-wall.is-swapping .imprint-ghost {
   opacity: .5;
+  scale: .96;
 }
 
 .wall-kicker {
@@ -746,6 +810,13 @@ body {
   height: auto;
   margin: clamp(26px, 4vh, 44px) 0 0 -4px;
   overflow: visible;
+  cursor: pointer;
+  transition: opacity .6s ease;
+}
+
+.about-signature:focus-visible {
+  outline: 1px solid var(--hairline-dark-strong);
+  outline-offset: 8px;
 }
 
 .about-signature path {
@@ -784,10 +855,10 @@ body {
 }
 
 .about-colophon {
+  position: relative;
   width: 100%;
   margin-top: auto;
   padding-top: 18px;
-  border-top: 1px solid var(--hairline-dark);
   color: var(--page-muted-dark);
   font-size: 10px;
   letter-spacing: .16em;
@@ -821,6 +892,207 @@ body {
 }
 
 /* =========================================================
+   CURTAIN CHOREOGRAPHY — single-trigger act entrances
+   ========================================================= */
+.mask-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: .12em;
+  margin-bottom: -.12em;
+}
+
+.mask-line > span {
+  display: block;
+  transition: transform 1.05s var(--page-ease);
+}
+
+.js-ready .act:not(.is-inview) .mask-line > span {
+  transform: translate3d(0, 108%, 0);
+}
+
+.act-works .act-kicker .mask-line > span {
+  transition-delay: .04s;
+}
+
+.act-works .work-item:nth-child(1) .mask-line > span {
+  transition-delay: .16s;
+}
+
+.act-works .work-item:nth-child(2) .mask-line > span {
+  transition-delay: .23s;
+}
+
+.act-works .work-item:nth-child(3) .mask-line > span {
+  transition-delay: .3s;
+}
+
+.act-imprints .act-kicker .mask-line > span {
+  transition-delay: .04s;
+}
+
+.act-imprints .imprint-asn-name.mask-line > span {
+  transition-delay: .16s;
+}
+
+.act-about .act-kicker .mask-line > span {
+  transition-delay: .04s;
+}
+
+.act-about .about-title .mask-line:nth-child(1) > span {
+  transition-delay: .14s;
+}
+
+.act-about .about-title .mask-line:nth-child(2) > span {
+  transition-delay: .22s;
+}
+
+/* 1px architectural rules draw from left to right */
+.work-list::before,
+.works-meta::before,
+.plate-caption::before,
+.imprint-list::before,
+.about-colophon::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: var(--hairline-light);
+  transform: scaleX(1);
+  transform-origin: left center;
+  transition: transform .95s var(--page-ease);
+}
+
+.works-meta::before,
+.plate-caption::before,
+.about-colophon::before {
+  background: var(--hairline-dark);
+}
+
+.work-list::before {
+  transition-delay: .1s;
+}
+
+.works-meta::before {
+  transition-delay: .02s;
+}
+
+.plate-caption::before {
+  transition-delay: .3s;
+}
+
+.imprint-list::before {
+  transition-delay: .14s;
+}
+
+.about-colophon::before {
+  transition-delay: .34s;
+}
+
+.js-ready .act:not(.is-inview) .work-list::before,
+.js-ready .act:not(.is-inview) .works-meta::before,
+.js-ready .act:not(.is-inview) .plate-caption::before,
+.js-ready .act:not(.is-inview) .imprint-list::before,
+.js-ready .act:not(.is-inview) .about-colophon::before {
+  transform: scaleX(0);
+}
+
+/* plate develops like a darkroom print on first entry */
+.js-ready .act-works:not(.is-inview) .plate-stack {
+  clip-path: inset(0 0 100% 0);
+  transform: scale(1.06);
+}
+
+/* supporting copy settles in after the rules and masks */
+.work-active-panel {
+  transition: opacity .55s ease, transform .75s var(--page-ease);
+}
+
+.js-ready .act-works:not(.is-inview) .work-active-panel {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.works-fig,
+.works-year,
+.plate-caption-text,
+.works-hint {
+  transition: opacity .8s ease;
+}
+
+.js-ready .act-works:not(.is-inview) .works-fig,
+.js-ready .act-works:not(.is-inview) .works-year,
+.js-ready .act-works:not(.is-inview) .plate-caption-text,
+.js-ready .act-works:not(.is-inview) .works-hint {
+  opacity: 0;
+}
+
+.imprint-row {
+  transition: padding-left .45s var(--page-ease), opacity .6s ease .08s, transform .75s var(--page-ease) .08s;
+}
+
+.js-ready .act-imprints:not(.is-inview) .imprint-row {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.js-ready .act-imprints:not(.is-inview) .imprint-wall-inner {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.js-ready .act-imprints:not(.is-inview) .imprint-ghost {
+  opacity: 0;
+  scale: .97;
+}
+
+.about-bio,
+.about-links {
+  transition: opacity .85s ease, transform .95s var(--page-ease);
+}
+
+.about-visual {
+  transition: opacity 1.1s var(--page-ease);
+}
+
+.about-colophon {
+  transition: opacity .8s ease .18s;
+}
+
+.js-ready .act-about:not(.is-inview) .about-bio,
+.js-ready .act-about:not(.is-inview) .about-links,
+.js-ready .act-about:not(.is-inview) .about-signature,
+.js-ready .act-about:not(.is-inview) .about-visual,
+.js-ready .act-about:not(.is-inview) .about-colophon {
+  opacity: 0;
+}
+
+.js-ready .act-about:not(.is-inview) .about-bio,
+.js-ready .act-about:not(.is-inview) .about-links {
+  transform: translateY(14px);
+}
+
+/* Desktop-only depth parallax hooks (values written by site.js). */
+@media (min-width: 901px) and (prefers-reduced-motion: no-preference) {
+  .js-ready .about-visual img {
+    margin-bottom: -14px;
+    transform: translate3d(0, var(--about-shift, 0px), 0);
+    will-change: transform;
+  }
+
+  .js-ready .imprint-ghost {
+    transform: translate3d(0, var(--ghost-shift, 0px), 0);
+    will-change: opacity, scale, transform;
+  }
+
+  .plate-img {
+    transform: translate3d(var(--plate-px, 0px), var(--plate-py, 0px), 0);
+    will-change: clip-path, scale, transform;
+  }
+}
+
+/* =========================================================
    RELIABLE REVEAL MOTION (always completes to opacity: 1)
    ========================================================= */
 .js-ready .reveal {
@@ -833,6 +1105,108 @@ body {
 .js-ready .reveal.is-visible {
   opacity: 1;
   transform: none;
+}
+
+/* =========================================================
+   GALLERY CURSOR — desktop precision-pointer companion
+   ========================================================= */
+.gallery-cursor {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .gallery-cursor {
+    display: block;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 60;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    background: #f4f3ee;
+    pointer-events: none;
+    mix-blend-mode: difference;
+    opacity: 0;
+    transform: translate3d(var(--cursor-x, -100px), var(--cursor-y, -100px), 0) translate(-50%, -50%);
+    transition: width .32s var(--page-ease), height .32s var(--page-ease), background-color .3s ease, border-color .3s ease, opacity .25s ease;
+    will-change: transform, width, height;
+  }
+
+  .gallery-cursor.is-visible {
+    opacity: .92;
+  }
+
+  .gallery-cursor.is-ring {
+    width: 28px;
+    height: 28px;
+    background-color: transparent;
+    border-color: rgba(244, 243, 238, .85);
+  }
+
+  .gallery-cursor.is-plate {
+    width: 54px;
+    height: 54px;
+    background-color: transparent;
+    border-color: rgba(244, 243, 238, .85);
+  }
+
+  .gallery-cursor-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8.5px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: #f4f3ee;
+    opacity: 0;
+    transition: opacity .25s ease;
+  }
+
+  .gallery-cursor.is-plate .gallery-cursor-label {
+    opacity: .92;
+  }
+}
+
+/* Restrained shuttle on external-link arrows. */
+@keyframes arrow-shuttle {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+
+  42% {
+    transform: translate3d(5px, -5px, 0);
+    opacity: 0;
+  }
+
+  43% {
+    transform: translate3d(-4px, 4px, 0);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+.work-links a > span[aria-hidden="true"],
+.about-links a > span[aria-hidden="true"] {
+  display: inline-block;
+  will-change: transform;
+}
+
+.work-links a:hover > span[aria-hidden="true"],
+.work-links a:focus-visible > span[aria-hidden="true"],
+.about-links a:hover > span[aria-hidden="true"],
+.about-links a:focus-visible > span[aria-hidden="true"],
+.imprint-row:hover .imprint-arrow,
+.imprint-row:focus-visible .imprint-arrow {
+  animation: arrow-shuttle .6s var(--page-ease);
 }
 
 /* =========================================================
@@ -906,6 +1280,15 @@ body {
     display: block;
     opacity: 1;
     border-bottom: 0;
+  }
+
+  .work-item::before {
+    display: none;
+  }
+
+  .work-name.mask-line {
+    padding-bottom: 0;
+    margin-bottom: 0;
   }
 
   .work-row {
@@ -1149,6 +1532,10 @@ body {
     scroll-behavior: auto;
   }
 
+  .gallery-cursor {
+    display: none !important;
+  }
+
   .js-ready .reveal,
   .js-ready .reveal.is-visible {
     opacity: 1;
@@ -1156,15 +1543,122 @@ body {
     transition: none;
   }
 
-  .plate-img,
-  .about-visual img,
-  #home .hero-canvas {
+  .js-ready .act:not(.is-inview) .mask-line > span,
+  .js-ready .act:not(.is-inview) .work-active-panel,
+  .js-ready .act:not(.is-inview) .imprint-row,
+  .js-ready .act:not(.is-inview) .imprint-wall-inner,
+  .js-ready .act:not(.is-inview) .imprint-ghost,
+  .js-ready .act:not(.is-inview) .about-bio,
+  .js-ready .act:not(.is-inview) .about-links,
+  .js-ready .act:not(.is-inview) .about-signature,
+  .js-ready .act:not(.is-inview) .about-visual,
+  .js-ready .act:not(.is-inview) .about-colophon,
+  .js-ready .act:not(.is-inview) .works-fig,
+  .js-ready .act:not(.is-inview) .works-year,
+  .js-ready .act:not(.is-inview) .plate-caption-text,
+  .js-ready .act:not(.is-inview) .works-hint {
+    opacity: 1;
+    transform: none;
+    clip-path: none;
+    transition: none;
+  }
+
+  .mask-line > span {
     transform: none;
     transition: none;
   }
 
+  .work-list::before,
+  .works-meta::before,
+  .plate-caption::before,
+  .imprint-list::before,
+  .about-colophon::before {
+    transform: scaleX(1);
+    transition: none;
+  }
+
+  .plate-stack {
+    clip-path: none;
+    transform: none;
+    transition: none;
+  }
+
+  .plate-img,
+  .plate-img.is-active,
+  .plate-img.is-prev {
+    animation: none;
+    transition: none;
+    clip-path: inset(0);
+    scale: 1;
+    translate: none;
+    transform: none;
+  }
+
+  .js-ready .act:not(.is-inview) .work-list::before,
+  .js-ready .act:not(.is-inview) .works-meta::before,
+  .js-ready .act:not(.is-inview) .plate-caption::before,
+  .js-ready .act:not(.is-inview) .imprint-list::before,
+  .js-ready .act:not(.is-inview) .about-colophon::before {
+    transform: scaleX(1);
+    transition: none;
+  }
+
+  .js-ready .act-works:not(.is-inview) .plate-stack {
+    clip-path: none;
+    transform: none;
+  }
+
+  .imprint-wall.is-swapping .imprint-wall-inner {
+    clip-path: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .imprint-ghost,
+  .imprint-wall.is-swapping .imprint-ghost {
+    scale: 1;
+    transition: none;
+  }
+
+  .plate-img:not(.is-active):not(.is-prev) {
+    opacity: 0;
+  }
+
+  .work-item::before {
+    transition: none;
+  }
+
+  .about-visual img,
+  #home .hero-canvas {
+    transform: none;
+    translate: none;
+    transition: none;
+  }
+
+  .imprint-wall-inner {
+    clip-path: none;
+    transition: none;
+  }
+
+  .imprint-ghost {
+    scale: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .work-links a:hover > span[aria-hidden="true"],
+  .work-links a:focus-visible > span[aria-hidden="true"],
+  .about-links a:hover > span[aria-hidden="true"],
+  .about-links a:focus-visible > span[aria-hidden="true"],
+  .imprint-row:hover .imprint-arrow,
+  .imprint-row:focus-visible .imprint-arrow {
+    animation: none;
+  }
+
   .work-row,
-  .imprint-row {
+  .imprint-row,
+  .work-item::before,
+  .about-signature {
     transition: none;
   }
 }
