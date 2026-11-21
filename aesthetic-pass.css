@@ -1,18 +1,17 @@
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", "Segoe UI", sans-serif;
   --font-serif: "Cormorant Garamond", "Bodoni 72", Didot, "Songti SC", "STSong", Georgia, serif;
-  --page-ink: #070707;
-  --page-paper: #f2f1ec;
-  --page-white: #f4f2ea;
-  --page-muted-dark: #68675f;
-  --page-muted-light: #9b9a92;
-  --hairline-dark: rgba(12, 12, 10, .14);
-  --hairline-dark-strong: rgba(12, 12, 10, .42);
-  --hairline-light: rgba(244, 242, 234, .15);
-  --hairline-light-strong: rgba(244, 242, 234, .46);
-  --page-x: clamp(40px, 7vw, 118px);
-  --page-y: clamp(76px, 8.8vh, 112px);
+  --page-ink: #060606;
+  --page-paper: #f4f3ee;
+  --page-white: #f4f3ee;
+  --page-muted-dark: rgba(6, 6, 6, .58);
+  --page-muted-light: rgba(244, 243, 238, .58);
+  --hairline-dark: rgba(6, 6, 6, .16);
+  --hairline-dark-strong: rgba(6, 6, 6, .42);
+  --hairline-light: rgba(244, 243, 238, .18);
+  --hairline-light-strong: rgba(244, 243, 238, .46);
   --page-ease: cubic-bezier(.19, 1, .22, 1);
+  --scene-split: 65%;
 }
 
 html {
@@ -42,8 +41,7 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Defensive positioning for fixed chrome — keeps controls stable even if a
-   legacy scroll.css is served from cache. */
+/* Defensive positioning for fixed chrome */
 .skip-link {
   position: fixed;
   top: -100px;
@@ -51,7 +49,49 @@ body {
   z-index: 100;
 }
 
-/* Subtle archival grain & global gallery frame */
+/* =========================================================
+   GLOBAL KINETIC SPLIT BACKDROP
+   ========================================================= */
+.split-backdrop {
+  display: none;
+}
+
+@media (min-width: 901px) {
+  .split-backdrop {
+    display: block;
+    position: fixed;
+    inset: 14px;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+    border-radius: 24px;
+    background: #060606;
+  }
+
+  /* The white wall is a single GPU layer translated on the X axis. Its 36px
+     left feather is part of the layer, so the divide stays smooth at 120fps. */
+  .split-backdrop-light {
+    position: absolute;
+    inset: 0;
+    background: #f4f3ee;
+    transform: translate3d(var(--scene-split, 65%), 0, 0);
+    will-change: transform;
+  }
+
+  .split-backdrop-light::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -36px;
+    width: 36px;
+    background: linear-gradient(to right, rgba(244, 243, 238, 0), #f4f3ee);
+  }
+}
+
+/* =========================================================
+   ARCHIVAL GRAIN & GLOBAL THEATRE FRAME
+   ========================================================= */
 .film-grain {
   position: fixed;
   z-index: 45;
@@ -62,7 +102,9 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' opacity='.65' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* Header & Journey — pure monochrome difference blend */
+/* =========================================================
+   HEADER & JOURNEY — pure monochrome difference blend
+   ========================================================= */
 .site-header {
   top: 42px;
   left: 52px;
@@ -115,7 +157,7 @@ body {
 }
 
 /* =========================================================
-   HERO (#home) — Author-designed visual anchor, surgical polish only
+   HERO (#home) — author-designed visual anchor, untouched
    ========================================================= */
 #home.home-chapter {
   height: 100svh;
@@ -158,7 +200,6 @@ body {
   color: #a5a49c;
 }
 
-/* Fix bottom-right credit contrast against bright white right half */
 #home .home-credit {
   right: 38px;
   bottom: 34px;
@@ -168,767 +209,619 @@ body {
   opacity: 1;
 }
 
-/* =========================================================
-   SHARED EDITORIAL ARCHITECTURE (BELOW THE FOLD)
-   ========================================================= */
-.paper,
-.project-paper,
-.about-portfolio {
-  background: var(--page-paper);
-  color: var(--page-ink);
-}
+/* Desktop: let the hero canvas run to the viewport edge so the white wall
+   continues into the next act without a 14px black band sweeping through. */
+@media (min-width: 901px) {
+  #home .home-stage {
+    background: transparent;
+  }
 
-.project-dark,
-.imprints {
-  background: var(--page-ink);
-  color: var(--page-white);
-}
+  #home .hero-canvas {
+    bottom: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
 
-.page-inner {
-  width: min(100%, 1520px);
-  margin: 0 auto;
-  padding: var(--page-y) var(--page-x);
-}
+  /* The canvas bottom now runs to the viewport edge; pin the inner layers to
+     the original inset-14 box so the hero composition does not move. */
+  #home .portrait-layer,
+  #home .portrait-fx,
+  #home .hero-ink-fx {
+    bottom: 14px;
+  }
 
-/* Shared architectural chapter rule echoing the Hero's hairline poise */
-.chapter-rule {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 18px;
-  padding-bottom: 18px;
-  margin-bottom: clamp(34px, 5vh, 64px);
-  border-bottom: 1px solid var(--hairline-dark);
-  font-size: 11px;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--page-muted-dark);
-  font-variant-numeric: tabular-nums;
-}
+  #home .portrait-fx,
+  #home .hero-ink-fx {
+    height: calc(100% - 14px);
+  }
 
-.project-dark .chapter-rule,
-.imprints .chapter-rule {
-  border-bottom-color: var(--hairline-light);
-  color: var(--page-muted-light);
-}
+  #home .hero {
+    top: calc(50% - 7px);
+  }
 
-.chapter-index {
-  color: inherit;
-  font-weight: 500;
-}
+  #home .home-scroll {
+    bottom: 80px;
+  }
 
-.chapter-meta {
-  opacity: .8;
-}
-
-.chapter-year {
-  opacity: .8;
-}
-
-.section-kicker,
-.project-type {
-  margin: 0 0 18px;
-  color: var(--page-muted-dark);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: .2em;
-  line-height: 1.4;
-  text-transform: uppercase;
-}
-
-.project-dark .section-kicker,
-.project-dark .project-type,
-.imprints .section-kicker {
-  color: var(--page-muted-light);
+  #home .home-credit {
+    bottom: 48px;
+  }
 }
 
 /* =========================================================
-   01 / WORKS INDEX — Hairline Editorial Ledger (No Boxes)
+   STORY / ACTS — four full-screen gallery stages
    ========================================================= */
-.portfolio-index {
+.story {
   position: relative;
+  z-index: 2;
+}
+
+.act {
+  position: relative;
+  z-index: 2;
   min-height: 100svh;
   display: flex;
-  align-items: center;
 }
 
-.index-body {
+.act-grid {
+  flex: 1;
+  min-width: 0;
   display: grid;
-  grid-template-columns: minmax(260px, .78fr) minmax(0, 1.22fr);
-  gap: clamp(48px, 7vw, 128px);
-  align-items: start;
+  margin: 14px;
+  align-items: stretch;
 }
 
-.index-heading h2 {
-  max-width: 9.5em;
-  margin: 0;
-  font-family: var(--font-sans);
-  font-size: clamp(32px, 3.3vw, 48px);
-  font-weight: 400;
-  letter-spacing: -.02em;
-  line-height: 1.24;
-  text-wrap: balance;
+.act-works .act-grid {
+  grid-template-columns: 40% 60%;
 }
 
-.index-heading > p:last-child {
-  max-width: 28em;
-  margin: 26px 0 0;
-  color: var(--page-muted-dark);
-  font-size: 15px;
-  line-height: 1.85;
+.act-imprints .act-grid {
+  grid-template-columns: 58% 42%;
 }
 
-.project-ledger {
+.act-about .act-grid {
+  grid-template-columns: 36% 64%;
+}
+
+.act-face {
+  position: relative;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--hairline-dark);
 }
 
-.project-ledger a {
-  display: grid;
-  grid-template-columns: 38px minmax(150px, .9fr) minmax(180px, 1.25fr) 52px 24px;
-  gap: 20px;
-  align-items: baseline;
-  padding: 30px 0;
-  border-bottom: 1px solid var(--hairline-dark);
+.act-face--dark {
+  color: var(--page-paper);
+}
+
+.act-face--light {
   color: var(--page-ink);
-  transition: padding-left .45s var(--page-ease), border-color .35s ease, opacity .35s ease;
 }
 
-.project-ledger:hover a {
-  opacity: .38;
+.act-kicker {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: .18em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  opacity: .62;
 }
 
-.project-ledger a:hover,
-.project-ledger a:focus-visible {
+/* =========================================================
+   ACT 1 / WORKS — interactive black & white gallery
+   ========================================================= */
+.works-index {
+  justify-content: flex-start;
+  padding: clamp(104px, 13svh, 140px) clamp(36px, 4.6vw, 72px) clamp(88px, 10svh, 110px) clamp(48px, 6.4vw, 96px);
+}
+
+.works-index .act-kicker {
+  color: rgba(244, 243, 238, .62);
+}
+
+.work-list {
+  list-style: none;
+  margin: clamp(24px, 3.6vh, 40px) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--hairline-light);
+}
+
+.work-item {
+  border-bottom: 1px solid rgba(244, 243, 238, .12);
+  opacity: .5;
+  transition: opacity .45s var(--page-ease);
+}
+
+.work-item.is-active {
   opacity: 1;
-  padding-left: 12px;
-  border-bottom-color: var(--hairline-dark-strong);
 }
 
-.ledger-num {
+.work-row {
+  display: grid;
+  grid-template-columns: 2.2em minmax(0, 1fr);
+  gap: 14px;
+  width: 100%;
+  padding: clamp(14px, 2.2vh, 22px) 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .5s var(--page-ease);
+}
+
+.work-row:hover,
+.work-row:focus-visible {
+  transform: translateX(6px);
+}
+
+.work-num {
+  padding-top: .45em;
   font-size: 11px;
   letter-spacing: .16em;
-  color: var(--page-muted-dark);
+  opacity: .5;
   font-variant-numeric: tabular-nums;
 }
 
-.ledger-main {
+.work-main {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
-.ledger-main strong {
+.work-name {
   font-family: var(--font-serif);
-  font-size: clamp(28px, 2.5vw, 38px);
+  font-size: clamp(32px, 3vw, 44px);
   font-weight: 400;
   letter-spacing: -.015em;
-  line-height: 1.05;
+  line-height: 1;
 }
 
-.ledger-kind {
-  font-size: 11px;
-  letter-spacing: .14em;
-  color: var(--page-muted-dark);
+.work-kind {
+  font-size: 10px;
+  letter-spacing: .16em;
+  line-height: 1.4;
   text-transform: uppercase;
+  opacity: .52;
 }
 
-.ledger-desc {
-  color: var(--page-muted-dark);
-  font-size: 14px;
-  line-height: 1.6;
-  align-self: center;
+.work-active-panel {
+  min-height: clamp(92px, 12svh, 112px);
+  margin-top: clamp(22px, 3vh, 32px);
+  transition: opacity .22s ease;
 }
 
-.ledger-year {
-  font-size: 11px;
-  letter-spacing: .14em;
-  color: var(--page-muted-dark);
-  font-variant-numeric: tabular-nums;
-  align-self: center;
+.work-active-panel.is-swapping {
+  opacity: 0;
 }
 
-.ledger-arrow {
-  justify-self: end;
-  align-self: center;
-  font-size: 17px;
-  color: var(--page-ink);
-  opacity: .45;
-  transition: transform .4s var(--page-ease), opacity .35s ease;
-}
-
-.project-ledger a:hover .ledger-arrow,
-.project-ledger a:focus-visible .ledger-arrow {
-  opacity: 1;
-  transform: translateY(4px);
-}
-
-.section-note {
-  margin: clamp(44px, 6vh, 72px) 0 0;
-  color: var(--page-muted-dark);
-  font-size: 12px;
-  letter-spacing: .04em;
+.work-desc {
+  max-width: 26em;
+  margin: 0 0 14px;
+  color: rgba(244, 243, 238, .62);
+  font-size: 13px;
   line-height: 1.7;
 }
 
-/* =========================================================
-   02–04 / PROJECT EXHIBITION PLATES
-   ========================================================= */
-.portfolio-project {
-  position: relative;
-  min-height: 100svh;
-  display: flex;
-  align-items: center;
-}
-
-.project-grid {
-  display: grid;
-  grid-template-columns: minmax(260px, .72fr) minmax(0, 1.48fr);
-  gap: clamp(44px, 6.5vw, 116px);
-  align-items: center;
-}
-
-.project-grid--reverse {
-  grid-template-columns: minmax(0, 1.48fr) minmax(260px, .72fr);
-}
-
-.portfolio-project .project-copy {
-  position: relative;
-  inset: auto;
-  width: auto;
-  transform: none;
-}
-
-.project-copy h2,
-.wide-project-heading h2 {
-  margin: 0 0 22px;
-  font-family: var(--font-serif);
-  font-size: clamp(44px, 4.8vw, 72px);
-  font-weight: 400;
-  letter-spacing: -.02em;
-  line-height: 1.02;
-}
-
-.project-lead {
-  max-width: 19em;
-  margin: 0;
-  font-size: clamp(19px, 1.6vw, 24px);
-  font-weight: 400;
-  letter-spacing: -.015em;
-  line-height: 1.48;
-}
-
-.project-description {
-  max-width: 30em;
-  margin: 22px 0 0;
-  color: var(--page-muted-dark);
-  font-size: 15px;
-  line-height: 1.85;
-}
-
-.project-dark .project-description {
-  color: var(--page-muted-light);
-}
-
-/* Hairline key-value metadata (replaces boxy SaaS cards) */
-.project-facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  margin: 34px 0 0;
-  padding-top: 20px;
-  border-top: 1px solid var(--hairline-dark);
-}
-
-.project-dark .project-facts {
-  border-top-color: var(--hairline-light);
-}
-
-.project-facts > div {
-  min-width: 0;
-}
-
-.project-facts dt {
-  margin: 0 0 6px;
-  color: var(--page-muted-dark);
-  font-size: 11px;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-}
-
-.project-dark .project-facts dt {
-  color: var(--page-muted-light);
-}
-
-.project-facts dd {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-/* Editorial links echoing Hero's hairline poise */
-.project-links,
-.about-links {
+.work-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px 30px;
-  margin-top: 34px;
+  gap: 10px 26px;
 }
 
-.project-links a,
-.about-links a {
+.work-links a {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 0 8px;
-  border-bottom: 1px solid var(--hairline-dark-strong);
-  color: inherit;
-  font-size: 12px;
-  letter-spacing: .12em;
+  gap: 8px;
+  padding: 4px 0 6px;
+  border-bottom: 1px solid var(--hairline-light-strong);
+  font-size: 10px;
+  letter-spacing: .14em;
   text-transform: uppercase;
-  transition: border-color .3s ease, gap .35s var(--page-ease), opacity .3s ease;
+  transition: border-color .3s ease, gap .35s var(--page-ease);
 }
 
-.project-dark .project-links a {
-  border-bottom-color: var(--hairline-light-strong);
-}
-
-.project-links a:hover,
-.project-links a:focus-visible,
-.about-links a:hover,
-.about-links a:focus-visible {
-  gap: 15px;
+.work-links a:hover,
+.work-links a:focus-visible {
+  gap: 12px;
   border-bottom-color: currentColor;
 }
 
-/* Exhibition Plate Framing — clean overflow clip + monochrome-to-color bloom */
-.project-artifact {
-  min-width: 0;
-  margin: 0;
+/* right: white gallery wall */
+.gallery-stage {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  row-gap: clamp(18px, 2.6vh, 28px);
+  padding: clamp(104px, 13svh, 140px) clamp(40px, 5vw, 84px) clamp(84px, 9.5svh, 104px);
 }
 
-.artifact-bar {
+.works-meta,
+.plate-caption {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 18px;
-  padding: 0 0 11px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--hairline-dark);
-  background: transparent;
-  color: var(--page-muted-dark);
-  font-size: 11px;
-  letter-spacing: .14em;
-  line-height: 1.4;
+  gap: 20px;
+  font-size: 10px;
+  letter-spacing: .16em;
+  line-height: 1.5;
   text-transform: uppercase;
+  color: rgba(6, 6, 6, .55);
+}
+
+.works-meta {
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline-dark);
+}
+
+.plate-caption {
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline-dark);
+}
+
+.works-year {
   font-variant-numeric: tabular-nums;
 }
 
-.project-dark .artifact-bar {
-  border-bottom-color: var(--hairline-light);
-  color: var(--page-muted-light);
-}
-
-.plate-frame {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--hairline-dark);
-  background: #e6e5de;
-}
-
-.project-dark .plate-frame {
-  border-color: var(--hairline-light);
-  background: #111;
-}
-
-.plate-frame img {
-  display: block;
-  width: 100%;
-  height: auto;
-  filter: grayscale(1) contrast(1.05) brightness(.97);
-  transform: translate3d(0, var(--artifact-shift, 0px), 0) scale(1.03);
-  transform-origin: center;
-  transition: filter .75s var(--page-ease);
-  will-change: transform, filter;
-}
-
-.project-dark .plate-frame img {
-  filter: grayscale(1) contrast(1.08) brightness(.86);
-}
-
-.project-artifact:hover .plate-frame img,
-.project-artifact:focus-within .plate-frame img {
-  filter: grayscale(0) contrast(1) brightness(1);
-}
-
-.project-artifact figcaption {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
-  margin-top: 12px;
-  color: var(--page-muted-dark);
-  font-size: 11px;
-  letter-spacing: .1em;
-  line-height: 1.5;
-}
-
-.project-dark .project-artifact figcaption {
-  color: #b2b1a8;
-}
-
-.caption-hint {
-  text-transform: uppercase;
-  letter-spacing: .15em;
-  opacity: .68;
+.works-hint {
+  opacity: .62;
   transition: opacity .3s ease;
 }
 
-.project-dark .caption-hint {
-  opacity: .82;
+.plate-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
 }
 
-.project-artifact:hover .caption-hint {
-  opacity: .28;
+.plate-stack {
+  position: relative;
+  width: min(100%, 82svh);
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border: 1px solid rgba(6, 6, 6, .14);
+  background: #eceae3;
 }
 
-/* Wide Cinema Plate (#project-nodeget) */
-.project-wide {
-  display: block;
-}
-
-.wide-project-heading {
-  display: grid;
-  grid-template-columns: minmax(220px, .75fr) minmax(300px, 1.2fr) auto;
-  gap: clamp(32px, 5vw, 88px);
-  align-items: end;
-  margin-bottom: clamp(26px, 3.8vh, 46px);
-}
-
-.wide-project-heading h2 {
-  margin: 0;
-}
-
-.wide-project-heading .project-description {
-  margin-top: 16px;
-}
-
-.wide-project-heading .project-links {
-  margin-top: 0;
-  justify-content: flex-end;
-}
-
-.project-artifact--wide .plate-frame img {
-  max-height: 50svh;
+.plate-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  object-position: top;
+  object-position: top center;
+  opacity: 0;
+  transform: scale(1.03);
+  filter: grayscale(1) contrast(1.06);
+  transition: opacity .7s var(--page-ease), transform 1.1s var(--page-ease), filter .7s ease;
 }
 
-/* Short desktop viewports (1440x780, 1280x720): tighten the wide plate a
-   little further so its caption keeps a >=16px gap above the fixed journey
-   marker. Heights above 840px (e.g. 1440x900) are untouched. */
-@media (min-width: 901px) and (max-height: 840px) {
-  .wide-project-heading {
-    margin-bottom: clamp(18px, 2.6vh, 28px);
-  }
+.plate-img.is-active {
+  opacity: 1;
+  transform: none;
+}
 
-  .project-artifact--wide .plate-frame img {
-    max-height: 44svh;
-  }
+.plate-stack:hover .plate-img.is-active {
+  filter: grayscale(0) contrast(1) brightness(1);
+}
+
+.plate-stack:hover ~ .plate-caption .works-hint,
+.gallery-stage:hover .works-hint {
+  opacity: .32;
 }
 
 /* =========================================================
-   05 / DIGITAL IMPRINTS — Dark Typographic Specimen (No Boxes)
+   ACT 2 / IMPRINTS — dark network index × white coordinate wall
    ========================================================= */
-.imprints {
-  position: relative;
-  min-height: 100svh;
-  display: flex;
-  align-items: center;
+.imprints-index {
+  justify-content: flex-start;
+  padding: clamp(104px, 13svh, 140px) clamp(36px, 4.6vw, 72px) clamp(84px, 10svh, 104px) clamp(48px, 6.4vw, 96px);
 }
 
-.imprints-grid {
-  display: grid;
-  grid-template-columns: minmax(260px, .78fr) minmax(0, 1.22fr);
-  gap: clamp(48px, 7.5vw, 136px);
-  align-items: start;
+.imprints-index .act-kicker {
+  color: rgba(244, 243, 238, .62);
 }
 
-.imprints-copy h2 {
-  max-width: 11em;
-  margin: 0;
-  font-family: var(--font-sans);
-  font-size: clamp(32px, 3.3vw, 48px);
+.imprint-asn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: clamp(26px, 4vh, 40px);
+  color: inherit;
+}
+
+.imprint-asn-name {
+  font-family: var(--font-serif);
+  font-size: clamp(64px, 7.2vw, 108px);
   font-weight: 400;
   letter-spacing: -.02em;
-  line-height: 1.24;
-  text-wrap: balance;
+  line-height: .88;
+  transition: opacity .3s ease;
 }
 
-.imprints-copy > p:last-child {
-  max-width: 28em;
-  margin: 26px 0 0;
-  color: var(--page-muted-light);
-  font-size: 15px;
-  line-height: 1.85;
-}
-
-.imprints-index {
-  display: flex;
-  flex-direction: column;
-}
-
-.asn-link {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 0 0 38px;
-  border-bottom: 1px solid var(--hairline-light);
-  color: var(--page-white);
-  transition: border-color .35s ease;
-}
-
-.asn-link:hover,
-.asn-link:focus-visible {
-  border-bottom-color: var(--hairline-light-strong);
-}
-
-.asn-label {
-  color: var(--page-muted-light);
-  font-size: 11px;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-}
-
-.asn-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.asn-link strong {
-  font-family: var(--font-serif);
-  font-size: clamp(54px, 6.2vw, 96px);
-  font-weight: 400;
-  letter-spacing: -.025em;
-  line-height: .94;
-}
-
-.asn-arrow {
-  font-size: 24px;
-  opacity: .5;
-  transition: transform .4s var(--page-ease), opacity .35s ease;
-}
-
-.asn-link:hover .asn-arrow,
-.asn-link:focus-visible .asn-arrow {
-  opacity: 1;
-  transform: translate(4px, -4px);
-}
-
-.imprints .domain-list {
-  position: relative;
-  inset: auto;
-  margin: 0;
-  transform: none;
-  display: flex;
-  flex-direction: column;
-}
-
-.domain-list a {
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) auto 24px;
-  gap: 18px;
-  align-items: baseline;
-  padding: 22px 0;
-  border-bottom: 1px solid var(--hairline-light);
-  background: transparent;
-  color: var(--page-white);
-  transition: padding-left .45s var(--page-ease), border-color .35s ease, opacity .35s ease;
-}
-
-.domain-list:hover a {
-  opacity: .38;
-}
-
-.domain-list a:hover,
-.domain-list a:focus-visible {
-  opacity: 1;
-  padding-left: 12px;
-  border-bottom-color: var(--hairline-light-strong);
-}
-
-.domain-num {
-  color: var(--page-muted-light);
+.imprint-asn-sub {
   font-size: 11px;
   letter-spacing: .16em;
+  text-transform: uppercase;
+  opacity: .55;
+  transition: opacity .3s ease;
+}
+
+.imprint-asn:hover .imprint-asn-name,
+.imprint-asn:focus-visible .imprint-asn-name {
+  opacity: .72;
+}
+
+.imprint-list {
+  margin-top: clamp(30px, 4.4vh, 48px);
+  border-top: 1px solid var(--hairline-light);
+}
+
+.imprint-row {
+  display: grid;
+  grid-template-columns: 2.4em minmax(0, 1fr) auto 1.4em;
+  gap: 14px;
+  align-items: baseline;
+  padding: clamp(14px, 2.2vh, 20px) 0;
+  border-bottom: 1px solid rgba(244, 243, 238, .13);
+  transition: padding-left .45s var(--page-ease), opacity .3s ease;
+}
+
+.imprint-list:hover .imprint-row {
+  opacity: .4;
+}
+
+.imprint-list:hover .imprint-row:hover,
+.imprint-row:focus-visible {
+  opacity: 1;
+  padding-left: 10px;
+}
+
+.imprint-num {
+  font-size: 11px;
+  letter-spacing: .16em;
+  opacity: .5;
   font-variant-numeric: tabular-nums;
 }
 
-.domain-list strong {
+.imprint-name {
   min-width: 0;
   overflow-wrap: anywhere;
   font-family: var(--font-serif);
-  font-size: clamp(24px, 2.2vw, 34px);
+  font-size: clamp(22px, 2.4vw, 34px);
   font-weight: 400;
   letter-spacing: -.01em;
   line-height: 1.1;
 }
 
-.domain-role {
-  color: var(--page-muted-light);
-  font-size: 12px;
-  letter-spacing: .1em;
+.imprint-role {
+  font-size: 11px;
+  letter-spacing: .12em;
+  opacity: .55;
 }
 
-.domain-arrow {
+.imprint-arrow {
   justify-self: end;
-  color: var(--page-white);
-  font-size: 16px;
-  opacity: .45;
+  font-size: 13px;
+  opacity: .5;
   transition: transform .35s var(--page-ease), opacity .3s ease;
 }
 
-.domain-list a:hover .domain-arrow,
-.domain-list a:focus-visible .domain-arrow {
+.imprint-row:hover .imprint-arrow,
+.imprint-row:focus-visible .imprint-arrow {
   opacity: 1;
   transform: translate(3px, -3px);
 }
 
-/* =========================================================
-   06 / ABOUT — Colophon Bookending the Hero
-   ========================================================= */
-.about-portfolio {
+/* right: breathing white wall with live coordinates */
+.imprint-wall {
   position: relative;
-  min-height: 100svh;
-  display: flex;
-  align-items: center;
-}
-
-.about-page {
-  padding-bottom: clamp(48px, 6vh, 72px);
-}
-
-.about-split {
-  display: grid;
-  grid-template-columns: minmax(280px, .92fr) minmax(0, 1.08fr);
-  gap: clamp(48px, 7.5vw, 128px);
-  align-items: center;
-}
-
-.about-copy {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.about-copy h2 {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-size: clamp(58px, 6.8vw, 108px);
-  font-weight: 400;
-  letter-spacing: -.025em;
-  line-height: .9;
-}
-
-.about-copy h2 em {
-  font-style: italic;
-}
-
-/* Fixed selector: reliably targets the bio paragraph */
-.about-copy > p:not(.section-kicker) {
-  max-width: 28em;
-  margin: 34px 0 0;
-  color: var(--page-muted-dark);
-  font-size: 15px;
-  line-height: 1.9;
-}
-
-.colophon-signature {
-  display: block;
-  width: min(210px, 58%);
-  height: auto;
-  margin: 34px 0 4px -4px;
-  overflow: visible;
-}
-
-.colophon-signature path {
-  fill: none;
-  stroke: var(--page-ink);
-  stroke-width: 2.1;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-  opacity: .78;
-}
-
-.about-portrait {
-  width: min(100%, 60svh);
-  justify-self: end;
-  margin: 0;
-  min-width: 0;
-}
-
-/* Height-linked width cap keeps the matte at a tall portrait ratio even in
-   short, wide viewports, so the shoulders always overflow the frame width
-   instead of letterboxing and exposing bottom-corner seams. */
-.about-matte {
-  position: relative;
-  aspect-ratio: 4 / 4.5;
-  max-height: 68svh;
-  width: 100%;
-  margin-left: auto;
   overflow: hidden;
-  background: var(--page-ink);
+  justify-content: flex-end;
+  padding: clamp(120px, 16svh, 180px) clamp(40px, 4.4vw, 72px) clamp(96px, 13svh, 150px);
+}
+
+.imprint-ghost {
+  position: absolute;
+  right: -.08em;
+  bottom: -.22em;
+  font-family: var(--font-serif);
+  font-size: clamp(240px, 27vw, 400px);
+  font-weight: 400;
+  letter-spacing: -.04em;
+  line-height: .8;
+  color: rgba(6, 6, 6, .05);
+  pointer-events: none;
+  user-select: none;
+  transition: opacity .4s ease;
+}
+
+.imprint-wall-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 26em;
+  transition: opacity .28s ease, transform .45s var(--page-ease);
+}
+
+.imprint-wall.is-swapping .imprint-wall-inner {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.imprint-wall.is-swapping .imprint-ghost {
+  opacity: .5;
+}
+
+.wall-kicker {
+  margin: 0 0 clamp(16px, 2.4vh, 26px);
+  font-size: 10px;
+  letter-spacing: .2em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: rgba(6, 6, 6, .5);
+}
+
+.wall-name {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-serif);
+  font-size: clamp(38px, 3.8vw, 58px);
+  font-weight: 400;
+  letter-spacing: -.02em;
+  line-height: 1.02;
+}
+
+.wall-role {
+  margin: clamp(10px, 1.6vh, 16px) 0 0;
+  font-size: 11px;
+  letter-spacing: .16em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: rgba(6, 6, 6, .55);
+}
+
+.wall-note {
+  margin: 8px 0 0;
+  font-size: 13px;
+  letter-spacing: .02em;
+  line-height: 1.6;
+  color: rgba(6, 6, 6, .58);
+}
+
+/* =========================================================
+   ACT 3 / ABOUT — mirrored closing portrait + colophon
+   ========================================================= */
+.about-visual {
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 8% 0 0;
+  background: transparent;
 }
 
-.about-matte img {
+.about-visual img {
   display: block;
-  width: 102%;
+  width: 120%;
   max-width: none;
   height: auto;
   max-height: 100%;
   object-fit: contain;
   object-position: center bottom;
   filter: grayscale(1) contrast(1.08);
-  transform: translate3d(0, var(--portrait-shift, 0px), 0) scale(1.02);
-  transform-origin: center bottom;
-  will-change: transform;
 }
 
-.about-portrait figcaption {
+.about-copy {
+  align-items: flex-start;
+  padding: clamp(104px, 13svh, 140px) clamp(48px, 6vw, 104px) clamp(26px, 4vh, 40px) clamp(56px, 7vw, 120px);
+}
+
+.about-title {
+  margin: clamp(26px, 4vh, 44px) 0 0;
+  font-family: var(--font-serif);
+  font-size: clamp(56px, 6.6vw, 104px);
+  font-weight: 400;
+  letter-spacing: -.025em;
+  line-height: .88;
+}
+
+.about-title em {
+  font-style: italic;
+}
+
+.about-bio {
+  max-width: 27em;
+  margin: clamp(26px, 3.6vh, 40px) 0 0;
+  color: rgba(6, 6, 6, .68);
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.about-signature {
+  display: block;
+  width: clamp(150px, 14vw, 196px);
+  height: auto;
+  margin: clamp(26px, 4vh, 44px) 0 0 -4px;
+  overflow: visible;
+}
+
+.about-signature path {
+  fill: none;
+  stroke: var(--page-ink);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  opacity: .84;
+}
+
+.about-links {
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 12px;
-  color: var(--page-muted-dark);
+  flex-wrap: wrap;
+  gap: 18px 34px;
+  margin-top: clamp(28px, 4vh, 44px);
+}
+
+.about-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 4px 0 7px;
+  border-bottom: 1px solid var(--hairline-dark-strong);
   font-size: 11px;
   letter-spacing: .14em;
   text-transform: uppercase;
+  transition: border-color .3s ease, gap .35s var(--page-ease);
 }
 
-.site-colophon {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  margin-top: clamp(56px, 8vh, 96px);
-  padding-top: 20px;
+.about-links a:hover,
+.about-links a:focus-visible {
+  gap: 13px;
+  border-bottom-color: currentColor;
+}
+
+.about-colophon {
+  width: 100%;
+  margin-top: auto;
+  padding-top: 18px;
   border-top: 1px solid var(--hairline-dark);
   color: var(--page-muted-dark);
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: .16em;
+  line-height: 1.4;
   text-transform: uppercase;
 }
 
+/* Short desktop viewports keep the imprints act inside exactly one screen. */
+@media (min-width: 901px) and (max-height: 740px) {
+  .imprints-index {
+    padding-top: clamp(88px, 12svh, 104px);
+    padding-bottom: 72px;
+  }
+
+  .imprint-asn {
+    margin-top: 22px;
+  }
+
+  .imprint-asn-name {
+    font-size: clamp(56px, 6.4vw, 92px);
+  }
+
+  .imprint-list {
+    margin-top: 24px;
+  }
+
+  .imprint-row {
+    padding-top: clamp(11px, 1.8vh, 16px);
+    padding-bottom: clamp(11px, 1.8vh, 16px);
+  }
+}
+
 /* =========================================================
-   RELIABLE REVEAL MOTION (Always completes to opacity: 1)
+   RELIABLE REVEAL MOTION (always completes to opacity: 1)
    ========================================================= */
 .js-ready .reveal {
   opacity: 0;
@@ -943,42 +836,9 @@ body {
 }
 
 /* =========================================================
-   RESPONSIVE — TABLET & MOBILE
+   RESPONSIVE — <=900px single-column gallery
    ========================================================= */
-@media (max-width: 1024px) and (min-width: 761px) {
-  :root {
-    --page-x: clamp(36px, 5.4vw, 60px);
-  }
-
-  .index-body,
-  .project-grid,
-  .imprints-grid,
-  .about-split {
-    gap: 48px;
-  }
-
-  .project-ledger a {
-    grid-template-columns: 30px minmax(130px, .9fr) minmax(150px, 1.1fr) 44px 20px;
-    gap: 14px;
-    padding: 24px 0;
-  }
-
-  .wide-project-heading {
-    grid-template-columns: .75fr 1.25fr;
-  }
-
-  .wide-project-heading .project-links {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-  }
-}
-
 @media (max-width: 900px) {
-  :root {
-    --page-x: 24px;
-    --page-y: 92px;
-  }
-
   .site-header {
     top: max(8px, env(safe-area-inset-top));
     right: 8px;
@@ -1014,207 +874,246 @@ body {
     display: none;
   }
 
-  .page-inner {
-    padding: var(--page-y) var(--page-x) 72px;
-  }
-
-  .chapter-rule {
-    margin-bottom: 42px;
-    padding-bottom: 14px;
-    font-size: 10px;
-    letter-spacing: .14em;
-  }
-
-  .portfolio-index,
-  .portfolio-project,
-  .imprints,
-  .about-portfolio {
+  .act {
+    display: block;
     min-height: 0;
   }
 
-  .index-body,
-  .project-grid,
-  .project-grid--reverse,
-  .imprints-grid,
-  .about-split {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 40px;
-  }
-
-  .project-grid--reverse .project-copy {
-    order: -1;
-  }
-
-  .index-heading h2,
-  .imprints-copy h2 {
-    font-size: clamp(28px, 7.6vw, 38px);
-    line-height: 1.24;
-  }
-
-  /* Mobile keeps the Works heading on one line; the 9.5em cap is a
-     desktop widow fix and would otherwise force an early break here. */
-  .index-heading h2 {
-    max-width: none;
-  }
-
-  .project-ledger {
-    margin-top: 8px;
-  }
-
-  .project-ledger a {
-    grid-template-columns: 28px minmax(0, 1fr) 22px;
-    grid-template-areas:
-      "num main arrow"
-      ". desc .";
-    gap: 8px 14px;
-    padding: 22px 0;
-  }
-
-  .project-ledger:hover a,
-  .domain-list:hover a {
-    opacity: 1;
-  }
-
-  .project-ledger a:hover,
-  .domain-list a:hover {
-    padding-left: 0;
-  }
-
-  .ledger-num {
-    grid-area: num;
-    padding-top: 6px;
-  }
-
-  .ledger-main {
-    grid-area: main;
-  }
-
-  .ledger-desc {
-    grid-area: desc;
-    font-size: 13.5px;
-  }
-
-  .ledger-year {
-    display: none;
-  }
-
-  .ledger-arrow {
-    grid-area: arrow;
-    align-self: start;
-    padding-top: 4px;
-  }
-
-  .project-copy h2,
-  .wide-project-heading h2 {
-    font-size: clamp(38px, 11vw, 54px);
-    margin-bottom: 16px;
-  }
-
-  .project-lead {
-    font-size: 19px;
-  }
-
-  .project-facts {
-    grid-template-columns: 1fr;
-    gap: 16px;
-    margin-top: 26px;
-  }
-
-  .wide-project-heading {
+  .act-grid {
     display: block;
-    margin-bottom: 32px;
+    margin: 0;
   }
 
-  .wide-project-heading .project-links {
-    margin-top: 24px;
-    justify-content: flex-start;
+  /* ---- works: black index + paper plate wall ---- */
+  .act-works {
+    background: #060606;
+    color: var(--page-paper);
   }
 
-  .project-artifact--wide .plate-frame img {
-    max-height: none;
+  .works-index {
+    padding: 100px 24px 34px;
   }
 
-  /* On touch/mobile, keep a restrained low-glare editorial color tone */
-  .plate-frame img {
-    filter: grayscale(.22) contrast(1.03) brightness(.98);
+  .work-list {
+    display: flex;
+    gap: 10px;
+    margin-top: 34px;
   }
 
-  .project-dark .plate-frame img {
-    filter: grayscale(.25) contrast(1.04) brightness(.92);
+  .work-item {
+    flex: 1 1 0;
+    min-width: 0;
+    display: block;
+    opacity: 1;
+    border-bottom: 0;
   }
 
-  .caption-hint {
+  .work-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    width: 100%;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(244, 243, 238, .16);
+    transform: none;
+  }
+
+  .work-item.is-active .work-row {
+    border-bottom-color: var(--page-paper);
+  }
+
+  .work-item:not(.is-active) .work-row {
+    opacity: .5;
+  }
+
+  .work-row:hover,
+  .work-row:focus-visible {
+    transform: none;
+  }
+
+  .work-num {
+    padding-top: 0;
+    font-size: 9.5px;
+    letter-spacing: .08em;
+  }
+
+  .work-main {
+    display: block;
+    min-width: 0;
+  }
+
+  .work-name {
+    font-size: 13.5px;
+    line-height: 1.25;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+
+  .work-kind {
     display: none;
   }
 
-  .asn-link {
-    padding-bottom: 28px;
+  .work-active-panel {
+    min-height: 0;
+    margin-top: 22px;
   }
 
-  .asn-link strong {
-    font-size: clamp(44px, 13vw, 66px);
+  .work-desc {
+    max-width: 30em;
+    margin-bottom: 16px;
+    font-size: 13.5px;
+    color: rgba(244, 243, 238, .62);
   }
 
-  .domain-list a {
-    grid-template-columns: 28px minmax(0, 1fr) auto 18px;
-    gap: 12px;
-    padding: 18px 0;
+  .work-links a {
+    border-bottom-color: rgba(244, 243, 238, .4);
   }
 
-  .domain-list strong {
-    font-size: clamp(20px, 5.8vw, 26px);
+  .gallery-stage {
+    display: block;
+    padding: 34px 24px 96px;
+    background: var(--page-paper);
+    color: var(--page-ink);
   }
 
-  .about-copy h2 {
-    font-size: clamp(50px, 14vw, 74px);
+  .works-meta,
+  .plate-caption {
+    color: rgba(6, 6, 6, .55);
   }
 
-  .about-copy > p:not(.section-kicker) {
+  .works-meta {
+    padding-top: 12px;
+    border-top-color: var(--hairline-dark);
+  }
+
+  .plate-slot {
+    display: block;
+    margin-top: 22px;
+  }
+
+  .plate-stack {
+    width: 100%;
+    max-width: none;
+    aspect-ratio: 3 / 2;
+    background: var(--page-paper);
+  }
+
+  .plate-img {
+    object-fit: cover;
+    object-position: top center;
+    filter: grayscale(.22) contrast(1.03) brightness(.96);
+  }
+
+  .plate-stack:hover .plate-img.is-active {
+    filter: grayscale(.22) contrast(1.03) brightness(.96);
+  }
+
+  .plate-caption {
+    margin-top: 18px;
+    border-top-color: var(--hairline-dark);
+  }
+
+  .works-hint {
+    display: none;
+  }
+
+  /* ---- imprints: one black column ---- */
+  .act-imprints {
+    background: #060606;
+    color: var(--page-paper);
+  }
+
+  .imprints-index {
+    padding: 100px 24px 96px;
+  }
+
+  .imprint-asn {
+    margin-top: 30px;
+  }
+
+  .imprint-asn-name {
+    font-size: clamp(56px, 15vw, 72px);
+  }
+
+  .imprint-list {
+    margin-top: 34px;
+  }
+
+  .imprint-row {
+    grid-template-columns: 2em minmax(0, 1fr) auto 1em;
+    gap: 10px;
+    padding: 16px 0;
+  }
+
+  .imprint-name {
+    font-size: clamp(18px, 5.4vw, 24px);
+  }
+
+  .imprint-wall {
+    display: none;
+  }
+
+  /* ---- about: paper copy + full-bleed portrait frame ---- */
+  .act-about {
+    background: var(--page-paper);
+    color: var(--page-ink);
+  }
+
+  .act-about .act-grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .about-copy {
+    order: 1;
+    width: 100%;
+    padding: 100px 24px 0;
+  }
+
+  .about-title {
+    margin-top: 26px;
+    font-size: clamp(48px, 14vw, 68px);
+  }
+
+  .about-bio {
     margin-top: 24px;
+    font-size: 14.5px;
   }
 
-  .colophon-signature {
-    width: 170px;
-    margin: 26px 0 4px -4px;
+  .about-signature {
+    width: 150px;
+    margin-top: 30px;
   }
 
-  .about-matte {
+  .about-links {
+    margin-top: 30px;
+    gap: 18px 26px;
+  }
+
+  .about-colophon {
+    margin-top: 44px;
+    padding-bottom: 0;
+  }
+
+  .about-visual {
+    order: 2;
+    width: 100%;
+    margin-top: 52px;
     aspect-ratio: 4 / 4.2;
     max-height: 62svh;
+    padding: 8% 0 0;
+    background: #060606;
   }
 
-  .about-portrait {
-    width: 100%;
-    justify-self: stretch;
-  }
-
-  .site-colophon {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    margin-top: 52px;
-    font-size: 10px;
+  .about-visual img {
+    width: 102%;
+    transform: scale(1.02);
+    transform-origin: center bottom;
   }
 }
 
-@media (hover: none), (pointer: coarse) {
-  .plate-frame img {
-    filter: grayscale(.22) contrast(1.03) brightness(.98);
-  }
-
-  .project-dark .plate-frame img {
-    filter: grayscale(.25) contrast(1.04) brightness(.92);
-  }
-
-  .caption-hint {
-    display: none;
-  }
-}
-
-/* Mobile hero corner controls. mobile-hero.css is loaded before this sheet,
-   so its <=760px positioning loses the cascade to the un-scoped #home rules
-   above; re-assert the small-screen values here. */
+/* Mobile hero corner controls: mobile-hero.css loads first, so re-assert the
+   small-screen positioning here to win the cascade. */
 @media (max-width: 760px) {
   #home .home-scroll {
     left: auto;
@@ -1231,6 +1130,20 @@ body {
   }
 }
 
+@media (hover: none), (pointer: coarse) {
+  .plate-img {
+    filter: grayscale(.22) contrast(1.03) brightness(.96);
+  }
+
+  .plate-stack:hover .plate-img.is-active {
+    filter: grayscale(.22) contrast(1.03) brightness(.96);
+  }
+
+  .works-hint {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -1243,10 +1156,15 @@ body {
     transition: none;
   }
 
-  .plate-frame img,
-  .about-matte img,
+  .plate-img,
+  .about-visual img,
   #home .hero-canvas {
     transform: none;
+    transition: none;
+  }
+
+  .work-row,
+  .imprint-row {
     transition: none;
   }
 }
