@@ -89,8 +89,8 @@
     background:linear-gradient(to bottom,transparent 0,rgba(0,0,0,.22) 32%,rgba(0,0,0,.82) 70%,#000 100%);
   }
   #home .eyebrow{
-    margin:0 0 8px;
-    font-size:clamp(6.8px,1.9vw,7.5px);
+    margin:0 0 10px;
+    font-size:10px;
     letter-spacing:.18em;
     color:#aaa9a2;
   }
@@ -100,34 +100,34 @@
     margin-left:-5px;
   }
   #home .name{
-    margin-top:7px;
-    font-size:clamp(7.7px,2.2vw,8.5px);
-    letter-spacing:.21em;
+    margin-top:9px;
+    font-size:10.5px;
+    letter-spacing:.22em;
   }
-  #home .signature-controls{gap:13px;margin-top:6px}
+  #home .signature-controls{gap:13px;margin-top:8px}
   #home .control-line{width:25px}
   #home .replay{
     gap:7px;
     padding:6px 0;
-    font-size:clamp(6.6px,1.9vw,7.4px);
-    letter-spacing:.11em;
+    font-size:9.5px;
+    letter-spacing:.12em;
   }
-  #home .replay svg{width:11px;height:11px}
+  #home .replay svg{width:12px;height:12px}
 
   #home .home-scroll{
     right:var(--mobile-gutter);
     bottom:var(--mobile-bottom);
     gap:7px;
-    color:#8e8e88;
-    font-size:6.4px;
-    letter-spacing:.15em;
+    color:#9a9992;
+    font-size:9.5px;
+    letter-spacing:.14em;
   }
   #home .home-scroll .down{font-size:14px}
   .journey{
     left:var(--mobile-gutter);
     bottom:var(--mobile-bottom);
     gap:7px;
-    font-size:6.4px;
+    font-size:9.5px;
     letter-spacing:.11em;
   }
   .journey-line{width:27px}

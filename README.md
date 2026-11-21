@@ -21,15 +21,20 @@
 
 ## 文件
 
-- index.html：完整页面与内容。
-- scroll.css：桌面、手机布局及视觉效果。
-- scenes.css：四个章节各自的构图和动画样式。
-- cinema.css：v8 的字号、叠印、画面尺度、转场与响应式调整。
-- scroll.js：滚动动效、章节进度、入场与签名动画。
-- portrait-retouched-v4.png：保留用户喜欢的美化人像，并对鼻尖补光。
-- assets/：真实项目界面截图。
+- index.html：完整页面与内容，所有章节与页脚都在这一文件中。
+- scroll.css：全局底座（字体、首屏 65% 分割与人像合成、影院外框、章节基础布局）。
+- portrait-fx.css：首屏人像 WebGL 墨迹样式，并引入 mobile-hero.css。
+- mobile-hero.css：移动端首屏排版、角标与安全区适配（由 portrait-fx.css 引入）。
+- aesthetic-pass.css：当前版本的画册式排版、章节、图版、图注、响应式与固定元素定位。
+- site.js：滚动、章节揭示、签名动画、视差与导航状态。
+- portrait-fx.js：首屏人像墨迹 WebGL 交互。
+- hero-ink-fx.js：首屏墨迹拖尾 WebGL 交互。
+- vendor/lenis.min.js：平滑滚动库（许可证见 vendor/LENIS_LICENSE.txt）。
+- portrait-cutout-clean.png：当前使用的人像抠图。
+- assets/：真实项目界面截图（blog.jpg、sla.jpg、nodeget.jpg）。
 - SOURCES.md：内容与截图来源。
-- original/：用户最初提供的网页与美化人像备份。
+
+当前 index.html 实际加载链：scroll.css → portrait-fx.css（@import mobile-hero.css）→ aesthetic-pass.css → vendor/lenis.min.js → site.js → portrait-fx.js → hero-ink-fx.js。
 
 签名使用原版速度：长度乘 2.65，长笔画 240–1150 毫秒，点笔画 90 毫秒，笔间停顿 40 / 68 毫秒。
 

@@ -4,10 +4,9 @@
   const paths = [...document.querySelectorAll('#home .sig')];
   const replay = document.getElementById('replay');
   const reveals = [...document.querySelectorAll('.reveal')];
-  const artifactImages = [...document.querySelectorAll('.project-artifact img')];
-  const portraitImages = [...document.querySelectorAll('.about-portrait img')];
+  const artifactImages = [...document.querySelectorAll('.plate-frame img')];
+  const portraitImages = [...document.querySelectorAll('.about-matte img')];
   const chapters = [...document.querySelectorAll('main > .chapter[data-nav]')];
-  const home = document.getElementById('home');
   const navLinks = [...document.querySelectorAll('.site-nav a')];
   const anchorLinks = [...document.querySelectorAll('a[href^="#"]')];
   const journey = document.querySelector('.journey');
@@ -22,11 +21,11 @@
   const easeOutCubic = (value) => 1 - Math.pow(1 - clamp(value), 3);
   const easeOutQuint = (value) => 1 - Math.pow(1 - clamp(value), 5);
   const lenis = window.Lenis && !motion.matches ? new window.Lenis({
-    duration: 1.12,
+    duration: 1.05,
     easing: easeOutQuint,
     smoothWheel: true,
     syncTouch: false,
-    wheelMultiplier: .88,
+    wheelMultiplier: .9,
     touchMultiplier: 1,
     autoRaf: false
   }) : null;
@@ -59,37 +58,64 @@
     });
   }
 
-  function setRevealProgress() {
-    const height = innerHeight;
-    const start = height * .64;
-    const distance = height * .42;
-
-    reveals.forEach((element) => {
-      const rect = element.getBoundingClientRect();
-      const progress = easeOutCubic((start - rect.top) / distance);
-      element.style.setProperty('--reveal', progress.toFixed(4));
+  /* Reliable one-way editorial reveal — never traps bottom elements at partial opacity */
+  function revealVisibleElements() {
+    if (motion.matches) {
+      reveals.forEach((el) => el.classList.add('is-visible'));
+      return;
+    }
+    const nearBottom = scrollY + innerHeight >= document.documentElement.scrollHeight - 40;
+    reveals.forEach((el) => {
+      if (el.classList.contains('is-visible')) return;
+      const rect = el.getBoundingClientRect();
+      if (nearBottom || rect.top < innerHeight * .92) {
+        el.classList.add('is-visible');
+      }
     });
+  }
+
+  if ('IntersectionObserver' in window && !motion.matches) {
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, {
+      rootMargin: '0px 0px -6% 0px',
+      threshold: 0.05
+    });
+    reveals.forEach((el) => revealObserver.observe(el));
+  } else {
+    reveals.forEach((el) => el.classList.add('is-visible'));
+  }
+
+  function updateParallax() {
+    if (motion.matches) {
+      artifactImages.forEach((image) => image.style.setProperty('--artifact-shift', '0px'));
+      portraitImages.forEach((image) => image.style.setProperty('--portrait-shift', '0px'));
+      return;
+    }
 
     artifactImages.forEach((image) => {
       const rect = image.getBoundingClientRect();
+      if (rect.bottom < 0 || rect.top > innerHeight) return;
       const center = (rect.top + rect.height * .5 - innerHeight * .5) / innerHeight;
-      image.style.setProperty('--artifact-shift', `${(-center * 12).toFixed(2)}px`);
+      image.style.setProperty('--artifact-shift', `${clamp(-center * 10, -10, 10).toFixed(2)}px`);
     });
 
     portraitImages.forEach((image) => {
       const rect = image.getBoundingClientRect();
+      if (rect.bottom < 0 || rect.top > innerHeight) return;
       const center = (rect.top + rect.height * .5 - innerHeight * .5) / innerHeight;
-      image.style.setProperty('--portrait-shift', `${(-center * 18).toFixed(2)}px`);
+      image.style.setProperty('--portrait-shift', `${clamp(-center * 14, -14, 14).toFixed(2)}px`);
     });
-
-    if (home) {
-      home.style.setProperty('--hero-exit', clamp(scrollY / Math.max(1, innerHeight * .28)).toFixed(4));
-    }
   }
 
   function update() {
     scheduled = false;
-    const marker = innerHeight * .38;
+    const marker = innerHeight * .36;
     let current = chapters[0];
 
     chapters.forEach((chapter) => {
@@ -108,12 +134,13 @@
     if (journeyLabel) journeyLabel.textContent = current?.dataset.label || 'Introduction';
     if (journeyProgress) {
       const progress = scrollY / Math.max(1, document.documentElement.scrollHeight - innerHeight);
-      journeyProgress.style.transform = `scaleX(${progress.toFixed(4)})`;
+      journeyProgress.style.transform = `scaleX(${clamp(progress).toFixed(4)})`;
     }
 
     document.body.dataset.headerTone = current?.dataset.tone || 'dark';
     if (journey) journey.dataset.atHome = index === 0 ? 'true' : 'false';
-    setRevealProgress();
+    revealVisibleElements();
+    updateParallax();
   }
 
   function schedule() {
@@ -181,7 +208,8 @@
   motion.addEventListener('change', () => {
     if (motion.matches) lenis?.stop();
     else lenis?.start();
-    setRevealProgress();
+    revealVisibleElements();
+    updateParallax();
     playSignature();
     schedule();
   });
