@@ -12,6 +12,8 @@
   --hairline-light-strong: rgba(244, 243, 238, .46);
   --page-ease: cubic-bezier(.19, 1, .22, 1);
   --scene-split: 65%;
+  --scroll-skew: 0deg;
+  --scroll-lag: 0px;
 }
 
 html {
@@ -276,7 +278,7 @@ body {
 }
 
 .act-imprints .act-grid {
-  grid-template-columns: 58% 42%;
+  grid-template-columns: 52% 48%;
 }
 
 .act-about .act-grid {
@@ -438,7 +440,7 @@ body {
   font-size: 10px;
   letter-spacing: .14em;
   text-transform: uppercase;
-  transition: border-color .3s ease, gap .35s var(--page-ease);
+  transition: border-color .3s ease, gap .35s var(--page-ease), transform .35s var(--page-ease);
 }
 
 .work-links a:hover,
@@ -500,10 +502,66 @@ body {
   overflow: hidden;
   border: 1px solid rgba(6, 6, 6, .14);
   background: #eceae3;
-  transform-origin: center top;
+  transform-origin: center center;
   clip-path: inset(0 0 0 0);
-  transition: clip-path 1.15s var(--page-ease), transform 1.15s var(--page-ease);
-  transition-delay: .18s;
+  transform: perspective(1100px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) scale(var(--stack-scale, 1));
+  transition: clip-path .5s var(--page-ease), transform .18s ease-out;
+  will-change: transform, clip-path;
+}
+
+/* Five staggered darkroom blades sweep the new plate clean. */
+.plate-shutter {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.plate-shutter i {
+  flex: 1 1 20%;
+  background: #060606;
+  transform: scaleY(0);
+  transform-origin: top center;
+}
+
+.plate-shutter i:first-child {
+  border-left: 0;
+}
+
+.plate-shutter.is-wiping i {
+  animation: shutter-blade .64s var(--page-ease) both;
+}
+
+.plate-shutter.is-wiping i:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.plate-shutter.is-wiping i:nth-child(2) {
+  animation-delay: 35ms;
+}
+
+.plate-shutter.is-wiping i:nth-child(3) {
+  animation-delay: 70ms;
+}
+
+.plate-shutter.is-wiping i:nth-child(4) {
+  animation-delay: 105ms;
+}
+
+.plate-shutter.is-wiping i:nth-child(5) {
+  animation-delay: 140ms;
+}
+
+@keyframes shutter-blade {
+  0% {
+    transform: scaleY(1);
+  }
+
+  100% {
+    transform: scaleY(0);
+  }
 }
 
 /* Darkroom shutter: the incoming plate develops upward over the previous one. */
@@ -569,8 +627,8 @@ body {
    ACT 2 / IMPRINTS — dark network index × white coordinate wall
    ========================================================= */
 .imprints-index {
-  justify-content: flex-start;
-  padding: clamp(104px, 13svh, 140px) clamp(36px, 4.6vw, 72px) clamp(84px, 10svh, 104px) clamp(48px, 6.4vw, 96px);
+  justify-content: center;
+  padding: clamp(112px, 14svh, 148px) clamp(64px, 6.8vw, 108px) clamp(88px, 10svh, 112px) clamp(52px, 6.4vw, 96px);
 }
 
 .imprints-index .act-kicker {
@@ -675,12 +733,31 @@ body {
   opacity: 1;
 }
 
-/* right: breathing white wall with live coordinates */
+/* right: white wall with the live AS218834 astrolabe */
 .imprint-wall {
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   justify-content: flex-end;
-  padding: clamp(120px, 16svh, 180px) clamp(40px, 4.4vw, 72px) clamp(96px, 13svh, 150px);
+  padding: clamp(56px, 7svh, 76px) clamp(40px, 4.4vw, 72px) clamp(36px, 4.6svh, 52px);
+}
+
+.imprint-orbit {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  top: clamp(112px, 13svh, 136px);
+  bottom: clamp(158px, 19svh, 184px);
+  pointer-events: none;
+}
+
+.imprint-astrolabe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .imprint-ghost {
@@ -693,6 +770,7 @@ body {
   letter-spacing: -.04em;
   line-height: .8;
   color: rgba(6, 6, 6, .05);
+  z-index: 0;
   pointer-events: none;
   user-select: none;
   will-change: opacity, scale;
@@ -701,8 +779,11 @@ body {
 
 .imprint-wall-inner {
   position: relative;
-  z-index: 1;
-  max-width: 26em;
+  z-index: 2;
+  width: 100%;
+  margin-top: auto;
+  padding-top: clamp(12px, 1.8svh, 18px);
+  border-top: 1px solid var(--hairline-dark);
   clip-path: inset(0 0 0 0);
   transition: opacity .28s ease, transform .45s var(--page-ease), clip-path .4s var(--page-ease);
 }
@@ -720,39 +801,58 @@ body {
 }
 
 .wall-kicker {
-  margin: 0 0 clamp(16px, 2.4vh, 26px);
-  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 clamp(10px, 1.6svh, 16px);
+  font-size: 9.5px;
   letter-spacing: .2em;
   line-height: 1.4;
   text-transform: uppercase;
   color: rgba(6, 6, 6, .5);
 }
 
+.wall-pulse {
+  width: 4px;
+  height: 4px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .6;
+  animation: wall-pulse 2.8s var(--page-ease) infinite;
+}
+
+@keyframes wall-pulse {
+  0%,
+  100% {
+    opacity: .28;
+    transform: scale(.8);
+  }
+
+  50% {
+    opacity: .85;
+    transform: scale(1);
+  }
+}
+
 .wall-name {
   margin: 0;
   overflow-wrap: anywhere;
   font-family: var(--font-serif);
-  font-size: clamp(38px, 3.8vw, 58px);
+  font-variant-numeric: lining-nums;
+  font-size: clamp(32px, 3.2vw, 48px);
   font-weight: 400;
   letter-spacing: -.02em;
-  line-height: 1.02;
-}
-
-.wall-role {
-  margin: clamp(10px, 1.6vh, 16px) 0 0;
-  font-size: 11px;
-  letter-spacing: .16em;
-  line-height: 1.4;
-  text-transform: uppercase;
-  color: rgba(6, 6, 6, .55);
+  line-height: 1.05;
 }
 
 .wall-note {
-  margin: 8px 0 0;
-  font-size: 13px;
-  letter-spacing: .02em;
-  line-height: 1.6;
-  color: rgba(6, 6, 6, .58);
+  margin: clamp(7px, 1.1svh, 11px) 0 0;
+  font-size: 9.5px;
+  letter-spacing: .14em;
+  line-height: 1.7;
+  text-transform: uppercase;
+  color: rgba(6, 6, 6, .55);
 }
 
 /* =========================================================
@@ -845,7 +945,7 @@ body {
   font-size: 11px;
   letter-spacing: .14em;
   text-transform: uppercase;
-  transition: border-color .3s ease, gap .35s var(--page-ease);
+  transition: border-color .3s ease, gap .35s var(--page-ease), transform .35s var(--page-ease);
 }
 
 .about-links a:hover,
@@ -1001,7 +1101,23 @@ body {
 /* plate develops like a darkroom print on first entry */
 .js-ready .act-works:not(.is-inview) .plate-stack {
   clip-path: inset(0 0 100% 0);
-  transform: scale(1.06);
+  transform: perspective(1100px) scale(1.06);
+}
+
+.act-works.is-inview .plate-stack {
+  animation: plate-unveil 1.15s var(--page-ease);
+}
+
+@keyframes plate-unveil {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: perspective(1100px) scale(1.06);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    transform: perspective(1100px) rotateX(0deg) rotateY(0deg) scale(1);
+  }
 }
 
 /* supporting copy settles in after the rules and masks */
@@ -1108,6 +1224,21 @@ body {
 }
 
 /* =========================================================
+   SCROLL INERTIA & MAGNETIC LINKS
+   ========================================================= */
+#works .plate-slot,
+#imprints .imprint-list,
+#about .about-copy {
+  transform: translate3d(0, var(--scroll-lag, 0px), 0) skewY(var(--scroll-skew, 0deg));
+  will-change: transform;
+}
+
+.work-links a,
+.about-links a {
+  transform: translate3d(var(--mag-x, 0px), var(--mag-y, 0px), 0);
+}
+
+/* =========================================================
    GALLERY CURSOR — desktop precision-pointer companion
    ========================================================= */
 .gallery-cursor {
@@ -1160,6 +1291,7 @@ body {
     justify-content: center;
     font-size: 8.5px;
     letter-spacing: .2em;
+    text-indent: .2em;
     text-transform: uppercase;
     color: #f4f3ee;
     opacity: 0;
@@ -1433,6 +1565,41 @@ body {
   }
 
   .imprint-wall {
+    display: flex;
+    height: 260px;
+    min-height: 260px;
+    padding: 0 24px 18px;
+    background: var(--page-paper);
+    color: var(--page-ink);
+  }
+
+  .imprint-orbit {
+    top: 0;
+    bottom: 96px;
+  }
+
+  .imprint-wall-inner {
+    padding-top: 10px;
+  }
+
+  .imprint-wall .wall-kicker {
+    margin-bottom: 7px;
+    font-size: 8px;
+    letter-spacing: .16em;
+  }
+
+  .imprint-wall .wall-name {
+    font-size: clamp(24px, 7.4vw, 30px);
+  }
+
+  .imprint-wall .wall-note {
+    margin-top: 5px;
+    font-size: 7.5px;
+    letter-spacing: .1em;
+    line-height: 1.5;
+  }
+
+  .imprint-wall .imprint-ghost {
     display: none;
   }
 
@@ -1603,9 +1770,28 @@ body {
     transition: none;
   }
 
-  .js-ready .act-works:not(.is-inview) .plate-stack {
+  .js-ready .act-works:not(.is-inview) .plate-stack,
+  .act-works.is-inview .plate-stack {
     clip-path: none;
     transform: none;
+    animation: none;
+  }
+
+  .plate-shutter {
+    display: none;
+  }
+
+  #works .plate-slot,
+  #imprints .imprint-list,
+  #about .about-copy,
+  .work-links a,
+  .about-links a {
+    transform: none;
+  }
+
+  .wall-pulse {
+    animation: none;
+    opacity: .6;
   }
 
   .imprint-wall.is-swapping .imprint-wall-inner {

@@ -24,6 +24,7 @@
   const galleryCursor = document.querySelector('.gallery-cursor');
   let heroAnimations = [];
   let aboutAnimations = [];
+  let astrolabe = null;
   let scheduled = false;
   let scrollAnimation = 0;
   let currentNav = '';
@@ -155,7 +156,8 @@
       const b = splitStops[i + 1];
       if (y >= a.top && y <= b.top) {
         const span = Math.max(1, b.top - a.top);
-        const t = (y - a.top) / span;
+        const raw = (y - a.top) / span;
+        const t = raw * raw * raw * (raw * (raw * 6 - 15) + 10);
         return a.split + (b.split - a.split) * t;
       }
     }
@@ -218,12 +220,23 @@
     const descEl = document.getElementById('work-desc');
     const visitEl = document.getElementById('work-visit');
     const sourceEl = document.getElementById('work-source');
+    const shutter = works.querySelector('.plate-shutter');
     if (!items.length) return;
 
     let currentKey = '';
     let panelTimer = 0;
     let prevPlate = null;
     let prevTimer = 0;
+    let shutterTimer = 0;
+
+    const triggerShutter = () => {
+      if (!shutter || motion.matches) return;
+      shutter.classList.remove('is-wiping');
+      void shutter.offsetWidth;
+      shutter.classList.add('is-wiping');
+      clearTimeout(shutterTimer);
+      shutterTimer = window.setTimeout(() => shutter.classList.remove('is-wiping'), 820);
+    };
 
     const applyPanel = (item) => {
       if (descEl) descEl.textContent = item.dataset.desc || '';
@@ -272,6 +285,7 @@
 
       if (fig) fig.textContent = activeItem.dataset.fig || '';
       if (caption) caption.textContent = activeItem.dataset.caption || '';
+      if (animate) triggerShutter();
       if (!animate || motion.matches || !panel) {
         applyPanel(activeItem);
         return;
@@ -337,17 +351,42 @@
         const rect = plateStack.getBoundingClientRect();
         const nx = clamp(((event.clientX - rect.left) / rect.width - .5) * 2, -1, 1);
         const ny = clamp(((event.clientY - rect.top) / rect.height - .5) * 2, -1, 1);
-        targetX = nx * 8;
-        targetY = ny * 8;
+        targetX = -nx * 8;
+        targetY = -ny * 8;
+        plateStack.style.setProperty('--tilt-x', (-ny * 2.8).toFixed(3) + 'deg');
+        plateStack.style.setProperty('--tilt-y', (nx * 3.2).toFixed(3) + 'deg');
         startPlate();
       });
 
       plateStack.addEventListener('pointerleave', () => {
         targetX = 0;
         targetY = 0;
+        plateStack.style.setProperty('--tilt-x', '0deg');
+        plateStack.style.setProperty('--tilt-y', '0deg');
         startPlate();
       });
     }
+  }
+
+  /* ---------------------------------------------------------
+     Magnetic editorial links — fine pointers only, ±6px
+     --------------------------------------------------------- */
+  function setupMagneticLinks() {
+    const links = [...document.querySelectorAll('.work-links a, .about-links a')];
+    links.forEach((link) => {
+      link.addEventListener('pointermove', (event) => {
+        if (!finePointer.matches || motion.matches) return;
+        const rect = link.getBoundingClientRect();
+        const nx = clamp((event.clientX - (rect.left + rect.width / 2)) / Math.max(1, rect.width / 2), -1, 1);
+        const ny = clamp((event.clientY - (rect.top + rect.height / 2)) / Math.max(1, rect.height / 2), -1, 1);
+        link.style.setProperty('--mag-x', (nx * 6).toFixed(2) + 'px');
+        link.style.setProperty('--mag-y', (ny * 6).toFixed(2) + 'px');
+      });
+      link.addEventListener('pointerleave', () => {
+        link.style.setProperty('--mag-x', '0px');
+        link.style.setProperty('--mag-y', '0px');
+      });
+    });
   }
 
   /* ---------------------------------------------------------
@@ -361,23 +400,23 @@
     const wall = document.getElementById('imprint-wall');
     const ghost = document.getElementById('imprint-ghost');
     const nameEl = document.getElementById('imprint-wall-name');
-    const roleEl = document.getElementById('imprint-wall-role');
     const noteEl = document.getElementById('imprint-wall-note');
     if (!entries.length || !wall || !nameEl) return;
 
     let currentEntry = entries[0];
     let swapTimer = 0;
 
-    const applyEntry = (entry) => {
+    const applyEntry = (entry, decode = false) => {
       if (ghost) ghost.textContent = entry.dataset.wallNum || '';
-      nameEl.textContent = entry.dataset.wallName || '';
-      if (roleEl) roleEl.textContent = entry.dataset.wallRole || '';
       if (noteEl) noteEl.textContent = entry.dataset.wallNote || '';
+      if (decode) scrambleText(nameEl, entry.dataset.wallName || '');
+      else nameEl.textContent = entry.dataset.wallName || '';
     };
 
     const showEntry = (entry) => {
       if (!entry || entry === currentEntry) return;
       currentEntry = entry;
+      astrolabe?.setEntry(entry);
       if (motion.matches) {
         applyEntry(entry);
         return;
@@ -385,7 +424,7 @@
       clearTimeout(swapTimer);
       wall.classList.add('is-swapping');
       swapTimer = window.setTimeout(() => {
-        applyEntry(entry);
+        applyEntry(entry, true);
         wall.classList.remove('is-swapping');
       }, 180);
     };
@@ -396,6 +435,448 @@
     });
 
     applyEntry(currentEntry);
+    astrolabe?.setEntry(currentEntry);
+  }
+
+
+  /* ---------------------------------------------------------
+     Telemetry nameplate decode + 3D astrolabe (Canvas 2D)
+     --------------------------------------------------------- */
+  function scrambleText(element, text) {
+    if (!element) return;
+    if (element._scrambleFrame) cancelAnimationFrame(element._scrambleFrame);
+    if (motion.matches) {
+      element.textContent = text;
+      element._scrambleFrame = 0;
+      return;
+    }
+    const glyphs = '0123456789ABCDEF/.—';
+    const duration = 420;
+    const start = performance.now();
+    const total = text.length;
+    const step = (now) => {
+      const elapsed = now - start;
+      let shown = '';
+      for (let i = 0; i < total; i += 1) {
+        const settle = (i / Math.max(1, total)) * duration * .7;
+        shown += elapsed >= settle ? text[i] : glyphs[(Math.random() * glyphs.length) | 0];
+      }
+      element.textContent = shown;
+      if (elapsed < duration) element._scrambleFrame = requestAnimationFrame(step);
+      else {
+        element.textContent = text;
+        element._scrambleFrame = 0;
+      }
+    };
+    element._scrambleFrame = requestAnimationFrame(step);
+  }
+
+  function setupAstrolabe() {
+    const section = document.getElementById('imprints');
+    const wall = document.getElementById('imprint-wall');
+    const canvas = document.getElementById('imprintAstrolabe');
+    if (!section || !wall || !canvas) return { setEntry() {}, refresh() {} };
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return { setEntry() {}, refresh() {} };
+
+    const NODES = [
+      { label: '01', az: -0.9, el: 0.36 },
+      { label: '02', az: 1.55, el: -0.12 },
+      { label: '03', az: 3.05, el: 0.5 },
+      { label: '04', az: -2.15, el: -0.4 },
+      { label: '05', az: 0.65, el: -0.55 }
+    ];
+    const INK = '6, 6, 6';
+    const TAU = Math.PI * 2;
+
+    const state = {
+      active: 'core',
+      yaw: 0,
+      targetYaw: 0,
+      pitch: 0,
+      targetPitch: 0,
+      tiltYaw: 0,
+      targetTiltYaw: 0,
+      tiltPitch: 0,
+      targetTiltPitch: 0,
+      lockX: 0,
+      lockY: 0,
+      targetLockX: 0,
+      targetLockY: 0,
+      lockSize: 30,
+      targetLockSize: 18,
+      time: 0,
+      frame: 0,
+      visible: false,
+      lastTime: 0,
+      ready: false
+    };
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(1, rect.width);
+      const h = Math.max(1, rect.height);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (!state.ready) {
+        state.lockX = w * .5;
+        state.lockY = h * .46;
+      }
+      state.ready = true;
+      draw();
+    }
+
+    function rotatePoint(az, el, yaw, pitch) {
+      const ce = Math.cos(el);
+      const se = Math.sin(el);
+      const x = Math.sin(az) * ce;
+      const y = se;
+      const z = Math.cos(az) * ce;
+      const cy = Math.cos(yaw);
+      const sy = Math.sin(yaw);
+      let xr = x * cy + z * sy;
+      let zr = -x * sy + z * cy;
+      const yr = y;
+      const cp = Math.cos(pitch);
+      const sp = Math.sin(pitch);
+      const yp = yr * cp - zr * sp;
+      const zp = yr * sp + zr * cp;
+      return { x: xr, y: yp, z: zp };
+    }
+
+    function draw() {
+      if (!state.ready) return;
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      if (w < 2 || h < 2) return;
+      ctx.clearRect(0, 0, w, h);
+
+      const cx = w * .5;
+      const cy = h * .5;
+      const R = Math.min(w * .4, h * .4);
+      const yaw = state.yaw + state.tiltYaw;
+      const pitch = state.pitch + state.tiltPitch;
+      const reduced = motion.matches;
+      const t = state.time;
+
+      ctx.lineWidth = .75;
+      ctx.lineCap = 'round';
+
+      // --- sphere globe: 6 meridians, 5 parallels ---
+      for (let m = 0; m < 6; m += 1) {
+        const az = m * Math.PI / 6;
+        let prev = null;
+        for (let s = 0; s <= 38; s += 1) {
+          const el = -Math.PI / 2 + (s / 38) * Math.PI;
+          const p = rotatePoint(az, el, yaw, pitch);
+          const depth = p.z;
+          const alpha = depth > 0 ? .16 : .06;
+          const pt = { x: cx + p.x * R, y: cy - p.y * R, z: depth };
+          if (prev) {
+            ctx.strokeStyle = 'rgba(' + INK + ', ' + alpha + ')';
+            ctx.beginPath();
+            ctx.moveTo(prev.x, prev.y);
+            ctx.lineTo(pt.x, pt.y);
+            ctx.stroke();
+          }
+          prev = pt;
+        }
+      }
+      for (let p = 0; p < 5; p += 1) {
+        const el = (-60 + p * 30) * Math.PI / 180;
+        let prev = null;
+        for (let s = 0; s <= 72; s += 1) {
+          const az = (s / 72) * TAU;
+          const pt3 = rotatePoint(az, el, yaw, pitch);
+          const alpha = pt3.z > 0 ? .15 : .055;
+          const pt = { x: cx + pt3.x * R, y: cy - pt3.y * R };
+          if (prev) {
+            ctx.strokeStyle = 'rgba(' + INK + ', ' + alpha + ')';
+            ctx.beginPath();
+            ctx.moveTo(prev.x, prev.y);
+            ctx.lineTo(pt.x, pt.y);
+            ctx.stroke();
+          }
+          prev = pt;
+        }
+      }
+
+      // sphere silhouette
+      ctx.strokeStyle = 'rgba(' + INK + ', .1)';
+      ctx.lineWidth = .75;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, TAU);
+      ctx.stroke();
+
+      // --- astrolabe bezel: 72 ticks, slow opposite rotation ---
+      const ringR = R * 1.1;
+      const ringAngle = -t * .032;
+      ctx.strokeStyle = 'rgba(' + INK + ', .1)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, ringR, 0, TAU);
+      ctx.stroke();
+      for (let i = 0; i < 72; i += 1) {
+        const a = ringAngle + (i / 72) * TAU;
+        const major = i % 6 === 0;
+        const inner = ringR - (major ? 9 : 4);
+        ctx.strokeStyle = 'rgba(' + INK + ', ' + (major ? .22 : .1) + ')';
+        ctx.lineWidth = major ? .85 : .6;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a) * ringR, cy + Math.sin(a) * ringR);
+        ctx.lineTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
+        ctx.stroke();
+      }
+      ctx.lineWidth = .75;
+      ctx.fillStyle = 'rgba(' + INK + ', .38)';
+      ctx.font = Math.max(6.5, Math.min(10, R * .05)) + 'px "Cormorant Garamond", serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const labelGap = h < 240 ? 6 : 12;
+      ['00', '90', '180', '270'].forEach((label, i) => {
+        const a = ringAngle + (i / 4) * TAU - Math.PI / 2;
+        ctx.fillText(label, cx + Math.cos(a) * (ringR + labelGap), cy + Math.sin(a) * (ringR + labelGap));
+      });
+
+      // --- core + routing nodes ---
+      const core = { x: cx, y: cy, z: 1 };
+      const nodePoints = NODES.map((node) => {
+        const p = rotatePoint(node.az, node.el, yaw, pitch);
+        return {
+          label: node.label,
+          x: cx + p.x * R,
+          y: cy - p.y * R,
+          z: p.z
+        };
+      });
+
+      const activeIndex = state.active === 'core' ? -1 : state.active;
+      nodePoints.forEach((node, i) => {
+        const active = i === activeIndex;
+        const midX = (core.x + node.x) * .5;
+        const midY = (core.y + node.y) * .5;
+        const dx = node.x - core.x;
+        const dy = node.y - core.y;
+        const len = Math.max(1, Math.hypot(dx, dy));
+        const ctrlX = midX + (-dy / len) * R * .26;
+        const ctrlY = midY + (dx / len) * R * .26;
+
+        ctx.strokeStyle = 'rgba(' + INK + ', ' + (active ? .42 : .1) + ')';
+        ctx.lineWidth = active ? 1.15 : .75;
+        ctx.beginPath();
+        ctx.moveTo(core.x, core.y);
+        ctx.quadraticCurveTo(ctrlX, ctrlY, node.x, node.y);
+        ctx.stroke();
+
+        if (!reduced) {
+          const speed = active ? .34 : .17;
+          const pulseT = ((t * speed) + i * .17) % 1;
+          const one = 1 - pulseT;
+          const px = one * one * core.x + 2 * one * pulseT * ctrlX + pulseT * pulseT * node.x;
+          const py = one * one * core.y + 2 * one * pulseT * ctrlY + pulseT * pulseT * node.y;
+          ctx.fillStyle = 'rgba(' + INK + ', ' + (active ? .72 : .32) + ')';
+          ctx.beginPath();
+          ctx.arc(px, py, active ? 1.9 : 1.25, 0, TAU);
+          ctx.fill();
+        }
+
+        ctx.strokeStyle = 'rgba(' + INK + ', ' + (node.z > 0 ? (active ? .62 : .34) : .16) + ')';
+        ctx.lineWidth = active ? 1.1 : .8;
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, active ? 3.4 : 2.4, 0, TAU);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(' + INK + ', ' + (node.z > 0 ? .62 : .22) + ')';
+        if (node.z > 0) {
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, active ? 1.6 : 1.1, 0, TAU);
+          ctx.fill();
+        }
+        ctx.font = Math.max(7, Math.min(9.5, R * .048)) + 'px -apple-system, "SF Pro Text", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(node.label, node.x + 6, node.y - 5);
+      });
+
+      // core mark
+      ctx.fillStyle = 'rgba(' + INK + ', .62)';
+      ctx.beginPath();
+      ctx.arc(core.x, core.y, 2.2, 0, TAU);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(' + INK + ', .22)';
+      ctx.lineWidth = .75;
+      ctx.beginPath();
+      ctx.arc(core.x, core.y, 7, 0, TAU);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(' + INK + ', .42)';
+      ctx.font = Math.max(6.5, Math.min(8.5, R * .038)) + 'px -apple-system, "SF Pro Text", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('AS218834', core.x, core.y + 18);
+
+      // --- mechanical lock brackets ---
+      let targetX = core.x;
+      let targetY = core.y;
+      if (activeIndex >= 0 && nodePoints[activeIndex]) {
+        targetX = nodePoints[activeIndex].x;
+        targetY = nodePoints[activeIndex].y;
+      }
+      state.targetLockX = targetX;
+      state.targetLockY = targetY;
+      state.targetLockSize = activeIndex >= 0 ? 15 : 19;
+      const s = state.lockSize;
+      ctx.strokeStyle = 'rgba(' + INK + ', .58)';
+      ctx.lineWidth = .85;
+      const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+      corners.forEach(([sx, sy]) => {
+        const x = state.lockX + sx * s;
+        const y = state.lockY + sy * s;
+        ctx.beginPath();
+        ctx.moveTo(x + sx * -s * .46, y);
+        ctx.lineTo(x, y);
+        ctx.lineTo(x, y + sy * -s * .46);
+        ctx.stroke();
+      });
+      ctx.strokeStyle = 'rgba(' + INK + ', .32)';
+      ctx.lineWidth = .7;
+      ctx.beginPath();
+      ctx.moveTo(state.lockX - 2.5, state.lockY);
+      ctx.lineTo(state.lockX + 2.5, state.lockY);
+      ctx.moveTo(state.lockX, state.lockY - 2.5);
+      ctx.lineTo(state.lockX, state.lockY + 2.5);
+      ctx.stroke();
+    }
+
+    function step(now) {
+      state.frame = 0;
+      if (!state.visible || motion.matches) return;
+      const dt = state.lastTime ? Math.min(.05, (now - state.lastTime) / 1000) : 1 / 60;
+      state.lastTime = now;
+      state.time += dt;
+      const alpha = 1 - Math.exp(-7 * dt);
+
+      if (state.active === 'core') state.targetYaw += dt * .12;
+      state.yaw += (state.targetYaw - state.yaw) * alpha;
+      state.pitch += (state.targetPitch - state.pitch) * alpha;
+      state.tiltYaw += (state.targetTiltYaw - state.tiltYaw) * alpha;
+      state.tiltPitch += (state.targetTiltPitch - state.tiltPitch) * alpha;
+      const lockAlpha = 1 - Math.exp(-9 * dt);
+      state.lockX += (state.targetLockX - state.lockX) * lockAlpha;
+      state.lockY += (state.targetLockY - state.lockY) * lockAlpha;
+      state.lockSize += (state.targetLockSize - state.lockSize) * lockAlpha;
+
+      draw();
+      state.frame = requestAnimationFrame(step);
+    }
+
+    function start() {
+      if (state.frame || motion.matches) {
+        if (motion.matches) draw();
+        return;
+      }
+      state.lastTime = 0;
+      state.time = Math.max(state.time, .001);
+      state.frame = requestAnimationFrame(step);
+    }
+
+    function stop() {
+      if (state.frame) cancelAnimationFrame(state.frame);
+      state.frame = 0;
+      state.lastTime = 0;
+    }
+
+    function setEntry(entry) {
+      const key = entry && entry.dataset ? entry.dataset.node : 'core';
+      if (key === 'core' || !key) {
+        state.active = 'core';
+        state.targetPitch = 0;
+        state.targetLockSize = 19;
+      } else {
+        const index = parseInt(key, 10) - 1;
+        if (Number.isFinite(index) && NODES[index]) {
+          state.active = index;
+          state.targetYaw = -NODES[index].az;
+          state.targetPitch = NODES[index].el - .12;
+          state.targetLockSize = 15;
+        }
+      }
+      state.lockSize = Math.max(state.lockSize, state.targetLockSize + 14);
+      if (motion.matches) {
+        state.lockX = state.targetLockX;
+        state.lockY = state.targetLockY;
+        state.lockSize = state.targetLockSize;
+        draw();
+      }
+    }
+
+    function onPointerMove(event) {
+      if (!finePointer.matches || motion.matches) return;
+      const rect = wall.getBoundingClientRect();
+      const nx = clamp(((event.clientX - rect.left) / rect.width - .5) * 2, -1, 1);
+      const ny = clamp(((event.clientY - rect.top) / rect.height - .5) * 2, -1, 1);
+      state.targetTiltYaw = nx * .16;
+      state.targetTiltPitch = -ny * .13;
+      start();
+    }
+
+    function releaseLock() {
+      if (state.active !== 'core') {
+        state.active = 'core';
+        state.targetPitch = 0;
+        state.targetLockSize = 19;
+      }
+    }
+
+    wall.addEventListener('pointermove', onPointerMove, { passive: true });
+    wall.addEventListener('pointerleave', () => {
+      state.targetTiltYaw = 0;
+      state.targetTiltPitch = 0;
+      releaseLock();
+    });
+
+    const observer = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        state.visible = entry.isIntersecting;
+        if (state.visible) start();
+        else stop();
+      });
+    }, { threshold: 0.01 }) : null;
+
+    if (observer) observer.observe(section);
+    else {
+      state.visible = true;
+      start();
+    }
+
+    window.addEventListener('resize', resize);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stop();
+      else if (state.visible) start();
+    });
+
+    const entryObserver = 'ResizeObserver' in window ? new ResizeObserver(() => resize()) : null;
+    if (entryObserver) entryObserver.observe(canvas);
+    else window.addEventListener('resize', resize);
+
+    resize();
+    if (motion.matches) draw();
+
+    return {
+      setEntry(entry) {
+        setEntry(entry);
+      },
+      refresh() {
+        if (motion.matches) {
+          stop();
+          draw();
+          return;
+        }
+        if (state.visible) start();
+      },
+      releaseLock() {
+        releaseLock();
+      }
+    };
   }
 
   /* ---------------------------------------------------------
@@ -480,10 +961,17 @@
   if (galleryCursor) {
     window.addEventListener('pointermove', (event) => {
       if (!finePointer.matches || motion.matches) return;
+      const firstMove = pointerX < 0;
       pointerX = event.clientX;
       pointerY = event.clientY;
       cursorTargetX = event.clientX;
       cursorTargetY = event.clientY;
+      if (firstMove) {
+        cursorX = event.clientX;
+        cursorY = event.clientY;
+        galleryCursor.style.setProperty('--cursor-x', cursorX.toFixed(2) + 'px');
+        galleryCursor.style.setProperty('--cursor-y', cursorY.toFixed(2) + 'px');
+      }
       setCursorMode(event.target, event.clientX, event.clientY);
       startCursor();
     }, { passive: true });
@@ -650,6 +1138,7 @@
   motion.addEventListener('change', () => {
     if (motion.matches) lenis?.stop();
     else lenis?.start();
+    astrolabe?.refresh();
     revealVisibleElements();
     if (motion.matches) {
       acts.forEach((act) => act.classList.add('is-inview'));
@@ -663,6 +1152,37 @@
   });
 
   /* ---------------------------------------------------------
+     Lenis scroll inertia — silk-like skew and lag
+     --------------------------------------------------------- */
+  let inertiaLast = 0;
+  let inertiaSkew = 0;
+  let inertiaLag = 0;
+
+  function updateScrollInertia(now) {
+    if (!lenis) return;
+    if (motion.matches) {
+      inertiaLast = 0;
+      inertiaSkew = 0;
+      inertiaLag = 0;
+      root.style.setProperty('--scroll-skew', '0deg');
+      root.style.setProperty('--scroll-lag', '0px');
+      return;
+    }
+    const dt = inertiaLast ? Math.min(.05, Math.max(0, (now - inertiaLast) / 1000)) : 1 / 60;
+    inertiaLast = now;
+    const velocity = typeof lenis.velocity === 'number' ? lenis.velocity : 0;
+    const targetSkew = clamp(velocity * .02, -1.2, 1.2);
+    const targetLag = clamp(velocity * .16, -10, 10);
+    const alpha = 1 - Math.exp(-10 * dt);
+    inertiaSkew += (targetSkew - inertiaSkew) * alpha;
+    inertiaLag += (targetLag - inertiaLag) * alpha;
+    if (Math.abs(targetSkew - inertiaSkew) < .004) inertiaSkew = targetSkew;
+    if (Math.abs(targetLag - inertiaLag) < .015) inertiaLag = targetLag;
+    root.style.setProperty('--scroll-skew', inertiaSkew.toFixed(3) + 'deg');
+    root.style.setProperty('--scroll-lag', inertiaLag.toFixed(2) + 'px');
+  }
+
+  /* ---------------------------------------------------------
      Boot
      --------------------------------------------------------- */
   measureSplitStops();
@@ -671,7 +1191,9 @@
   applySplit(splitCurrent);
 
   setupWorks();
+  astrolabe = setupAstrolabe();
   setupImprints();
+  setupMagneticLinks();
 
   playHeroSignature();
   update();
@@ -679,6 +1201,7 @@
   if (lenis) {
     function raf(time) {
       lenis.raf(time);
+      updateScrollInertia(time);
       requestAnimationFrame(raf);
     }
     requestAnimationFrame(raf);
