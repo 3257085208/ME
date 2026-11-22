@@ -475,20 +475,53 @@
     const section = document.getElementById('imprints');
     const wall = document.getElementById('imprint-wall');
     const canvas = document.getElementById('imprintAstrolabe');
-    if (!section || !wall || !canvas) return { setEntry() {}, refresh() {} };
+    if (!section || !wall || !canvas) return { setEntry() {}, refresh() {}, releaseLock() {} };
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) return { setEntry() {}, refresh() {} };
+    if (!ctx) return { setEntry() {}, refresh() {}, releaseLock() {} };
 
-    const NODES = [
-      { label: '01', az: -0.9, el: 0.36 },
-      { label: '02', az: 1.55, el: -0.12 },
-      { label: '03', az: 3.05, el: 0.5 },
-      { label: '04', az: -2.15, el: -0.4 },
-      { label: '05', az: 0.65, el: -0.55 }
-    ];
-    const INK = '6, 6, 6';
     const TAU = Math.PI * 2;
+    const NODES = [
+      { label: '01', az: -2.55, el: .42 },
+      { label: '02', az: -1.15, el: -.52 },
+      { label: '03', az: .35, el: .58 },
+      { label: '04', az: 1.9, el: -.36 },
+      { label: '05', az: 3.0, el: .2 }
+    ];
+    const nodeDirs = NODES.map((node) => {
+      const ce = Math.cos(node.el);
+      return { x: Math.sin(node.az) * ce, y: Math.sin(node.el), z: Math.cos(node.az) * ce };
+    });
+    const CORE = { x: 0, y: 0, z: 1 };
+    const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
+    function fibonacciSphere(count) {
+      const out = new Float32Array(count * 3);
+      for (let i = 0; i < count; i += 1) {
+        const y = 1 - (i / Math.max(1, count - 1)) * 2;
+        const r = Math.sqrt(Math.max(0, 1 - y * y));
+        const th = GOLDEN_ANGLE * i;
+        out[i * 3] = Math.cos(th) * r;
+        out[i * 3 + 1] = y;
+        out[i * 3 + 2] = Math.sin(th) * r;
+      }
+      return out;
+    }
+
+    const DOTS_WIDE = fibonacciSphere(480);
+    const DOTS_NARROW = fibonacciSphere(260);
+    const LIGHT = (() => {
+      const v = { x: -.62, y: .48, z: .62 };
+      const len = Math.hypot(v.x, v.y, v.z) || 1;
+      return { x: v.x / len, y: v.y / len, z: v.z / len };
+    })();
+    const INK = '6, 6, 6';
+    const inkCache = {};
+
+    function ink(alpha) {
+      const key = Math.max(0, Math.min(200, Math.round(alpha * 200)));
+      return inkCache[key] || (inkCache[key] = 'rgba(' + INK + ', ' + (key / 200).toFixed(3) + ')');
+    }
 
     const state = {
       active: 'core',
@@ -505,13 +538,22 @@
       targetLockX: 0,
       targetLockY: 0,
       lockSize: 30,
-      targetLockSize: 18,
+      targetLockSize: 19,
+      rippleStart: -10,
+      rippleX: 0,
+      rippleY: 0,
+      lastLockKey: 'core',
       time: 0,
       frame: 0,
       visible: false,
       lastTime: 0,
-      ready: false
+      ready: false,
+      gradient: null
     };
+
+    function sphereRadius(w, h) {
+      return Math.min(w * .4, h * (w < 460 ? .36 : .39));
+    }
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
@@ -523,28 +565,30 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       if (!state.ready) {
         state.lockX = w * .5;
-        state.lockY = h * .46;
+        state.lockY = h * .5;
       }
+      const R = sphereRadius(w, h);
+      const cx = w * .5;
+      const cy = h * .5;
+      const gradient = ctx.createRadialGradient(cx - R * .32, cy - R * .32, R * .05, cx, cy, R);
+      gradient.addColorStop(0, 'rgba(' + INK + ', 0)');
+      gradient.addColorStop(.55, 'rgba(' + INK + ', .018)');
+      gradient.addColorStop(1, 'rgba(' + INK + ', .055)');
+      state.gradient = gradient;
       state.ready = true;
       draw();
     }
 
-    function rotatePoint(az, el, yaw, pitch) {
-      const ce = Math.cos(el);
-      const se = Math.sin(el);
-      const x = Math.sin(az) * ce;
-      const y = se;
-      const z = Math.cos(az) * ce;
-      const cy = Math.cos(yaw);
-      const sy = Math.sin(yaw);
-      let xr = x * cy + z * sy;
-      let zr = -x * sy + z * cy;
-      const yr = y;
-      const cp = Math.cos(pitch);
-      const sp = Math.sin(pitch);
-      const yp = yr * cp - zr * sp;
-      const zp = yr * sp + zr * cp;
-      return { x: xr, y: yp, z: zp };
+    function slerpPoint(a, b, u) {
+      const dot = Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y + a.z * b.z));
+      const omega = Math.acos(dot);
+      if (omega < 1e-5) {
+        return { x: a.x, y: a.y, z: a.z };
+      }
+      const so = Math.sin(omega);
+      const wa = Math.sin((1 - u) * omega) / so;
+      const wb = Math.sin(u * omega) / so;
+      return { x: a.x * wa + b.x * wb, y: a.y * wa + b.y * wb, z: a.z * wa + b.z * wb };
     }
 
     function draw() {
@@ -556,195 +600,471 @@
 
       const cx = w * .5;
       const cy = h * .5;
-      const R = Math.min(w * .4, h * .4);
+      const R = sphereRadius(w, h);
       const yaw = state.yaw + state.tiltYaw;
       const pitch = state.pitch + state.tiltPitch;
-      const reduced = motion.matches;
+      const yc = Math.cos(yaw);
+      const ys = Math.sin(yaw);
+      const pc = Math.cos(pitch);
+      const ps = Math.sin(pitch);
       const t = state.time;
+      const reduced = motion.matches;
+      const narrow = w < 460;
+      const dots = narrow ? DOTS_NARROW : DOTS_WIDE;
+      const dotCount = dots.length / 3;
+      const activeIndex = state.active === 'core' ? -1 : state.active;
 
-      ctx.lineWidth = .75;
-      ctx.lineCap = 'round';
+      // ---------- back half of the 23.5° tilted double orbit ----------
+      const tilt = 23.5 * Math.PI / 180;
+      const tiltSin = Math.sin(tilt);
+      const tiltCos = Math.cos(tilt);
 
-      // --- sphere globe: 6 meridians, 5 parallels ---
-      for (let m = 0; m < 6; m += 1) {
+      function orbitPaths(scale) {
+        const back = new Path2D();
+        const front = new Path2D();
+        const steps = 200;
+        let prev = null;
+        for (let i = 0; i <= steps; i += 1) {
+          const a = (i / steps) * TAU;
+          const x0 = Math.cos(a);
+          const y0 = Math.sin(a) * tiltSin;
+          const z0 = Math.sin(a) * tiltCos;
+          const x1 = x0 * yc + z0 * ys;
+          const z1 = -x0 * ys + z0 * yc;
+          const y1 = y0 * pc - z1 * ps;
+          const z2 = y0 * ps + z1 * pc;
+          const sx = cx + x1 * R * scale;
+          const sy = cy - y1 * R * scale;
+          if (prev) {
+            const target = (z2 + prev.z) * .5 <= 0 ? back : front;
+            target.moveTo(prev.x, prev.y);
+            target.lineTo(sx, sy);
+          }
+          prev = { x: sx, y: sy, z: z2 };
+        }
+        return { back, front };
+      }
+
+      const orbitOuter = orbitPaths(1.22);
+      const orbitInner = orbitPaths(1.19);
+      ctx.lineWidth = .8;
+      ctx.strokeStyle = ink(.16);
+      ctx.stroke(orbitOuter.back);
+      ctx.save();
+      ctx.setLineDash([2, 5]);
+      ctx.lineWidth = .6;
+      ctx.strokeStyle = ink(.1);
+      ctx.stroke(orbitInner.back);
+      ctx.restore();
+
+      // ---------- engraved stipple sphere ----------
+      if (state.gradient) {
+        ctx.fillStyle = state.gradient;
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0, TAU);
+        ctx.fill();
+      }
+
+      // Latitude/longitude guide grid: 12 full meridians, batched by hemisphere.
+      const backMeridian = new Path2D();
+      const frontMeridian = new Path2D();
+      for (let m = 0; m < 12; m += 1) {
         const az = m * Math.PI / 6;
+        const sa = Math.sin(az);
+        const ca = Math.cos(az);
         let prev = null;
-        for (let s = 0; s <= 38; s += 1) {
-          const el = -Math.PI / 2 + (s / 38) * Math.PI;
-          const p = rotatePoint(az, el, yaw, pitch);
-          const depth = p.z;
-          const alpha = depth > 0 ? .16 : .06;
-          const pt = { x: cx + p.x * R, y: cy - p.y * R, z: depth };
+        for (let s = 0; s <= 48; s += 1) {
+          const el = -Math.PI / 2 + (s / 48) * Math.PI;
+          const ce = Math.cos(el);
+          const x0 = sa * ce;
+          const y0 = Math.sin(el);
+          const z0 = ca * ce;
+          const x1 = x0 * yc + z0 * ys;
+          const z1 = -x0 * ys + z0 * yc;
+          const y1 = y0 * pc - z1 * ps;
+          const z2 = y0 * ps + z1 * pc;
+          const sx = cx + x1 * R;
+          const sy = cy - y1 * R;
           if (prev) {
-            ctx.strokeStyle = 'rgba(' + INK + ', ' + alpha + ')';
-            ctx.beginPath();
-            ctx.moveTo(prev.x, prev.y);
-            ctx.lineTo(pt.x, pt.y);
-            ctx.stroke();
+            const target = (z2 + prev.z) * .5 <= 0 ? backMeridian : frontMeridian;
+            target.moveTo(prev.x, prev.y);
+            target.lineTo(sx, sy);
           }
-          prev = pt;
+          prev = { x: sx, y: sy, z: z2 };
         }
       }
-      for (let p = 0; p < 5; p += 1) {
-        const el = (-60 + p * 30) * Math.PI / 180;
-        let prev = null;
-        for (let s = 0; s <= 72; s += 1) {
-          const az = (s / 72) * TAU;
-          const pt3 = rotatePoint(az, el, yaw, pitch);
-          const alpha = pt3.z > 0 ? .15 : .055;
-          const pt = { x: cx + pt3.x * R, y: cy - pt3.y * R };
-          if (prev) {
-            ctx.strokeStyle = 'rgba(' + INK + ', ' + alpha + ')';
-            ctx.beginPath();
-            ctx.moveTo(prev.x, prev.y);
-            ctx.lineTo(pt.x, pt.y);
-            ctx.stroke();
-          }
-          prev = pt;
-        }
+      ctx.lineWidth = .6;
+      ctx.strokeStyle = ink(.025);
+      ctx.stroke(backMeridian);
+
+      // Back hemisphere stipple (faint) before front grid so depth reads.
+      for (let i = 0; i < dotCount; i += 1) {
+        const x0 = dots[i * 3];
+        const y0 = dots[i * 3 + 1];
+        const z0 = dots[i * 3 + 2];
+        const x1 = x0 * yc + z0 * ys;
+        const z1 = -x0 * ys + z0 * yc;
+        const y1 = y0 * pc - z1 * ps;
+        const z2 = y0 * ps + z1 * pc;
+        if (z2 > 0) continue;
+        ctx.fillStyle = ink(.035);
+        ctx.beginPath();
+        ctx.arc(cx + x1 * R, cy - y1 * R, .42, 0, TAU);
+        ctx.fill();
       }
 
-      // sphere silhouette
-      ctx.strokeStyle = 'rgba(' + INK + ', .1)';
-      ctx.lineWidth = .75;
+      ctx.strokeStyle = ink(.075);
+      ctx.lineWidth = .6;
+      ctx.stroke(frontMeridian);
+
+      // Front hemisphere stipple with left-top chiaroscuro.
+      for (let i = 0; i < dotCount; i += 1) {
+        const x0 = dots[i * 3];
+        const y0 = dots[i * 3 + 1];
+        const z0 = dots[i * 3 + 2];
+        const x1 = x0 * yc + z0 * ys;
+        const z1 = -x0 * ys + z0 * yc;
+        const y1 = y0 * pc - z1 * ps;
+        const z2 = y0 * ps + z1 * pc;
+        if (z2 <= 0) continue;
+        const nx = cx + x1 * R;
+        const ny = cy - y1 * R;
+        const lit = Math.max(0, Math.min(1, (x1 * LIGHT.x + y1 * LIGHT.y + z2 * LIGHT.z + .2) / 1.15));
+        const shade = Math.pow(1 - lit, 1.35);
+        const spread = Math.max(0, Math.min(1, (z2 + .08) / .5));
+        let alpha = .05 + .37 * shade * spread + .03 * spread;
+        if (lit > .72) alpha *= .55;
+        let radius = .52 + .93 * shade * spread;
+        alpha = Math.max(.04, Math.min(.42, alpha));
+        radius = Math.max(.42, Math.min(1.45, radius));
+        ctx.fillStyle = ink(alpha);
+        ctx.beginPath();
+        ctx.arc(nx, ny, radius, 0, TAU);
+        ctx.fill();
+      }
+
+      // Fine engraved silhouette + front half of the orbit.
+      ctx.lineWidth = .6;
+      ctx.strokeStyle = ink(.08);
       ctx.beginPath();
       ctx.arc(cx, cy, R, 0, TAU);
       ctx.stroke();
+      ctx.lineWidth = .8;
+      ctx.strokeStyle = ink(.16);
+      ctx.stroke(orbitOuter.front);
+      ctx.save();
+      ctx.setLineDash([2, 5]);
+      ctx.lineWidth = .6;
+      ctx.strokeStyle = ink(.1);
+      ctx.stroke(orbitInner.front);
+      ctx.restore();
 
-      // --- astrolabe bezel: 72 ticks, slow opposite rotation ---
-      const ringR = R * 1.1;
+      // ---------- 3D geodesic routes from the core ----------
+      function rotateDir(dir) {
+        const x1 = dir.x * yc + dir.z * ys;
+        const z1 = -dir.x * ys + dir.z * yc;
+        return {
+          x: x1,
+          y: dir.y * pc - z1 * ps,
+          z: dir.y * ps + z1 * pc
+        };
+      }
+      const nodeCam = nodeDirs.map(rotateDir);
+      const constellation = new Path2D();
+      for (let i = 0; i < nodeCam.length; i += 1) {
+        for (let j = i + 1; j < nodeCam.length; j += 1) {
+          const a = nodeCam[i];
+          const b = nodeCam[j];
+          for (let s = 0; s <= 30; s += 1) {
+            const u = s / 30;
+            const p = slerpPoint(a, b, u);
+            const lift = 1 + .16 * Math.sin(Math.PI * u);
+            const px = cx + p.x * R * lift;
+            const py = cy - p.y * R * lift;
+            if (s === 0) constellation.moveTo(px, py);
+            else constellation.lineTo(px, py);
+          }
+        }
+      }
+      ctx.strokeStyle = ink(.05);
+      ctx.lineWidth = .5;
+      ctx.stroke(constellation);
+
+      const arcSteps = 40;
+      const arcCache = nodeCam.map((target) => {
+        const pts = new Array(arcSteps + 1);
+        for (let s = 0; s <= arcSteps; s += 1) {
+          const u = s / arcSteps;
+          const p = slerpPoint(CORE, target, u);
+          const lift = 1 + .16 * Math.sin(Math.PI * u);
+          pts[s] = {
+            x: cx + p.x * R * lift,
+            y: cy - p.y * R * lift,
+            z: p.z
+          };
+        }
+        return pts;
+      });
+
+      function strokeRoute(index, active) {
+        const pts = arcCache[index];
+        ctx.strokeStyle = ink(active ? .3 : .08);
+        ctx.lineWidth = active ? .95 : .6;
+        ctx.beginPath();
+        pts.forEach((pt, s) => {
+          if (s === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.stroke();
+      }
+
+      for (let i = 0; i < nodeCam.length; i += 1) if (i !== activeIndex) strokeRoute(i, false);
+      if (activeIndex >= 0) strokeRoute(activeIndex, true);
+
+      // Ten-segment ink comet tails along each route.
+      if (!reduced) {
+        nodeCam.forEach((target, i) => {
+          const active = i === activeIndex;
+          const speed = active ? .34 : .16;
+          const head = (t * speed + i * .19 + .15) % 1;
+          for (let j = 0; j < 10; j += 1) {
+            const u = head - j * .012;
+            if (u < 0) continue;
+            const p = slerpPoint(CORE, target, u);
+            const lift = 1 + .16 * Math.sin(Math.PI * u);
+            const px = cx + p.x * R * lift;
+            const py = cy - p.y * R * lift;
+            const fade = 1 - j / 10;
+            ctx.fillStyle = ink(active ? .05 + .8 * fade : .03 + .07 * fade);
+            ctx.beginPath();
+            ctx.arc(px, py, active ? .4 + 1.4 * fade : .25 + .4 * fade, 0, TAU);
+            ctx.fill();
+          }
+        });
+      }
+
+      // ---------- Swiss double bezel with 180 precision ticks ----------
+      const ringR = R * 1.12;
+      const ringR2 = R * 1.165;
       const ringAngle = -t * .032;
-      ctx.strokeStyle = 'rgba(' + INK + ', .1)';
+      ctx.lineWidth = .6;
+      ctx.strokeStyle = ink(.12);
       ctx.beginPath();
       ctx.arc(cx, cy, ringR, 0, TAU);
       ctx.stroke();
-      for (let i = 0; i < 72; i += 1) {
-        const a = ringAngle + (i / 72) * TAU;
-        const major = i % 6 === 0;
-        const inner = ringR - (major ? 9 : 4);
-        ctx.strokeStyle = 'rgba(' + INK + ', ' + (major ? .22 : .1) + ')';
-        ctx.lineWidth = major ? .85 : .6;
-        ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(a) * ringR, cy + Math.sin(a) * ringR);
-        ctx.lineTo(cx + Math.cos(a) * inner, cy + Math.sin(a) * inner);
-        ctx.stroke();
+      ctx.strokeStyle = ink(.06);
+      ctx.beginPath();
+      ctx.arc(cx, cy, ringR2, 0, TAU);
+      ctx.stroke();
+
+      const majorTicks = new Path2D();
+      const mediumTicks = new Path2D();
+      const microTicks = new Path2D();
+      for (let i = 0; i < 180; i += 1) {
+        const a = ringAngle + (i / 180) * TAU;
+        const ca2 = Math.cos(a);
+        const sa2 = Math.sin(a);
+        let len = 2.8;
+        let target = microTicks;
+        if (i % 15 === 0) {
+          len = 10;
+          target = majorTicks;
+        } else if (i % 5 === 0) {
+          len = 6;
+          target = mediumTicks;
+        }
+        target.moveTo(cx + ca2 * ringR2, cy + sa2 * ringR2);
+        target.lineTo(cx + ca2 * (ringR2 - len), cy + sa2 * (ringR2 - len));
       }
-      ctx.lineWidth = .75;
-      ctx.fillStyle = 'rgba(' + INK + ', .38)';
-      ctx.font = Math.max(6.5, Math.min(10, R * .05)) + 'px "Cormorant Garamond", serif';
+      ctx.lineWidth = .5;
+      ctx.strokeStyle = ink(.09);
+      ctx.stroke(microTicks);
+      ctx.lineWidth = .65;
+      ctx.strokeStyle = ink(.18);
+      ctx.stroke(mediumTicks);
+      ctx.lineWidth = .9;
+      ctx.strokeStyle = ink(.34);
+      ctx.stroke(majorTicks);
+
+      const labelRadius = ringR2 + 6;
+      ctx.font = Math.max(8, Math.min(9.5, R * .042)) + 'px "Cormorant Garamond", Georgia, serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      const labelGap = h < 240 ? 6 : 12;
-      ['00', '90', '180', '270'].forEach((label, i) => {
+      ['000°', '090°', '180°', '270°'].forEach((label, i) => {
         const a = ringAngle + (i / 4) * TAU - Math.PI / 2;
-        ctx.fillText(label, cx + Math.cos(a) * (ringR + labelGap), cy + Math.sin(a) * (ringR + labelGap));
+        ctx.save();
+        ctx.translate(cx + Math.cos(a) * labelRadius, cy + Math.sin(a) * labelRadius);
+        ctx.rotate(a + Math.PI / 2);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(244, 243, 238, .92)';
+        ctx.strokeText(label, 0, 0);
+        ctx.fillStyle = ink(.46);
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
       });
 
-      // --- core + routing nodes ---
-      const core = { x: cx, y: cy, z: 1 };
-      const nodePoints = NODES.map((node) => {
-        const p = rotatePoint(node.az, node.el, yaw, pitch);
-        return {
-          label: node.label,
-          x: cx + p.x * R,
-          y: cy - p.y * R,
-          z: p.z
-        };
-      });
+      // ---------- nodes, leaders, reticle ----------
+      const nodePoints = nodeCam.map((node) => ({
+        x: cx + node.x * R,
+        y: cy - node.y * R,
+        z: node.z
+      }));
 
-      const activeIndex = state.active === 'core' ? -1 : state.active;
+      let targetLockX = cx;
+      let targetLockY = cy;
+      if (activeIndex >= 0 && nodePoints[activeIndex]) {
+        targetLockX = nodePoints[activeIndex].x;
+        targetLockY = nodePoints[activeIndex].y;
+      }
+      state.targetLockX = targetLockX;
+      state.targetLockY = targetLockY;
+      state.targetLockSize = activeIndex >= 0 ? 15 : 19;
+
+      const activeKey = activeIndex < 0 ? 'core' : String(activeIndex);
+      if (state.lastLockKey !== activeKey) {
+        state.lastLockKey = activeKey;
+        state.rippleStart = t;
+        state.rippleX = targetLockX;
+        state.rippleY = targetLockY;
+        state.lockSize = Math.max(state.lockSize, state.targetLockSize + 14);
+      }
+
+      const boxes = [];
+      const coreActive = activeIndex < 0;
+      ctx.font = '8.5px -apple-system, "SF Pro Text", sans-serif';
+      const coreW = ctx.measureText('AS218834').width;
+      const coreBox = {
+        l: cx + 27,
+        r: cx + 27 + coreW,
+        t: cy + 17,
+        b: cy + 31
+      };
+      boxes.push(coreBox);
+
+      function intersects(a, b) {
+        return a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
+      }
+
       nodePoints.forEach((node, i) => {
         const active = i === activeIndex;
-        const midX = (core.x + node.x) * .5;
-        const midY = (core.y + node.y) * .5;
-        const dx = node.x - core.x;
-        const dy = node.y - core.y;
-        const len = Math.max(1, Math.hypot(dx, dy));
-        const ctrlX = midX + (-dy / len) * R * .26;
-        const ctrlY = midY + (dx / len) * R * .26;
-
-        ctx.strokeStyle = 'rgba(' + INK + ', ' + (active ? .42 : .1) + ')';
-        ctx.lineWidth = active ? 1.15 : .75;
-        ctx.beginPath();
-        ctx.moveTo(core.x, core.y);
-        ctx.quadraticCurveTo(ctrlX, ctrlY, node.x, node.y);
-        ctx.stroke();
-
-        if (!reduced) {
-          const speed = active ? .34 : .17;
-          const pulseT = ((t * speed) + i * .17) % 1;
-          const one = 1 - pulseT;
-          const px = one * one * core.x + 2 * one * pulseT * ctrlX + pulseT * pulseT * node.x;
-          const py = one * one * core.y + 2 * one * pulseT * ctrlY + pulseT * pulseT * node.y;
-          ctx.fillStyle = 'rgba(' + INK + ', ' + (active ? .72 : .32) + ')';
-          ctx.beginPath();
-          ctx.arc(px, py, active ? 1.9 : 1.25, 0, TAU);
-          ctx.fill();
+        const nx = node.x;
+        const ny = node.y;
+        const dx = nx - cx;
+        const dy = ny - cy;
+        const dist = Math.hypot(dx, dy);
+        let ux = dist > 6 ? dx / dist : Math.cos((i / 5) * TAU);
+        let uy = dist > 6 ? dy / dist : Math.sin((i / 5) * TAU);
+        const label = NODES[i].label;
+        let drawn = false;
+        let shoulder = 10;
+        for (let attempt = 0; attempt < 4 && !drawn; attempt += 1) {
+          const elbowX = nx + ux * 12;
+          const elbowY = ny + uy * 12;
+          const sign = ux >= 0 ? 1 : -1;
+          const endX = elbowX + sign * shoulder;
+          const textW = ctx.measureText(label).width;
+          const box = {
+            l: sign > 0 ? endX + 3 : endX - 3 - textW,
+            r: sign > 0 ? endX + 3 + textW : endX - 3,
+            t: elbowY - 5,
+            b: elbowY + 5
+          };
+          if (!boxes.some((other) => intersects(box, other))) {
+            ctx.strokeStyle = ink(node.z > 0 ? .24 : .12);
+            ctx.lineWidth = .6;
+            ctx.beginPath();
+            ctx.moveTo(nx, ny);
+            ctx.lineTo(elbowX, elbowY);
+            ctx.lineTo(endX, elbowY);
+            ctx.stroke();
+            ctx.fillStyle = ink(node.z > 0 ? .58 : .26);
+            ctx.textAlign = sign > 0 ? 'left' : 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, endX + sign * 3, elbowY);
+            boxes.push(box);
+            drawn = true;
+          }
+          shoulder += 10;
+        }
+        if (!drawn) {
+          ctx.fillStyle = ink(.24);
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, nx + 8, ny - 8);
         }
 
-        ctx.strokeStyle = 'rgba(' + INK + ', ' + (node.z > 0 ? (active ? .62 : .34) : .16) + ')';
-        ctx.lineWidth = active ? 1.1 : .8;
+        ctx.strokeStyle = ink(node.z > 0 ? (active ? .62 : .34) : .14);
+        ctx.lineWidth = active ? 1.05 : .8;
         ctx.beginPath();
-        ctx.arc(node.x, node.y, active ? 3.4 : 2.4, 0, TAU);
+        ctx.arc(nx, ny, active ? 3.4 : 2.4, 0, TAU);
         ctx.stroke();
-
-        ctx.fillStyle = 'rgba(' + INK + ', ' + (node.z > 0 ? .62 : .22) + ')';
         if (node.z > 0) {
+          ctx.fillStyle = ink(active ? .7 : .45);
           ctx.beginPath();
-          ctx.arc(node.x, node.y, active ? 1.6 : 1.1, 0, TAU);
+          ctx.arc(nx, ny, active ? 1.5 : 1, 0, TAU);
           ctx.fill();
         }
-        ctx.font = Math.max(7, Math.min(9.5, R * .048)) + 'px -apple-system, "SF Pro Text", sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(node.label, node.x + 6, node.y - 5);
       });
 
-      // core mark
-      ctx.fillStyle = 'rgba(' + INK + ', .62)';
+      // Core: micro cross-hair with double rings; label only while core locked.
+      ctx.strokeStyle = ink(coreActive ? .6 : .32);
+      ctx.lineWidth = .8;
       ctx.beginPath();
-      ctx.arc(core.x, core.y, 2.2, 0, TAU);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(' + INK + ', .22)';
-      ctx.lineWidth = .75;
-      ctx.beginPath();
-      ctx.arc(core.x, core.y, 7, 0, TAU);
+      ctx.arc(cx, cy, 2, 0, TAU);
       ctx.stroke();
-      ctx.fillStyle = 'rgba(' + INK + ', .42)';
-      ctx.font = Math.max(6.5, Math.min(8.5, R * .038)) + 'px -apple-system, "SF Pro Text", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('AS218834', core.x, core.y + 18);
-
-      // --- mechanical lock brackets ---
-      let targetX = core.x;
-      let targetY = core.y;
-      if (activeIndex >= 0 && nodePoints[activeIndex]) {
-        targetX = nodePoints[activeIndex].x;
-        targetY = nodePoints[activeIndex].y;
-      }
-      state.targetLockX = targetX;
-      state.targetLockY = targetY;
-      state.targetLockSize = activeIndex >= 0 ? 15 : 19;
-      const s = state.lockSize;
-      ctx.strokeStyle = 'rgba(' + INK + ', .58)';
-      ctx.lineWidth = .85;
-      const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
-      corners.forEach(([sx, sy]) => {
-        const x = state.lockX + sx * s;
-        const y = state.lockY + sy * s;
+      ctx.strokeStyle = ink(coreActive ? .28 : .16);
+      ctx.beginPath();
+      ctx.arc(cx, cy, 6, 0, TAU);
+      ctx.stroke();
+      if (coreActive) {
+        ctx.strokeStyle = ink(.28);
+        ctx.lineWidth = .6;
         ctx.beginPath();
-        ctx.moveTo(x + sx * -s * .46, y);
-        ctx.lineTo(x, y);
-        ctx.lineTo(x, y + sy * -s * .46);
+        ctx.moveTo(cx + 6, cy + 6);
+        ctx.lineTo(cx + 22, cy + 20);
         ctx.stroke();
-      });
-      ctx.strokeStyle = 'rgba(' + INK + ', .32)';
-      ctx.lineWidth = .7;
+      }
+      ctx.fillStyle = ink(coreActive ? .42 : .1);
+      ctx.font = '7.5px -apple-system, "SF Pro Text", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('AS218834', cx + 27, cy + 24);
+
+      // Lock ripple: single 0.65s confirmation ring.
+      const rippleAge = t - state.rippleStart;
+      if (!reduced && rippleAge >= 0 && rippleAge < .65) {
+        const p = rippleAge / .65;
+        ctx.strokeStyle = ink(.35 * (1 - p));
+        ctx.lineWidth = .85;
+        ctx.beginPath();
+        ctx.arc(state.rippleX, state.rippleY, 6 + 22 * p, 0, TAU);
+        ctx.stroke();
+      }
+
+      // Vernier reticle: two counter-rotating 70° arcs plus four cardinal pins.
+      ctx.save();
+      ctx.translate(state.lockX, state.lockY);
+      ctx.rotate(-t * .25);
+      ctx.strokeStyle = ink(.62);
+      ctx.lineWidth = .85;
       ctx.beginPath();
-      ctx.moveTo(state.lockX - 2.5, state.lockY);
-      ctx.lineTo(state.lockX + 2.5, state.lockY);
-      ctx.moveTo(state.lockX, state.lockY - 2.5);
-      ctx.lineTo(state.lockX, state.lockY + 2.5);
+      ctx.arc(0, 0, 10, -.61, .61);
       ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, 10, Math.PI - .61, Math.PI + .61);
+      ctx.stroke();
+      ctx.restore();
+      ctx.strokeStyle = ink(.62);
+      ctx.lineWidth = .85;
+      for (let k = 0; k < 4; k += 1) {
+        const a = k * Math.PI / 2;
+        const ca2 = Math.cos(a);
+        const sa2 = Math.sin(a);
+        ctx.beginPath();
+        ctx.moveTo(state.lockX + ca2 * 4.5, state.lockY + sa2 * 4.5);
+        ctx.lineTo(state.lockX + ca2 * 8.5, state.lockY + sa2 * 8.5);
+        ctx.stroke();
+      }
     }
 
     function step(now) {
@@ -801,8 +1121,10 @@
           state.targetLockSize = 15;
         }
       }
-      state.lockSize = Math.max(state.lockSize, state.targetLockSize + 14);
       if (motion.matches) {
+        state.yaw = state.targetYaw;
+        state.pitch = state.targetPitch;
+        draw();
         state.lockX = state.targetLockX;
         state.lockY = state.targetLockY;
         state.lockSize = state.targetLockSize;
@@ -859,7 +1181,6 @@
     else window.addEventListener('resize', resize);
 
     resize();
-    if (motion.matches) draw();
 
     return {
       setEntry(entry) {
