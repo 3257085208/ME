@@ -257,6 +257,8 @@
   let last=performance.now();
   let imgRect={x:0,y:0,w:1,h:1};
   let hostRect={left:0,top:0,width:1,height:1};
+  let hostPageTop=0;
+  let hostPageLeft=0;
   let homeVisible=true;
   let layoutDirty=true;
   let layoutVersion=0;
@@ -296,12 +298,18 @@
   resizeObserver.observe(sourceImg);
 
   addEventListener('resize',markLayoutDirty,{passive:true});
-  addEventListener('scroll',markLayoutDirty,{passive:true});
+  addEventListener('scroll',()=>{
+    hostRect.top=hostPageTop-scrollY;
+    hostRect.left=hostPageLeft-scrollX;
+  },{passive:true});
 
   function measure(){
     if(!layoutDirty)return;
 
-    hostRect=host.getBoundingClientRect();
+    const hostBCR=host.getBoundingClientRect();
+    hostPageTop=hostBCR.top+scrollY;
+    hostPageLeft=hostBCR.left+scrollX;
+    hostRect={left:hostBCR.left,top:hostBCR.top,width:hostBCR.width,height:hostBCR.height};
     const dpr=Math.min(devicePixelRatio||1,MAX_DPR);
     const w=Math.max(1,Math.round(hostRect.width*dpr));
     const h=Math.max(1,Math.round(hostRect.height*dpr));

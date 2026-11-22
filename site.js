@@ -22,6 +22,8 @@
   const imprintWall = document.getElementById('imprint-wall');
   const imprintGhost = document.getElementById('imprint-ghost');
   const galleryCursor = document.querySelector('.gallery-cursor');
+  const splitLight = document.querySelector('.split-backdrop-light');
+  const inertiaElements = [...document.querySelectorAll('.act-works .plate-slot, .act-imprints .imprint-list, .act-about .about-copy')];
   let heroAnimations = [];
   let aboutAnimations = [];
   let astrolabe = null;
@@ -33,14 +35,35 @@
   const easeOutCubic = (value) => 1 - Math.pow(1 - clamp(value), 3);
   const easeOutQuint = (value) => 1 - Math.pow(1 - clamp(value), 5);
   const lenis = window.Lenis && !motion.matches ? new window.Lenis({
-    duration: 1.05,
-    easing: easeOutQuint,
+    lerp: .11,
     smoothWheel: true,
     syncTouch: false,
-    wheelMultiplier: .9,
+    wheelMultiplier: 1,
     touchMultiplier: 1,
     autoRaf: false
   }) : null;
+
+  const layout = {
+    innerHeight: 0,
+    scrollHeight: 0,
+    maxScroll: 1,
+    heroHeight: 0,
+    heroTop: 0,
+    heroBottom: 0,
+    aboutTop: 0,
+    imprintTop: 0,
+    imprintWallTop: 0,
+    chapters: [],
+    acts: [],
+    reveals: []
+  };
+  let measureTimer = 0;
+  let lastJourneyLabel = '';
+  let lastJourneyProgress = -1;
+  let lastHeaderTone = '';
+  let lastJourneyAtHome = '';
+  let lastAboutShift = null;
+  let lastGhostShift = null;
 
   root.classList.add('js-ready');
 
@@ -100,12 +123,66 @@
     if (act === aboutSection) playAboutSignature();
   }
 
-  function revealActs() {
-    const nearBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 40;
-    acts.forEach((act) => {
-      if (act.classList.contains('is-inview')) return;
+  function measureLayout() {
+    const scrollY = window.scrollY;
+    layout.innerHeight = window.innerHeight;
+    layout.scrollHeight = document.documentElement.scrollHeight;
+    layout.maxScroll = Math.max(1, layout.scrollHeight - layout.innerHeight);
+
+    const heroRect = hero ? hero.getBoundingClientRect() : null;
+    layout.heroHeight = heroRect ? heroRect.height : layout.innerHeight;
+    layout.heroTop = heroRect ? heroRect.top + scrollY : 0;
+    layout.heroBottom = heroRect ? layout.heroTop + heroRect.height : layout.innerHeight;
+
+    layout.chapters = chapters.map((chapter) => {
+      const rect = chapter.getBoundingClientRect();
+      return {
+        el: chapter,
+        top: rect.top + scrollY,
+        height: rect.height,
+        split: parseFloat(chapter.dataset.split),
+        nav: chapter.dataset.nav || '',
+        tone: chapter.dataset.tone || 'dark',
+        label: chapter.dataset.label || 'Introduction'
+      };
+    });
+
+    layout.acts = acts.map((act) => {
       const rect = act.getBoundingClientRect();
-      if (nearBottom || rect.top < window.innerHeight * .82) markActInView(act);
+      return { el: act, top: rect.top + scrollY, height: rect.height };
+    });
+
+    layout.reveals = reveals.map((el) => {
+      const rect = el.getBoundingClientRect();
+      return { el, top: rect.top + scrollY, height: rect.height };
+    });
+
+    const imprintSection = document.getElementById('imprints');
+    layout.imprintTop = imprintSection ? imprintSection.getBoundingClientRect().top + scrollY : 0;
+    layout.imprintWallTop = imprintWall ? imprintWall.getBoundingClientRect().top + scrollY : layout.imprintTop;
+    layout.aboutTop = aboutSection ? aboutSection.getBoundingClientRect().top + scrollY : 0;
+
+    splitStops = layout.chapters
+      .map((chapter) => ({ top: chapter.top, split: chapter.split }))
+      .filter((stop) => Number.isFinite(stop.split));
+  }
+
+  function scheduleMeasure() {
+    if (measureTimer) clearTimeout(measureTimer);
+    measureTimer = setTimeout(() => {
+      measureTimer = 0;
+      measureLayout();
+      if (lenis) updateScrollInertia(performance.now());
+      schedule();
+    }, 120);
+  }
+
+  function revealActs(scrollY) {
+    const y = typeof scrollY === 'number' ? scrollY : window.scrollY;
+    const nearBottom = y + layout.innerHeight >= layout.scrollHeight - 40;
+    layout.acts.forEach((act) => {
+      if (act.el.classList.contains('is-inview')) return;
+      if (nearBottom || act.top - y < layout.innerHeight * .82) markActInView(act.el);
     });
   }
 
@@ -136,14 +213,6 @@
   let splitFrame = 0;
   let splitLastTime = 0;
 
-  function measureSplitStops() {
-    splitStops = chapters
-      .map((chapter) => ({
-        top: chapter.getBoundingClientRect().top + window.scrollY,
-        split: parseFloat(chapter.dataset.split)
-      }))
-      .filter((stop) => Number.isFinite(stop.split));
-  }
 
   function splitAtScroll(y) {
     if (!splitStops.length) return 65;
@@ -165,7 +234,7 @@
   }
 
   function applySplit(value) {
-    root.style.setProperty('--scene-split', value.toFixed(3) + '%');
+    if (splitLight) splitLight.style.transform = 'translate3d(' + value.toFixed(3) + '%, 0, 0)';
   }
 
   function stepSplit(now) {
@@ -188,16 +257,16 @@
     splitFrame = requestAnimationFrame(stepSplit);
   }
 
-  function queueSplit(currentChapter) {
+  function queueSplit(currentChapter, scrollY) {
     if (motion.matches) {
-      const direct = currentChapter ? parseFloat(currentChapter.dataset.split) : 65;
+      const direct = currentChapter ? currentChapter.split : 65;
       splitTarget = Number.isFinite(direct) ? direct : 65;
       splitCurrent = splitTarget;
       splitLastTime = 0;
       applySplit(splitCurrent);
       return;
     }
-    splitTarget = splitAtScroll(window.scrollY);
+    splitTarget = splitAtScroll(typeof scrollY === 'number' ? scrollY : window.scrollY);
     if (!splitFrame) {
       splitLastTime = 0;
       splitFrame = requestAnimationFrame(stepSplit);
@@ -505,6 +574,8 @@
       { lat: 34.05, lon: -118.24, label: 'US · 04' },
       { lat: 1.35, lon: 103.82, label: 'SG · 05' }
     ];
+    const DEGREE_LABELS = ['000°', '090°', '180°', '270°'];
+    const CITY_FONT = '9px -apple-system, "SF Pro Text", sans-serif';
 
     function toVector(latDeg, lonDeg) {
       const lat = latDeg * RAD;
@@ -534,6 +605,8 @@
 
     const worldDots = decodeWorldDots(window.__QQSG_WORLD_DOTS__);
     const totalDots = worldDots.length / 3;
+    const dotScreen = new Float32Array(totalDots * 2);
+    const dotBins = new Uint8Array(totalDots);
 
     const FRONT_ALPHA = [];
     const FRONT_RADIUS = [];
@@ -541,6 +614,15 @@
       FRONT_ALPHA.push(.55 + .40 * (b / 6));
       FRONT_RADIUS.push(1.25 + .90 * (b / 6));
     }
+
+    const routeMeta = cityVecs.map((node) => {
+      const dot = Math.max(-1, Math.min(1, coreVec.x * node.x + coreVec.y * node.y + coreVec.z * node.z));
+      const angle = Math.acos(dot);
+      return {
+        lift: .14 + .14 * (angle / Math.PI),
+        samples: Array.from({ length: 41 }, () => ({ x: 0, y: 0, z: 0 }))
+      };
+    });
 
     const state = {
       active: 'core',
@@ -568,6 +650,17 @@
       lastTime: 0,
       ready: false,
       gradient: null,
+      width: 0,
+      height: 0,
+      radius: 0,
+      dpr: 1,
+      useArcDots: true,
+      dotSprites: [],
+      dotSizes: [],
+      labelWidths: [],
+      degreeWidths: [],
+      labelFont: '9px -apple-system, "SF Pro Text", sans-serif',
+      degreeFont: '9px "Cormorant Garamond", Georgia, serif',
       dragging: false,
       dragMoved: false,
       pointerId: null,
@@ -594,23 +687,47 @@
       return Math.min(w * .42, h * .45, (Math.min(w, h) * .5 - 22) / 1.09);
     }
 
-    function rotateVector(x, y, z, yaw, pitch) {
-      const cy = Math.cos(yaw);
-      const sy = Math.sin(yaw);
-      const cp = Math.cos(pitch);
-      const sp = Math.sin(pitch);
-      const x1 = x * cy + z * sy;
-      const z1 = -x * sy + z * cy;
-      const y1 = y * cp - z1 * sp;
-      const z2 = y * sp + z1 * cp;
-      return { x: x1, y: y1, z: z2 };
+    function buildDotSprites(dpr) {
+      const sprites = [];
+      const sizes = [];
+      for (let b = 0; b < 8; b += 1) {
+        const radius = b === 0 ? .7 : FRONT_RADIUS[b - 1];
+        const alpha = b === 0 ? .075 : FRONT_ALPHA[b - 1];
+        const size = radius * 2 + 1.5;
+        const dim = Math.max(2, Math.round(size * dpr));
+        const source = document.createElement('canvas');
+        source.width = dim;
+        source.height = dim;
+        const sctx = source.getContext('2d');
+        sctx.fillStyle = 'rgba(' + INK + ', ' + alpha.toFixed(3) + ')';
+        sctx.beginPath();
+        sctx.arc(dim * .5, dim * .5, dim * (radius / size), 0, TAU);
+        sctx.fill();
+        sprites.push(source);
+        sizes.push(dim);
+      }
+      state.dotSprites = sprites;
+      state.dotSizes = sizes;
+    }
+
+    function cacheTextMetrics(R) {
+      const labelFont = CITY_FONT;
+      ctx.font = labelFont;
+      state.labelFont = labelFont;
+      state.labelWidths = [CORE.label, ...CITIES.map((city) => city.label)]
+        .map((text) => ctx.measureText(text).width);
+
+      const degreeFont = Math.max(8, Math.min(9.5, R * .042)) + 'px "Cormorant Garamond", Georgia, serif';
+      ctx.font = degreeFont;
+      state.degreeFont = degreeFont;
+      state.degreeWidths = DEGREE_LABELS.map((label) => ctx.measureText(label).width);
     }
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
       const w = Math.max(1, rect.width);
       const h = Math.max(1, rect.height);
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -621,37 +738,38 @@
       const R = sphereRadius(w, h);
       const cx = w * .5;
       const cy = h * .5;
+      state.width = w;
+      state.height = h;
+      state.radius = R;
+      state.dpr = dpr;
+      state.useArcDots = dpr < 1.25;
       const gradient = ctx.createRadialGradient(cx - R * .32, cy - R * .32, R * .05, cx, cy, R);
       gradient.addColorStop(0, 'rgba(' + INK + ', 0)');
       gradient.addColorStop(.55, 'rgba(' + INK + ', .015)');
       gradient.addColorStop(1, 'rgba(' + INK + ', .05)');
       state.gradient = gradient;
+      buildDotSprites(dpr);
+      cacheTextMetrics(R);
       state.ready = true;
       draw();
     }
 
-    function slerpPoint(a, b, u) {
-      const dot = Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y + a.z * b.z));
-      const omega = Math.acos(dot);
-      if (omega < 1e-5) return { x: a.x, y: a.y, z: a.z };
-      const so = Math.sin(omega);
-      const wa = Math.sin((1 - u) * omega) / so;
-      const wb = Math.sin(u * omega) / so;
-      return { x: a.x * wa + b.x * wb, y: a.y * wa + b.y * wb, z: a.z * wa + b.z * wb };
-    }
-
     function draw() {
       if (!state.ready) return;
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
+      const w = state.width;
+      const h = state.height;
       if (w < 2 || h < 2) return;
       ctx.clearRect(0, 0, w, h);
 
       const cx = w * .5;
       const cy = h * .5;
-      const R = sphereRadius(w, h);
+      const R = state.radius;
       const yaw = state.yaw + state.tiltYaw;
       const pitch = state.pitch + state.tiltPitch;
+      const cyaw = Math.cos(yaw);
+      const syaw = Math.sin(yaw);
+      const cp = Math.cos(pitch);
+      const sp = Math.sin(pitch);
       const narrow = w < 460;
       const stride = narrow ? 2 : 1;
       const t = state.time;
@@ -670,52 +788,76 @@
       ctx.beginPath();
       for (let s = 0; s <= 90; s += 1) {
         const lon = (s / 90) * TAU;
-        const p = rotateVector(Math.sin(lon), 0, Math.cos(lon), yaw, pitch);
-        const px = cx + p.x * R;
-        const py = cy - p.y * R;
+        const ex = Math.sin(lon);
+        const ez = Math.cos(lon);
+        const x1 = ex * cyaw + ez * syaw;
+        const z1 = -ex * syaw + ez * cyaw;
+        const y1 = -z1 * sp;
+        const px = cx + x1 * R;
+        const py = cy - y1 * R;
         if (s === 0) ctx.moveTo(px, py);
         else ctx.lineTo(px, py);
       }
       ctx.stroke();
 
-      // ---------- real-world stipple: one back bucket + seven front tone buckets ----------
-      const buckets = [
-        new Path2D(),
-        new Path2D(),
-        new Path2D(),
-        new Path2D(),
-        new Path2D(),
-        new Path2D(),
-        new Path2D(),
-        new Path2D()
-      ];
+      // ---------- pre-rendered stipple sprites: 3,232 drawImage calls, no arcs ----------
+      const sprites = state.dotSprites;
+      const sizes = state.dotSizes;
+      const pixelRatio = state.dpr;
+      let dotCount = 0;
       for (let i = 0; i < totalDots; i += stride) {
         const base = i * 3;
         const x0 = worldDots[base];
         const y0 = worldDots[base + 1];
         const z0 = worldDots[base + 2];
-        const p = rotateVector(x0, y0, z0, yaw, pitch);
-        const sx = cx + p.x * R;
-        const sy = cy - p.y * R;
-        if (p.z <= 0) {
-          buckets[0].moveTo(sx + .7, sy);
-          buckets[0].arc(sx, sy, .7, 0, TAU);
-          continue;
+        const x1 = x0 * cyaw + z0 * syaw;
+        const z1 = -x0 * syaw + z0 * cyaw;
+        const y1 = y0 * cp - z1 * sp;
+        const z2 = y0 * sp + z1 * cp;
+        const sx = cx + x1 * R;
+        const sy = cy - y1 * R;
+        let bin;
+        if (z2 <= 0) {
+          bin = 0;
+        } else {
+          const lit = x1 * LIGHT.x + y1 * LIGHT.y + z2 * LIGHT.z;
+          const tone = Math.max(0, Math.min(1, .5 - .5 * lit + (1 - z2) * .20));
+          bin = 1 + Math.min(6, Math.floor(tone * 7));
         }
-        const lit = p.x * LIGHT.x + p.y * LIGHT.y + p.z * LIGHT.z;
-        const tone = Math.max(0, Math.min(1, .5 - .5 * lit + (1 - p.z) * .20));
-        const bin = Math.min(6, Math.floor(tone * 7));
-        const target = buckets[1 + bin];
-        const radius = FRONT_RADIUS[bin];
-        target.moveTo(sx + radius, sy);
-        target.arc(sx, sy, radius, 0, TAU);
+        dotScreen[dotCount * 2] = sx;
+        dotScreen[dotCount * 2 + 1] = sy;
+        dotBins[dotCount] = bin;
+        dotCount += 1;
       }
-      ctx.fillStyle = ink(.075);
-      ctx.fill(buckets[0]);
-      for (let b = 0; b < 7; b += 1) {
-        ctx.fillStyle = ink(FRONT_ALPHA[b]);
-        ctx.fill(buckets[1 + b]);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      if (state.useArcDots) {
+        const arcBuckets = [
+          new Path2D(), new Path2D(), new Path2D(), new Path2D(),
+          new Path2D(), new Path2D(), new Path2D(), new Path2D()
+        ];
+        for (let i = 0; i < dotCount; i += 1) {
+          const bin = dotBins[i];
+          const radius = bin === 0 ? .7 : FRONT_RADIUS[bin - 1];
+          const path = arcBuckets[bin];
+          path.moveTo(dotScreen[i * 2] + radius, dotScreen[i * 2 + 1]);
+          path.arc(dotScreen[i * 2], dotScreen[i * 2 + 1], radius, 0, TAU);
+        }
+        ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        for (let b = 0; b < 8; b += 1) {
+          ctx.fillStyle = b === 0 ? ink(.075) : ink(FRONT_ALPHA[b - 1]);
+          ctx.fill(arcBuckets[b]);
+        }
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+      } else {
+        for (let i = 0; i < dotCount; i += 1) {
+          const bin = dotBins[i];
+          const dim = sizes[bin];
+          const dx = Math.round(dotScreen[i * 2] * pixelRatio - dim * .5);
+          const dy = Math.round(dotScreen[i * 2 + 1] * pixelRatio - dim * .5);
+          ctx.drawImage(sprites[bin], dx, dy);
+        }
       }
+      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
 
       // clean satellite outline
       ctx.strokeStyle = ink(.22);
@@ -725,36 +867,53 @@
       ctx.stroke();
 
       // ---------- city beacons + BGP geodesic routes ----------
-      const corePoint = rotateVector(coreVec.x, coreVec.y, coreVec.z, yaw, pitch);
-      const coreScreen = { x: cx + corePoint.x * R, y: cy - corePoint.y * R, z: corePoint.z };
-      const cityPoints = cityVecs.map((vec) => {
-        const p = rotateVector(vec.x, vec.y, vec.z, yaw, pitch);
-        return { x: cx + p.x * R, y: cy - p.y * R, z: p.z };
-      });
+      function projectUnit(v, out) {
+        const x1 = v.x * cyaw + v.z * syaw;
+        const z1 = -v.x * syaw + v.z * cyaw;
+        const y1 = v.y * cp - z1 * sp;
+        const z2 = v.y * sp + z1 * cp;
+        out.x = cx + x1 * R;
+        out.y = cy - y1 * R;
+        out.z = z2;
+        return out;
+      }
+
+      const coreScreen = projectUnit(coreVec, { x: 0, y: 0, z: 0 });
+      const cityPoints = cityVecs.map((vec) => projectUnit(vec, { x: 0, y: 0, z: 0 }));
       const activeRoute = state.locked && activeIndex >= 0 ? activeIndex : -1;
 
-      const routes = cityPoints.map((point, i) => {
+      for (let i = 0; i < cityVecs.length; i += 1) {
         const node = cityVecs[i];
+        const meta = routeMeta[i];
         const dot = Math.max(-1, Math.min(1, coreVec.x * node.x + coreVec.y * node.y + coreVec.z * node.z));
-        const angle = Math.acos(dot);
-        const lift = .14 + .14 * (angle / Math.PI);
-        const samples = [];
+        const omega = Math.acos(dot);
+        const so = Math.sin(omega) || 1e-6;
         for (let s = 0; s <= 40; s += 1) {
           const u = s / 40;
-          const p = slerpPoint(coreVec, node, u);
-          const alt = 1 + lift * Math.sin(Math.PI * u);
-          const cam = rotateVector(p.x, p.y, p.z, yaw, pitch);
-          samples.push({ x: cx + cam.x * R * alt, y: cy - cam.y * R * alt, z: cam.z, u });
+          const wa = Math.sin((1 - u) * omega) / so;
+          const wb = Math.sin(u * omega) / so;
+          const gx = coreVec.x * wa + node.x * wb;
+          const gy = coreVec.y * wa + node.y * wb;
+          const gz = coreVec.z * wa + node.z * wb;
+          const alt = 1 + meta.lift * Math.sin(Math.PI * u);
+          const cx1 = gx * cyaw + gz * syaw;
+          const cz1 = -gx * syaw + gz * cyaw;
+          const cy1 = gy * cp - cz1 * sp;
+          const cz2 = gy * sp + cz1 * cp;
+          const sample = meta.samples[s];
+          sample.x = cx + cx1 * R * alt;
+          sample.y = cy + (-cy1) * R * alt;
+          sample.z = cz2;
         }
-        return { samples, point, node, angle, lift };
-      });
+      }
 
-      function strokeRoute(route, active) {
+      function strokeRoute(index, active) {
+        const samples = routeMeta[index].samples;
         ctx.strokeStyle = ink(active ? .82 : .16);
         ctx.lineWidth = active ? 1.6 : .7;
         ctx.setLineDash(active ? [] : [3, 4]);
         ctx.beginPath();
-        route.samples.forEach((p, s) => {
+        samples.forEach((p, s) => {
           if (s === 0) ctx.moveTo(p.x, p.y);
           else ctx.lineTo(p.x, p.y);
         });
@@ -762,13 +921,14 @@
         ctx.setLineDash([]);
       }
 
-      routes.forEach((route, i) => {
-        if (i !== activeRoute) strokeRoute(route, false);
-      });
-      if (activeRoute >= 0 && routes[activeRoute]) strokeRoute(routes[activeRoute], true);
+      for (let i = 0; i < routeMeta.length; i += 1) {
+        if (i !== activeRoute) strokeRoute(i, false);
+      }
+      if (activeRoute >= 0) strokeRoute(activeRoute, true);
 
       if (!reduced) {
-        routes.forEach((route, i) => {
+        for (let i = 0; i < routeMeta.length; i += 1) {
+          const meta = routeMeta[i];
           const active = i === activeRoute;
           const speed = active ? .85 : .14;
           const head = (t * speed + i * .17 + .12) % 1;
@@ -776,18 +936,20 @@
           for (let j = 0; j < tail; j += 1) {
             const u = head - j * .011;
             if (u < 0) continue;
-            const p = slerpPoint(coreVec, cityVecs[i], u);
-            const alt = 1 + route.lift * Math.sin(Math.PI * u);
-            const cam = rotateVector(p.x, p.y, p.z, yaw, pitch);
-            const px = cx + cam.x * R * alt;
-            const py = cy - cam.y * R * alt;
+            const f = u * 40;
+            const si = Math.min(40, Math.floor(f));
+            const frac = f - si;
+            const a = meta.samples[si];
+            const b = meta.samples[Math.min(40, si + 1)];
+            const px = a.x + (b.x - a.x) * frac;
+            const py = a.y + (b.y - a.y) * frac;
             const fade = 1 - j / tail;
             ctx.fillStyle = ink(active ? .08 + .82 * fade : .03 + .14 * fade);
             ctx.beginPath();
             ctx.arc(px, py, active ? .35 + 1.75 * fade : .28 + .72 * fade, 0, TAU);
             ctx.fill();
           }
-        });
+        }
       }
 
       // ---------- minimal Swiss bezel: 1.09R, 120 ticks, tangent cardinals ----------
@@ -820,14 +982,14 @@
 
       const labelRadius = ringR + 10;
       const occupiedBoxes = [];
-      ctx.font = Math.max(8, Math.min(9.5, R * .042)) + 'px "Cormorant Garamond", Georgia, serif';
+      ctx.font = state.degreeFont;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ['000°', '090°', '180°', '270°'].forEach((label, i) => {
+      DEGREE_LABELS.forEach((label, i) => {
         const a = ringAngle + (i / 4) * TAU - Math.PI / 2;
         const lx = cx + Math.cos(a) * labelRadius;
         const ly = cy + Math.sin(a) * labelRadius;
-        const half = Math.max(10, ctx.measureText(label).width * .5 + 4);
+        const half = Math.max(10, state.degreeWidths[i] * .5 + 4);
         occupiedBoxes.push({ l: lx - half, r: lx + half, t: ly - half, b: ly + half });
         ctx.save();
         ctx.translate(lx, ly);
@@ -842,10 +1004,18 @@
 
       // ---------- beacons, lock reticle, short leader labels ----------
       const labelEntries = [
-        { x: coreScreen.x, y: coreScreen.y, z: coreScreen.z, text: CORE.label, core: true, active: activeIndex < 0 }
+        { x: coreScreen.x, y: coreScreen.y, z: coreScreen.z, text: CORE.label, width: state.labelWidths[0], core: true, active: activeIndex < 0 }
       ];
       cityPoints.forEach((point, i) => {
-        labelEntries.push({ x: point.x, y: point.y, z: point.z, text: CITIES[i].label, core: false, active: activeIndex === i });
+        labelEntries.push({
+          x: point.x,
+          y: point.y,
+          z: point.z,
+          text: CITIES[i].label,
+          width: state.labelWidths[i + 1],
+          core: false,
+          active: activeIndex === i
+        });
       });
 
       labelEntries.forEach((entry) => {
@@ -875,7 +1045,7 @@
           const rank = (item) => (state.locked && item.entry.active ? 0 : item.entry.core ? 1 : item.entry.z > 0 ? 2 : 3);
           return rank(a) - rank(b) || a.idx - b.idx;
         });
-      ctx.font = '9px -apple-system, "SF Pro Text", sans-serif';
+      ctx.font = state.labelFont;
       const labelH = 10;
       labelOrder.forEach(({ entry, idx }) => {
         const front = entry.z > 0;
@@ -884,7 +1054,7 @@
         const dist = Math.hypot(dx, dy);
         const ux = dist > 4 ? dx / dist : Math.cos((idx / 6) * TAU);
         const uy = dist > 4 ? dy / dist : Math.sin((idx / 6) * TAU);
-        const textW = ctx.measureText(entry.text).width;
+        const textW = entry.width;
         const elbowX = entry.x + ux * 13;
         const elbowY = Math.max(9, Math.min(h - 9, entry.y + uy * 13));
         const preferred = ux >= 0 ? 1 : -1;
@@ -974,6 +1144,7 @@
           ctx.stroke();
         }
       }
+
     }
 
     function step(now) {
@@ -1186,6 +1357,12 @@
 
     resize();
     if (motion.matches) draw();
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        cacheTextMetrics(state.radius);
+        if (state.visible) draw();
+      });
+    }
 
     return {
       setEntry(entry) {
@@ -1214,23 +1391,27 @@
   /* ---------------------------------------------------------
      Scroll-linked depth: about portrait + imprints ghost
      --------------------------------------------------------- */
-  function updateDepthParallax() {
+  function updateDepthParallax(scrollY) {
     if (motion.matches) return;
+    const y = typeof scrollY === 'number' ? scrollY : window.scrollY;
 
     if (desktop.matches && aboutSection && aboutVisual && aboutImage) {
-      const aboutTop = aboutSection.getBoundingClientRect().top + window.scrollY;
-      const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      const start = aboutTop - window.innerHeight;
-      const t = clamp((window.scrollY - start) / Math.max(1, maxScroll - start), 0, 1);
+      const start = layout.aboutTop - layout.innerHeight;
+      const t = clamp((y - start) / Math.max(1, layout.maxScroll - start), 0, 1);
       const shift = -12 + 24 * t;
-      aboutImage.style.setProperty('--about-shift', shift.toFixed(2) + 'px');
+      if (lastAboutShift === null || Math.abs(shift - lastAboutShift) > .005) {
+        aboutImage.style.setProperty('--about-shift', shift.toFixed(2) + 'px');
+        lastAboutShift = shift;
+      }
     }
 
     if (desktop.matches && imprintWall && imprintGhost) {
-      const rect = imprintWall.getBoundingClientRect();
-      const progress = clamp((window.innerHeight - rect.top) / (window.innerHeight * 2), 0, 1);
+      const progress = clamp((layout.innerHeight - (layout.imprintWallTop - y)) / (layout.innerHeight * 2), 0, 1);
       const shift = 24 - 48 * progress;
-      imprintGhost.style.setProperty('--ghost-shift', shift.toFixed(2) + 'px');
+      if (lastGhostShift === null || Math.abs(shift - lastGhostShift) > .005) {
+        imprintGhost.style.setProperty('--ghost-shift', shift.toFixed(2) + 'px');
+        lastGhostShift = shift;
+      }
     }
   }
 
@@ -1248,8 +1429,8 @@
 
   function cursorInHero(x, y) {
     if (!hero) return false;
-    const rect = hero.getBoundingClientRect();
-    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+    const scrollY = window.scrollY;
+    return y >= layout.heroTop - scrollY && y <= layout.heroBottom - scrollY;
   }
 
   function setCursorMode(target, x, y) {
@@ -1317,30 +1498,34 @@
     window.addEventListener('blur', hideCursor);
   }
 
-  function refreshCursor() {
+  function refreshCursor(scrollY) {
     if (!galleryCursor) return;
     if (!finePointer.matches || motion.matches || pointerX < 0) {
       galleryCursor.classList.remove('is-visible', 'is-ring', 'is-plate');
       return;
     }
-    const target = document.elementFromPoint(pointerX, pointerY);
-    setCursorMode(target, pointerX, pointerY);
+    const y = typeof scrollY === 'number' ? scrollY : window.scrollY;
+    if (pointerY < layout.heroBottom - y) {
+      galleryCursor.classList.remove('is-visible', 'is-ring', 'is-plate');
+      return;
+    }
+    if (!galleryCursor.classList.contains('is-visible')) galleryCursor.classList.add('is-visible');
   }
 
   /* ---------------------------------------------------------
      Reveal motion — reliable, one-way, always ends at opacity 1
      --------------------------------------------------------- */
-  function revealVisibleElements() {
+  function revealVisibleElements(scrollY) {
     if (motion.matches) {
       reveals.forEach((el) => el.classList.add('is-visible'));
       return;
     }
-    const nearBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 40;
-    reveals.forEach((el) => {
-      if (el.classList.contains('is-visible')) return;
-      const rect = el.getBoundingClientRect();
-      if (nearBottom || rect.top < window.innerHeight * .92) {
-        el.classList.add('is-visible');
+    const y = typeof scrollY === 'number' ? scrollY : window.scrollY;
+    const nearBottom = y + layout.innerHeight >= layout.scrollHeight - 40;
+    layout.reveals.forEach((reveal) => {
+      if (reveal.el.classList.contains('is-visible')) return;
+      if (nearBottom || reveal.top - y < layout.innerHeight * .92) {
+        reveal.el.classList.add('is-visible');
       }
     });
   }
@@ -1365,38 +1550,54 @@
   /* ---------------------------------------------------------
      Scroll state: nav, journey, header tone, split, depth, cursor
      --------------------------------------------------------- */
-  function update() {
+  function update(scrollYParam) {
     scheduled = false;
-    const marker = window.innerHeight * .36;
-    let current = chapters[0];
+    const scrollY = typeof scrollYParam === 'number' ? scrollYParam : window.scrollY;
+    const marker = layout.innerHeight * .36;
+    let current = layout.chapters[0];
 
-    chapters.forEach((chapter) => {
-      if (chapter.getBoundingClientRect().top <= marker) current = chapter;
+    layout.chapters.forEach((chapter) => {
+      if (chapter.top - scrollY <= marker) current = chapter;
     });
 
-    if (current?.dataset.nav !== currentNav) {
-      currentNav = current?.dataset.nav || 'home';
+    if (current && current.nav !== currentNav) {
+      currentNav = current.nav;
       navLinks.forEach((link) => {
         if (link.hash === '#' + currentNav) link.setAttribute('aria-current', 'page');
         else link.removeAttribute('aria-current');
       });
     }
 
-    const index = Math.max(0, chapters.indexOf(current));
-    if (journeyLabel) journeyLabel.textContent = current?.dataset.label || 'Introduction';
+    const index = current ? Math.max(0, layout.chapters.indexOf(current)) : 0;
+    const label = current ? current.label : 'Introduction';
+    if (journeyLabel && lastJourneyLabel !== label) {
+      journeyLabel.textContent = label;
+      lastJourneyLabel = label;
+    }
     if (journeyProgress) {
-      const progress = window.scrollY / Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      journeyProgress.style.transform = 'scaleX(' + clamp(progress).toFixed(4) + ')';
+      const progress = clamp(scrollY / layout.maxScroll);
+      if (Math.abs(progress - lastJourneyProgress) > .0004) {
+        journeyProgress.style.transform = 'scaleX(' + progress.toFixed(4) + ')';
+        lastJourneyProgress = progress;
+      }
     }
 
-    document.body.dataset.headerTone = current?.dataset.tone || 'dark';
-    if (journey) journey.dataset.atHome = index === 0 ? 'true' : 'false';
+    const tone = current ? current.tone : 'dark';
+    if (lastHeaderTone !== tone) {
+      document.body.dataset.headerTone = tone;
+      lastHeaderTone = tone;
+    }
+    const atHome = index === 0 ? 'true' : 'false';
+    if (journey && lastJourneyAtHome !== atHome) {
+      journey.dataset.atHome = atHome;
+      lastJourneyAtHome = atHome;
+    }
 
-    revealVisibleElements();
-    revealActs();
-    updateDepthParallax();
-    queueSplit(current);
-    refreshCursor();
+    revealVisibleElements(scrollY);
+    revealActs(scrollY);
+    updateDepthParallax(scrollY);
+    queueSplit(current, scrollY);
+    refreshCursor(scrollY);
   }
 
   function schedule() {
@@ -1456,16 +1657,29 @@
 
   window.addEventListener('wheel', cancelAnimatedScroll, { passive: true });
   window.addEventListener('touchstart', cancelAnimatedScroll, { passive: true });
-  window.addEventListener('scroll', schedule, { passive: true });
-  window.addEventListener('resize', () => {
-    measureSplitStops();
-    schedule();
-  });
+  if (lenis) {
+    lenis.on('scroll', (payload) => {
+      update(payload.scroll);
+      updateScrollInertia(performance.now());
+    });
+  } else {
+    window.addEventListener('scroll', schedule, { passive: true });
+  }
+  window.addEventListener('resize', scheduleMeasure, { passive: true });
+  window.addEventListener('load', () => {
+    measureLayout();
+    update();
+  }, { once: true });
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => {
+      measureLayout();
+      update();
+    });
+  }
   window.addEventListener('popstate', () => {
     const target = location.hash ? document.querySelector(location.hash) : null;
     animateScrollTo(target ? target.getBoundingClientRect().top + window.scrollY : 0);
   });
-  lenis?.on('scroll', schedule);
   replay?.addEventListener('click', playHeroSignature);
   motion.addEventListener('change', () => {
     if (motion.matches) lenis?.stop();
@@ -1489,20 +1703,61 @@
   let inertiaLast = 0;
   let inertiaSkew = 0;
   let inertiaLag = 0;
+  let inertiaActive = false;
+  let inertiaLastTransform = '';
 
-  function updateScrollInertia(now) {
-    if (!lenis) return;
-    if (motion.matches) {
-      inertiaLast = 0;
-      inertiaSkew = 0;
-      inertiaLag = 0;
-      root.style.setProperty('--scroll-skew', '0deg');
-      root.style.setProperty('--scroll-lag', '0px');
+  function setInertiaTransform(skew, lag) {
+    if (!inertiaElements.length) return;
+    const active = skew !== 0 || lag !== 0;
+    if (!active) {
+      if (!inertiaActive) return;
+      inertiaActive = false;
+      inertiaLastTransform = '';
+      inertiaElements.forEach((el) => {
+        el.style.transform = '';
+        el.style.willChange = '';
+      });
       return;
     }
-    const dt = inertiaLast ? Math.min(.05, Math.max(0, (now - inertiaLast) / 1000)) : 1 / 60;
-    inertiaLast = now;
-    const velocity = typeof lenis.velocity === 'number' ? lenis.velocity : 0;
+    const transform = 'translate3d(0,' + lag.toFixed(2) + 'px,0) skewY(' + skew.toFixed(3) + 'deg)';
+    if (transform === inertiaLastTransform) return;
+    inertiaLastTransform = transform;
+    if (!inertiaActive) {
+      inertiaActive = true;
+      inertiaElements.forEach((el) => {
+        el.style.willChange = 'transform';
+      });
+    }
+    inertiaElements.forEach((el) => {
+      el.style.transform = transform;
+    });
+  }
+
+  function updateScrollInertia(now, velocityOverride) {
+    if (!lenis) return;
+    if (motion.matches) {
+      if (inertiaActive || inertiaSkew !== 0 || inertiaLag !== 0) {
+        inertiaLast = 0;
+        inertiaSkew = 0;
+        inertiaLag = 0;
+        setInertiaTransform(0, 0);
+      }
+      return;
+    }
+    const time = typeof now === 'number' ? now : performance.now();
+    if (inertiaLast && time - inertiaLast < 4) return;
+    const velocity = typeof velocityOverride === 'number'
+      ? velocityOverride
+      : (typeof lenis.velocity === 'number' ? lenis.velocity : 0);
+
+    if (inertiaSkew === 0 && inertiaLag === 0 && velocity === 0) {
+      if (inertiaActive) setInertiaTransform(0, 0);
+      inertiaLast = 0;
+      return;
+    }
+
+    const dt = inertiaLast ? Math.min(.05, Math.max(0, (time - inertiaLast) / 1000)) : 1 / 60;
+    inertiaLast = time;
     const targetSkew = clamp(velocity * .02, -1.2, 1.2);
     const targetLag = clamp(velocity * .16, -10, 10);
     const alpha = 1 - Math.exp(-10 * dt);
@@ -1510,14 +1765,18 @@
     inertiaLag += (targetLag - inertiaLag) * alpha;
     if (Math.abs(targetSkew - inertiaSkew) < .004) inertiaSkew = targetSkew;
     if (Math.abs(targetLag - inertiaLag) < .015) inertiaLag = targetLag;
-    root.style.setProperty('--scroll-skew', inertiaSkew.toFixed(3) + 'deg');
-    root.style.setProperty('--scroll-lag', inertiaLag.toFixed(2) + 'px');
+    if (inertiaSkew === 0 && inertiaLag === 0 && velocity === 0) {
+      setInertiaTransform(0, 0);
+      inertiaLast = 0;
+      return;
+    }
+    setInertiaTransform(inertiaSkew, inertiaLag);
   }
 
   /* ---------------------------------------------------------
      Boot
      --------------------------------------------------------- */
-  measureSplitStops();
+  measureLayout();
   splitCurrent = splitAtScroll(window.scrollY);
   splitTarget = splitCurrent;
   applySplit(splitCurrent);
@@ -1533,7 +1792,7 @@
   if (lenis) {
     function raf(time) {
       lenis.raf(time);
-      updateScrollInertia(time);
+      if (inertiaActive || inertiaSkew !== 0 || inertiaLag !== 0) updateScrollInertia(time);
       requestAnimationFrame(raf);
     }
     requestAnimationFrame(raf);

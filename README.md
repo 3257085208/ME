@@ -17,11 +17,14 @@
 
 ## 装置与微动效
 
-- 地球 Canvas 只使用 #060606 / #f4f3ee 墨色，DPR 封顶 2；3,232 个真实陆地点按透明度/半径分入 8 个 Path2D 桶（1 个背面桶 + 7 个正面墨色桶），每帧仅 8 次 fill；由 IntersectionObserver 控制，仅 #imprints 在视口内渲染，离屏即暂停，标签页隐藏时同样暂停。
+- 地球 Canvas 只使用 #060606 / #f4f3ee 墨色，DPR 封顶 1.5；3,232 个真实陆地点按明暗档位映射到 8 枚离屏预渲染圆点 Sprite，DPR>=1.25 时每帧以设备像素 1:1 drawImage 绘制，低 DPR 自动回落为抗锯齿 Path2D 圆点以保持锐利；文字宽度在 resize 时一次性 measureText 缓存。由 IntersectionObserver 控制，仅 #imprints 在视口内渲染，离屏即暂停，标签页隐藏时同样暂停。
 - 陆地点来自 Natural Earth 50m 陆地 TopoJSON（为台湾、新加坡等小岛保留真实轮廓），以 11,000 个斐波那契候选点做点在多边形判定后压缩为本地静态 world-dots.js（3,232 点 / 25.9KB）；运行时无任何地图数据外链。
 - 桌面精确指针可在右侧白墙按住拖拽旋转地球，带惯性角速度衰减；停稳 2.5s 后恢复缓慢自转。悬停左侧入口会中断自转并按最短角差锁定城市。
 - Works 切换保留无闪烁的双层图版（is-prev / is-active），叠加 5 条 35ms 错峰的墨色百叶扫片（总 0.78s）；桌面精确指针下支持 3D 透视微倾、反相微视差与磁吸外链。
 - Lenis 滚动速度写入 --scroll-skew（±1.2deg）与 --scroll-lag（±10px），以帧率无关阻尼作用于图版、域名列表与 About 文案，停滚即归零。
+- 滚动热路径零 getBoundingClientRect() / document.elementFromPoint()：章节、首屏、Imprints/About 坐标与 scrollHeight 只在初始化/resize 时测量，滚动帧全部用缓存坐标和 scrollY 做纯数值计算。
+- 对切层与滚动惯性直接写目标元素 transform，不再每帧写 :root CSS 变量；惯性静止后立即停写并清除临时 will-change。Lenis 开启时由 lenis.on('scroll') 同帧驱动 update 与惯性，lerp: .11。
+- .film-grain 改用 mix-blend-mode: normal + .022 透明度与 180px 平铺，移除全屏 soft-light 混合；不再为幽灵编号、箭头、静态 reveal 预留常驻合成层。
 - 全局光标仅对 hover:hover + pointer:fine 生效，首帧直接落位；触屏与减少动态效果下自动关闭。
 - 首屏保持作者原构图；所有新增动画在 prefers-reduced-motion 下均为静态最终态。
 
