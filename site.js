@@ -481,40 +481,7 @@
     if (!ctx) return { setEntry() {}, refresh() {}, releaseLock() {} };
 
     const TAU = Math.PI * 2;
-    const NODES = [
-      { label: '01', az: -2.55, el: .42 },
-      { label: '02', az: -1.15, el: -.52 },
-      { label: '03', az: .35, el: .58 },
-      { label: '04', az: 1.9, el: -.36 },
-      { label: '05', az: 3.0, el: .2 }
-    ];
-    const nodeDirs = NODES.map((node) => {
-      const ce = Math.cos(node.el);
-      return { x: Math.sin(node.az) * ce, y: Math.sin(node.el), z: Math.cos(node.az) * ce };
-    });
-    const CORE = { x: 0, y: 0, z: 1 };
-    const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
-
-    function fibonacciSphere(count) {
-      const out = new Float32Array(count * 3);
-      for (let i = 0; i < count; i += 1) {
-        const y = 1 - (i / Math.max(1, count - 1)) * 2;
-        const r = Math.sqrt(Math.max(0, 1 - y * y));
-        const th = GOLDEN_ANGLE * i;
-        out[i * 3] = Math.cos(th) * r;
-        out[i * 3 + 1] = y;
-        out[i * 3 + 2] = Math.sin(th) * r;
-      }
-      return out;
-    }
-
-    const DOTS_WIDE = fibonacciSphere(480);
-    const DOTS_NARROW = fibonacciSphere(260);
-    const LIGHT = (() => {
-      const v = { x: -.62, y: .48, z: .62 };
-      const len = Math.hypot(v.x, v.y, v.z) || 1;
-      return { x: v.x / len, y: v.y / len, z: v.z / len };
-    })();
+    const RAD = Math.PI / 180;
     const INK = '6, 6, 6';
     const inkCache = {};
 
@@ -523,12 +490,66 @@
       return inkCache[key] || (inkCache[key] = 'rgba(' + INK + ', ' + (key / 200).toFixed(3) + ')');
     }
 
+    const LIGHT = (() => {
+      const v = { x: -.55, y: .45, z: .70 };
+      const len = Math.hypot(v.x, v.y, v.z) || 1;
+      return { x: v.x / len, y: v.y / len, z: v.z / len };
+    })();
+
+    const CORE = { lat: 39.90, lon: 116.40, label: 'CN · CORE' };
+    const CORE_VIEW = { lat: 24, lon: 120 };
+    const CITIES = [
+      { lat: 31.20, lon: 121.50, label: 'CN · 01' },
+      { lat: 35.70, lon: 139.70, label: 'JP · 02' },
+      { lat: 50.11, lon: 8.68, label: 'DE · 03' },
+      { lat: 34.05, lon: -118.24, label: 'US · 04' },
+      { lat: 1.35, lon: 103.82, label: 'SG · 05' }
+    ];
+
+    function toVector(latDeg, lonDeg) {
+      const lat = latDeg * RAD;
+      const lon = lonDeg * RAD;
+      const ce = Math.cos(lat);
+      return { x: ce * Math.sin(lon), y: Math.sin(lat), z: ce * Math.cos(lon) };
+    }
+
+    const coreVec = toVector(CORE.lat, CORE.lon);
+    const cityVecs = CITIES.map((city) => toVector(city.lat, city.lon));
+
+    function decodeWorldDots(payload) {
+      if (!payload || typeof payload.data !== 'string') return new Float32Array(0);
+      try {
+        const bin = atob(payload.data);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+        const ints = new Int16Array(bytes.buffer);
+        const scale = payload.scale || 1000;
+        const out = new Float32Array(ints.length);
+        for (let i = 0; i < ints.length; i += 1) out[i] = ints[i] / scale;
+        return out;
+      } catch (error) {
+        return new Float32Array(0);
+      }
+    }
+
+    const worldDots = decodeWorldDots(window.__QQSG_WORLD_DOTS__);
+    const totalDots = worldDots.length / 3;
+
+    const FRONT_ALPHA = [];
+    const FRONT_RADIUS = [];
+    for (let b = 0; b < 7; b += 1) {
+      FRONT_ALPHA.push(.55 + .40 * (b / 6));
+      FRONT_RADIUS.push(1.25 + .90 * (b / 6));
+    }
+
     const state = {
       active: 'core',
-      yaw: 0,
-      targetYaw: 0,
-      pitch: 0,
-      targetPitch: 0,
+      locked: true,
+      mode: 'locked',
+      yaw: -CORE_VIEW.lon * RAD,
+      targetYaw: -CORE_VIEW.lon * RAD,
+      pitch: CORE_VIEW.lat * RAD,
+      targetPitch: CORE_VIEW.lat * RAD,
       tiltYaw: 0,
       targetTiltYaw: 0,
       tiltPitch: 0,
@@ -537,22 +558,52 @@
       lockY: 0,
       targetLockX: 0,
       targetLockY: 0,
-      lockSize: 30,
-      targetLockSize: 19,
+      lastLockKey: 'core',
       rippleStart: -10,
       rippleX: 0,
       rippleY: 0,
-      lastLockKey: 'core',
       time: 0,
       frame: 0,
       visible: false,
       lastTime: 0,
       ready: false,
-      gradient: null
+      gradient: null,
+      dragging: false,
+      dragMoved: false,
+      pointerId: null,
+      lastPX: 0,
+      lastPY: 0,
+      lastMoveAt: 0,
+      spinYaw: 0,
+      spinPitch: 0,
+      idleSince: 0
     };
 
+    function clampPitch(value) {
+      return Math.max(-1.26, Math.min(1.26, value));
+    }
+
+    function shortestDelta(target) {
+      let delta = (target - state.yaw) % TAU;
+      if (delta > Math.PI) delta -= TAU;
+      if (delta < -Math.PI) delta += TAU;
+      return delta;
+    }
+
     function sphereRadius(w, h) {
-      return Math.min(w * .4, h * (w < 460 ? .36 : .39));
+      return Math.min(w * .42, h * .45, (Math.min(w, h) * .5 - 22) / 1.09);
+    }
+
+    function rotateVector(x, y, z, yaw, pitch) {
+      const cy = Math.cos(yaw);
+      const sy = Math.sin(yaw);
+      const cp = Math.cos(pitch);
+      const sp = Math.sin(pitch);
+      const x1 = x * cy + z * sy;
+      const z1 = -x * sy + z * cy;
+      const y1 = y * cp - z1 * sp;
+      const z2 = y * sp + z1 * cp;
+      return { x: x1, y: y1, z: z2 };
     }
 
     function resize() {
@@ -572,8 +623,8 @@
       const cy = h * .5;
       const gradient = ctx.createRadialGradient(cx - R * .32, cy - R * .32, R * .05, cx, cy, R);
       gradient.addColorStop(0, 'rgba(' + INK + ', 0)');
-      gradient.addColorStop(.55, 'rgba(' + INK + ', .018)');
-      gradient.addColorStop(1, 'rgba(' + INK + ', .055)');
+      gradient.addColorStop(.55, 'rgba(' + INK + ', .015)');
+      gradient.addColorStop(1, 'rgba(' + INK + ', .05)');
       state.gradient = gradient;
       state.ready = true;
       draw();
@@ -582,9 +633,7 @@
     function slerpPoint(a, b, u) {
       const dot = Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y + a.z * b.z));
       const omega = Math.acos(dot);
-      if (omega < 1e-5) {
-        return { x: a.x, y: a.y, z: a.z };
-      }
+      if (omega < 1e-5) return { x: a.x, y: a.y, z: a.z };
       const so = Math.sin(omega);
       const wa = Math.sin((1 - u) * omega) / so;
       const wb = Math.sin(u * omega) / so;
@@ -603,297 +652,185 @@
       const R = sphereRadius(w, h);
       const yaw = state.yaw + state.tiltYaw;
       const pitch = state.pitch + state.tiltPitch;
-      const yc = Math.cos(yaw);
-      const ys = Math.sin(yaw);
-      const pc = Math.cos(pitch);
-      const ps = Math.sin(pitch);
+      const narrow = w < 460;
+      const stride = narrow ? 2 : 1;
       const t = state.time;
       const reduced = motion.matches;
-      const narrow = w < 460;
-      const dots = narrow ? DOTS_NARROW : DOTS_WIDE;
-      const dotCount = dots.length / 3;
       const activeIndex = state.active === 'core' ? -1 : state.active;
 
-      // ---------- back half of the 23.5° tilted double orbit ----------
-      const tilt = 23.5 * Math.PI / 180;
-      const tiltSin = Math.sin(tilt);
-      const tiltCos = Math.cos(tilt);
-
-      function orbitPaths(scale) {
-        const back = new Path2D();
-        const front = new Path2D();
-        const steps = 200;
-        let prev = null;
-        for (let i = 0; i <= steps; i += 1) {
-          const a = (i / steps) * TAU;
-          const x0 = Math.cos(a);
-          const y0 = Math.sin(a) * tiltSin;
-          const z0 = Math.sin(a) * tiltCos;
-          const x1 = x0 * yc + z0 * ys;
-          const z1 = -x0 * ys + z0 * yc;
-          const y1 = y0 * pc - z1 * ps;
-          const z2 = y0 * ps + z1 * pc;
-          const sx = cx + x1 * R * scale;
-          const sy = cy - y1 * R * scale;
-          if (prev) {
-            const target = (z2 + prev.z) * .5 <= 0 ? back : front;
-            target.moveTo(prev.x, prev.y);
-            target.lineTo(sx, sy);
-          }
-          prev = { x: sx, y: sy, z: z2 };
-        }
-        return { back, front };
-      }
-
-      const orbitOuter = orbitPaths(1.22);
-      const orbitInner = orbitPaths(1.19);
-      ctx.lineWidth = .8;
-      ctx.strokeStyle = ink(.16);
-      ctx.stroke(orbitOuter.back);
-      ctx.save();
-      ctx.setLineDash([2, 5]);
-      ctx.lineWidth = .6;
-      ctx.strokeStyle = ink(.1);
-      ctx.stroke(orbitInner.back);
-      ctx.restore();
-
-      // ---------- engraved stipple sphere ----------
+      // ---------- immersed sphere shadow + equator reference ----------
       if (state.gradient) {
         ctx.fillStyle = state.gradient;
         ctx.beginPath();
         ctx.arc(cx, cy, R, 0, TAU);
         ctx.fill();
       }
+      ctx.strokeStyle = ink(.07);
+      ctx.lineWidth = .6;
+      ctx.beginPath();
+      for (let s = 0; s <= 90; s += 1) {
+        const lon = (s / 90) * TAU;
+        const p = rotateVector(Math.sin(lon), 0, Math.cos(lon), yaw, pitch);
+        const px = cx + p.x * R;
+        const py = cy - p.y * R;
+        if (s === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
 
-      // Latitude/longitude guide grid: 12 full meridians, batched by hemisphere.
-      const backMeridian = new Path2D();
-      const frontMeridian = new Path2D();
-      for (let m = 0; m < 12; m += 1) {
-        const az = m * Math.PI / 6;
-        const sa = Math.sin(az);
-        const ca = Math.cos(az);
-        let prev = null;
-        for (let s = 0; s <= 48; s += 1) {
-          const el = -Math.PI / 2 + (s / 48) * Math.PI;
-          const ce = Math.cos(el);
-          const x0 = sa * ce;
-          const y0 = Math.sin(el);
-          const z0 = ca * ce;
-          const x1 = x0 * yc + z0 * ys;
-          const z1 = -x0 * ys + z0 * yc;
-          const y1 = y0 * pc - z1 * ps;
-          const z2 = y0 * ps + z1 * pc;
-          const sx = cx + x1 * R;
-          const sy = cy - y1 * R;
-          if (prev) {
-            const target = (z2 + prev.z) * .5 <= 0 ? backMeridian : frontMeridian;
-            target.moveTo(prev.x, prev.y);
-            target.lineTo(sx, sy);
-          }
-          prev = { x: sx, y: sy, z: z2 };
+      // ---------- real-world stipple: one back bucket + seven front tone buckets ----------
+      const buckets = [
+        new Path2D(),
+        new Path2D(),
+        new Path2D(),
+        new Path2D(),
+        new Path2D(),
+        new Path2D(),
+        new Path2D(),
+        new Path2D()
+      ];
+      for (let i = 0; i < totalDots; i += stride) {
+        const base = i * 3;
+        const x0 = worldDots[base];
+        const y0 = worldDots[base + 1];
+        const z0 = worldDots[base + 2];
+        const p = rotateVector(x0, y0, z0, yaw, pitch);
+        const sx = cx + p.x * R;
+        const sy = cy - p.y * R;
+        if (p.z <= 0) {
+          buckets[0].moveTo(sx + .7, sy);
+          buckets[0].arc(sx, sy, .7, 0, TAU);
+          continue;
         }
+        const lit = p.x * LIGHT.x + p.y * LIGHT.y + p.z * LIGHT.z;
+        const tone = Math.max(0, Math.min(1, .5 - .5 * lit + (1 - p.z) * .20));
+        const bin = Math.min(6, Math.floor(tone * 7));
+        const target = buckets[1 + bin];
+        const radius = FRONT_RADIUS[bin];
+        target.moveTo(sx + radius, sy);
+        target.arc(sx, sy, radius, 0, TAU);
       }
-      ctx.lineWidth = .6;
-      ctx.strokeStyle = ink(.025);
-      ctx.stroke(backMeridian);
-
-      // Back hemisphere stipple (faint) before front grid so depth reads.
-      for (let i = 0; i < dotCount; i += 1) {
-        const x0 = dots[i * 3];
-        const y0 = dots[i * 3 + 1];
-        const z0 = dots[i * 3 + 2];
-        const x1 = x0 * yc + z0 * ys;
-        const z1 = -x0 * ys + z0 * yc;
-        const y1 = y0 * pc - z1 * ps;
-        const z2 = y0 * ps + z1 * pc;
-        if (z2 > 0) continue;
-        ctx.fillStyle = ink(.035);
-        ctx.beginPath();
-        ctx.arc(cx + x1 * R, cy - y1 * R, .42, 0, TAU);
-        ctx.fill();
+      ctx.fillStyle = ink(.075);
+      ctx.fill(buckets[0]);
+      for (let b = 0; b < 7; b += 1) {
+        ctx.fillStyle = ink(FRONT_ALPHA[b]);
+        ctx.fill(buckets[1 + b]);
       }
 
-      ctx.strokeStyle = ink(.075);
-      ctx.lineWidth = .6;
-      ctx.stroke(frontMeridian);
-
-      // Front hemisphere stipple with left-top chiaroscuro.
-      for (let i = 0; i < dotCount; i += 1) {
-        const x0 = dots[i * 3];
-        const y0 = dots[i * 3 + 1];
-        const z0 = dots[i * 3 + 2];
-        const x1 = x0 * yc + z0 * ys;
-        const z1 = -x0 * ys + z0 * yc;
-        const y1 = y0 * pc - z1 * ps;
-        const z2 = y0 * ps + z1 * pc;
-        if (z2 <= 0) continue;
-        const nx = cx + x1 * R;
-        const ny = cy - y1 * R;
-        const lit = Math.max(0, Math.min(1, (x1 * LIGHT.x + y1 * LIGHT.y + z2 * LIGHT.z + .2) / 1.15));
-        const shade = Math.pow(1 - lit, 1.35);
-        const spread = Math.max(0, Math.min(1, (z2 + .08) / .5));
-        let alpha = .05 + .37 * shade * spread + .03 * spread;
-        if (lit > .72) alpha *= .55;
-        let radius = .52 + .93 * shade * spread;
-        alpha = Math.max(.04, Math.min(.42, alpha));
-        radius = Math.max(.42, Math.min(1.45, radius));
-        ctx.fillStyle = ink(alpha);
-        ctx.beginPath();
-        ctx.arc(nx, ny, radius, 0, TAU);
-        ctx.fill();
-      }
-
-      // Fine engraved silhouette + front half of the orbit.
-      ctx.lineWidth = .6;
-      ctx.strokeStyle = ink(.08);
+      // clean satellite outline
+      ctx.strokeStyle = ink(.22);
+      ctx.lineWidth = .85;
       ctx.beginPath();
       ctx.arc(cx, cy, R, 0, TAU);
       ctx.stroke();
-      ctx.lineWidth = .8;
-      ctx.strokeStyle = ink(.16);
-      ctx.stroke(orbitOuter.front);
-      ctx.save();
-      ctx.setLineDash([2, 5]);
-      ctx.lineWidth = .6;
-      ctx.strokeStyle = ink(.1);
-      ctx.stroke(orbitInner.front);
-      ctx.restore();
 
-      // ---------- 3D geodesic routes from the core ----------
-      function rotateDir(dir) {
-        const x1 = dir.x * yc + dir.z * ys;
-        const z1 = -dir.x * ys + dir.z * yc;
-        return {
-          x: x1,
-          y: dir.y * pc - z1 * ps,
-          z: dir.y * ps + z1 * pc
-        };
-      }
-      const nodeCam = nodeDirs.map(rotateDir);
-      const constellation = new Path2D();
-      for (let i = 0; i < nodeCam.length; i += 1) {
-        for (let j = i + 1; j < nodeCam.length; j += 1) {
-          const a = nodeCam[i];
-          const b = nodeCam[j];
-          for (let s = 0; s <= 30; s += 1) {
-            const u = s / 30;
-            const p = slerpPoint(a, b, u);
-            const lift = 1 + .16 * Math.sin(Math.PI * u);
-            const px = cx + p.x * R * lift;
-            const py = cy - p.y * R * lift;
-            if (s === 0) constellation.moveTo(px, py);
-            else constellation.lineTo(px, py);
-          }
-        }
-      }
-      ctx.strokeStyle = ink(.05);
-      ctx.lineWidth = .5;
-      ctx.stroke(constellation);
+      // ---------- city beacons + BGP geodesic routes ----------
+      const corePoint = rotateVector(coreVec.x, coreVec.y, coreVec.z, yaw, pitch);
+      const coreScreen = { x: cx + corePoint.x * R, y: cy - corePoint.y * R, z: corePoint.z };
+      const cityPoints = cityVecs.map((vec) => {
+        const p = rotateVector(vec.x, vec.y, vec.z, yaw, pitch);
+        return { x: cx + p.x * R, y: cy - p.y * R, z: p.z };
+      });
+      const activeRoute = state.locked && activeIndex >= 0 ? activeIndex : -1;
 
-      const arcSteps = 40;
-      const arcCache = nodeCam.map((target) => {
-        const pts = new Array(arcSteps + 1);
-        for (let s = 0; s <= arcSteps; s += 1) {
-          const u = s / arcSteps;
-          const p = slerpPoint(CORE, target, u);
-          const lift = 1 + .16 * Math.sin(Math.PI * u);
-          pts[s] = {
-            x: cx + p.x * R * lift,
-            y: cy - p.y * R * lift,
-            z: p.z
-          };
+      const routes = cityPoints.map((point, i) => {
+        const node = cityVecs[i];
+        const dot = Math.max(-1, Math.min(1, coreVec.x * node.x + coreVec.y * node.y + coreVec.z * node.z));
+        const angle = Math.acos(dot);
+        const lift = .14 + .14 * (angle / Math.PI);
+        const samples = [];
+        for (let s = 0; s <= 40; s += 1) {
+          const u = s / 40;
+          const p = slerpPoint(coreVec, node, u);
+          const alt = 1 + lift * Math.sin(Math.PI * u);
+          const cam = rotateVector(p.x, p.y, p.z, yaw, pitch);
+          samples.push({ x: cx + cam.x * R * alt, y: cy - cam.y * R * alt, z: cam.z, u });
         }
-        return pts;
+        return { samples, point, node, angle, lift };
       });
 
-      function strokeRoute(index, active) {
-        const pts = arcCache[index];
-        ctx.strokeStyle = ink(active ? .3 : .08);
-        ctx.lineWidth = active ? .95 : .6;
+      function strokeRoute(route, active) {
+        ctx.strokeStyle = ink(active ? .82 : .16);
+        ctx.lineWidth = active ? 1.6 : .7;
+        ctx.setLineDash(active ? [] : [3, 4]);
         ctx.beginPath();
-        pts.forEach((pt, s) => {
-          if (s === 0) ctx.moveTo(pt.x, pt.y);
-          else ctx.lineTo(pt.x, pt.y);
+        route.samples.forEach((p, s) => {
+          if (s === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
         });
         ctx.stroke();
+        ctx.setLineDash([]);
       }
 
-      for (let i = 0; i < nodeCam.length; i += 1) if (i !== activeIndex) strokeRoute(i, false);
-      if (activeIndex >= 0) strokeRoute(activeIndex, true);
+      routes.forEach((route, i) => {
+        if (i !== activeRoute) strokeRoute(route, false);
+      });
+      if (activeRoute >= 0 && routes[activeRoute]) strokeRoute(routes[activeRoute], true);
 
-      // Ten-segment ink comet tails along each route.
       if (!reduced) {
-        nodeCam.forEach((target, i) => {
-          const active = i === activeIndex;
-          const speed = active ? .34 : .16;
-          const head = (t * speed + i * .19 + .15) % 1;
-          for (let j = 0; j < 10; j += 1) {
-            const u = head - j * .012;
+        routes.forEach((route, i) => {
+          const active = i === activeRoute;
+          const speed = active ? .85 : .14;
+          const head = (t * speed + i * .17 + .12) % 1;
+          const tail = 14;
+          for (let j = 0; j < tail; j += 1) {
+            const u = head - j * .011;
             if (u < 0) continue;
-            const p = slerpPoint(CORE, target, u);
-            const lift = 1 + .16 * Math.sin(Math.PI * u);
-            const px = cx + p.x * R * lift;
-            const py = cy - p.y * R * lift;
-            const fade = 1 - j / 10;
-            ctx.fillStyle = ink(active ? .05 + .8 * fade : .03 + .07 * fade);
+            const p = slerpPoint(coreVec, cityVecs[i], u);
+            const alt = 1 + route.lift * Math.sin(Math.PI * u);
+            const cam = rotateVector(p.x, p.y, p.z, yaw, pitch);
+            const px = cx + cam.x * R * alt;
+            const py = cy - cam.y * R * alt;
+            const fade = 1 - j / tail;
+            ctx.fillStyle = ink(active ? .08 + .82 * fade : .03 + .14 * fade);
             ctx.beginPath();
-            ctx.arc(px, py, active ? .4 + 1.4 * fade : .25 + .4 * fade, 0, TAU);
+            ctx.arc(px, py, active ? .35 + 1.75 * fade : .28 + .72 * fade, 0, TAU);
             ctx.fill();
           }
         });
       }
 
-      // ---------- Swiss double bezel with 180 precision ticks ----------
-      const ringR = R * 1.12;
-      const ringR2 = R * 1.165;
-      const ringAngle = -t * .032;
-      ctx.lineWidth = .6;
+      // ---------- minimal Swiss bezel: 1.09R, 120 ticks, tangent cardinals ----------
+      const ringR = R * 1.09;
+      const ringAngle = -t * .02;
       ctx.strokeStyle = ink(.12);
+      ctx.lineWidth = .6;
       ctx.beginPath();
       ctx.arc(cx, cy, ringR, 0, TAU);
       ctx.stroke();
-      ctx.strokeStyle = ink(.06);
-      ctx.beginPath();
-      ctx.arc(cx, cy, ringR2, 0, TAU);
-      ctx.stroke();
 
       const majorTicks = new Path2D();
-      const mediumTicks = new Path2D();
       const microTicks = new Path2D();
-      for (let i = 0; i < 180; i += 1) {
-        const a = ringAngle + (i / 180) * TAU;
-        const ca2 = Math.cos(a);
-        const sa2 = Math.sin(a);
-        let len = 2.8;
-        let target = microTicks;
-        if (i % 15 === 0) {
-          len = 10;
-          target = majorTicks;
-        } else if (i % 5 === 0) {
-          len = 6;
-          target = mediumTicks;
-        }
-        target.moveTo(cx + ca2 * ringR2, cy + sa2 * ringR2);
-        target.lineTo(cx + ca2 * (ringR2 - len), cy + sa2 * (ringR2 - len));
+      for (let i = 0; i < 120; i += 1) {
+        const a = ringAngle + (i / 120) * TAU;
+        const ca = Math.cos(a);
+        const sa = Math.sin(a);
+        const major = i % 10 === 0;
+        const len = major ? 8 : 3.2;
+        const path = major ? majorTicks : microTicks;
+        path.moveTo(cx + ca * ringR, cy + sa * ringR);
+        path.lineTo(cx + ca * (ringR - len), cy + sa * (ringR - len));
       }
       ctx.lineWidth = .5;
-      ctx.strokeStyle = ink(.09);
+      ctx.strokeStyle = ink(.12);
       ctx.stroke(microTicks);
-      ctx.lineWidth = .65;
-      ctx.strokeStyle = ink(.18);
-      ctx.stroke(mediumTicks);
-      ctx.lineWidth = .9;
-      ctx.strokeStyle = ink(.34);
+      ctx.lineWidth = .85;
+      ctx.strokeStyle = ink(.38);
       ctx.stroke(majorTicks);
 
-      const labelRadius = ringR2 + 6;
+      const labelRadius = ringR + 10;
+      const occupiedBoxes = [];
       ctx.font = Math.max(8, Math.min(9.5, R * .042)) + 'px "Cormorant Garamond", Georgia, serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ['000°', '090°', '180°', '270°'].forEach((label, i) => {
         const a = ringAngle + (i / 4) * TAU - Math.PI / 2;
+        const lx = cx + Math.cos(a) * labelRadius;
+        const ly = cy + Math.sin(a) * labelRadius;
+        const half = Math.max(10, ctx.measureText(label).width * .5 + 4);
+        occupiedBoxes.push({ l: lx - half, r: lx + half, t: ly - half, b: ly + half });
         ctx.save();
-        ctx.translate(cx + Math.cos(a) * labelRadius, cy + Math.sin(a) * labelRadius);
+        ctx.translate(lx, ly);
         ctx.rotate(a + Math.PI / 2);
         ctx.lineWidth = 3;
         ctx.strokeStyle = 'rgba(244, 243, 238, .92)';
@@ -903,187 +840,179 @@
         ctx.restore();
       });
 
-      // ---------- nodes, leaders, reticle ----------
-      const nodePoints = nodeCam.map((node) => ({
-        x: cx + node.x * R,
-        y: cy - node.y * R,
-        z: node.z
-      }));
+      // ---------- beacons, lock reticle, short leader labels ----------
+      const labelEntries = [
+        { x: coreScreen.x, y: coreScreen.y, z: coreScreen.z, text: CORE.label, core: true, active: activeIndex < 0 }
+      ];
+      cityPoints.forEach((point, i) => {
+        labelEntries.push({ x: point.x, y: point.y, z: point.z, text: CITIES[i].label, core: false, active: activeIndex === i });
+      });
 
-      let targetLockX = cx;
-      let targetLockY = cy;
-      if (activeIndex >= 0 && nodePoints[activeIndex]) {
-        targetLockX = nodePoints[activeIndex].x;
-        targetLockY = nodePoints[activeIndex].y;
+      labelEntries.forEach((entry) => {
+        const front = entry.z > 0;
+        const active = entry.active && state.locked;
+        const beaconAlpha = front ? (active ? .9 : .58) : .16;
+        const beaconRadius = entry.core ? (front ? 3.2 : 2.4) : (front ? 2.4 : 1.8);
+        ctx.strokeStyle = ink(beaconAlpha);
+        ctx.lineWidth = active ? 1 : .8;
+        ctx.beginPath();
+        ctx.arc(entry.x, entry.y, active ? 7.5 : 5.4, 0, TAU);
+        ctx.stroke();
+        ctx.fillStyle = ink(beaconAlpha);
+        ctx.beginPath();
+        ctx.arc(entry.x, entry.y, beaconRadius, 0, TAU);
+        ctx.fill();
+      });
+
+      function overlaps(a, b) {
+        return a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
+      }
+
+      const boxes = occupiedBoxes.slice();
+      const labelOrder = labelEntries
+        .map((entry, idx) => ({ entry, idx }))
+        .sort((a, b) => {
+          const rank = (item) => (state.locked && item.entry.active ? 0 : item.entry.core ? 1 : item.entry.z > 0 ? 2 : 3);
+          return rank(a) - rank(b) || a.idx - b.idx;
+        });
+      ctx.font = '9px -apple-system, "SF Pro Text", sans-serif';
+      const labelH = 10;
+      labelOrder.forEach(({ entry, idx }) => {
+        const front = entry.z > 0;
+        const dx = entry.x - cx;
+        const dy = entry.y - cy;
+        const dist = Math.hypot(dx, dy);
+        const ux = dist > 4 ? dx / dist : Math.cos((idx / 6) * TAU);
+        const uy = dist > 4 ? dy / dist : Math.sin((idx / 6) * TAU);
+        const textW = ctx.measureText(entry.text).width;
+        const elbowX = entry.x + ux * 13;
+        const elbowY = Math.max(9, Math.min(h - 9, entry.y + uy * 13));
+        const preferred = ux >= 0 ? 1 : -1;
+        let placed = false;
+        for (const sign of [preferred, -preferred]) {
+          for (let shoulder = 8; shoulder <= 260 && !placed; shoulder += 10) {
+            const rawX = elbowX + sign * shoulder;
+            const textX = sign > 0 ? rawX + 3 : rawX - 3;
+            const box = sign > 0
+              ? { l: textX, r: textX + textW, t: elbowY - labelH * .5, b: elbowY + labelH * .5 }
+              : { l: textX - textW, r: textX, t: elbowY - labelH * .5, b: elbowY + labelH * .5 };
+            if (box.l < 3 || box.r > w - 3 || box.t < 3 || box.b > h - 3) continue;
+            if (boxes.some((other) => overlaps(box, other))) continue;
+            ctx.strokeStyle = ink(front ? .24 : .1);
+            ctx.lineWidth = .55;
+            ctx.beginPath();
+            ctx.moveTo(entry.x, entry.y);
+            ctx.lineTo(elbowX, elbowY);
+            ctx.lineTo(textX, elbowY);
+            ctx.stroke();
+            ctx.fillStyle = ink(front ? (state.locked && entry.active ? .82 : .62) : .22);
+            ctx.textAlign = sign > 0 ? 'left' : 'right';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(entry.text, textX, elbowY);
+            boxes.push(box);
+            placed = true;
+          }
+        }
+        if (!placed) {
+          const textY = 12 + (idx % 6) * 11;
+          ctx.fillStyle = ink(front ? .48 : .2);
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(entry.text, 6, textY);
+        }
+      });
+
+      let targetLockX = coreScreen.x;
+      let targetLockY = coreScreen.y;
+      if (activeIndex >= 0 && cityPoints[activeIndex]) {
+        targetLockX = cityPoints[activeIndex].x;
+        targetLockY = cityPoints[activeIndex].y;
       }
       state.targetLockX = targetLockX;
       state.targetLockY = targetLockY;
-      state.targetLockSize = activeIndex >= 0 ? 15 : 19;
 
-      const activeKey = activeIndex < 0 ? 'core' : String(activeIndex);
-      if (state.lastLockKey !== activeKey) {
+      const activeKey = state.locked ? (activeIndex < 0 ? 'core' : String(activeIndex)) : 'free';
+      if (state.locked && state.lastLockKey !== activeKey) {
         state.lastLockKey = activeKey;
         state.rippleStart = t;
         state.rippleX = targetLockX;
         state.rippleY = targetLockY;
-        state.lockSize = Math.max(state.lockSize, state.targetLockSize + 14);
+      } else if (!state.locked) {
+        state.lastLockKey = 'free';
       }
 
-      const boxes = [];
-      const coreActive = activeIndex < 0;
-      ctx.font = '8.5px -apple-system, "SF Pro Text", sans-serif';
-      const coreW = ctx.measureText('AS218834').width;
-      const coreBox = {
-        l: cx + 27,
-        r: cx + 27 + coreW,
-        t: cy + 17,
-        b: cy + 31
-      };
-      boxes.push(coreBox);
-
-      function intersects(a, b) {
-        return a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
-      }
-
-      nodePoints.forEach((node, i) => {
-        const active = i === activeIndex;
-        const nx = node.x;
-        const ny = node.y;
-        const dx = nx - cx;
-        const dy = ny - cy;
-        const dist = Math.hypot(dx, dy);
-        let ux = dist > 6 ? dx / dist : Math.cos((i / 5) * TAU);
-        let uy = dist > 6 ? dy / dist : Math.sin((i / 5) * TAU);
-        const label = NODES[i].label;
-        let drawn = false;
-        let shoulder = 10;
-        for (let attempt = 0; attempt < 4 && !drawn; attempt += 1) {
-          const elbowX = nx + ux * 12;
-          const elbowY = ny + uy * 12;
-          const sign = ux >= 0 ? 1 : -1;
-          const endX = elbowX + sign * shoulder;
-          const textW = ctx.measureText(label).width;
-          const box = {
-            l: sign > 0 ? endX + 3 : endX - 3 - textW,
-            r: sign > 0 ? endX + 3 + textW : endX - 3,
-            t: elbowY - 5,
-            b: elbowY + 5
-          };
-          if (!boxes.some((other) => intersects(box, other))) {
-            ctx.strokeStyle = ink(node.z > 0 ? .24 : .12);
-            ctx.lineWidth = .6;
-            ctx.beginPath();
-            ctx.moveTo(nx, ny);
-            ctx.lineTo(elbowX, elbowY);
-            ctx.lineTo(endX, elbowY);
-            ctx.stroke();
-            ctx.fillStyle = ink(node.z > 0 ? .58 : .26);
-            ctx.textAlign = sign > 0 ? 'left' : 'right';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(label, endX + sign * 3, elbowY);
-            boxes.push(box);
-            drawn = true;
-          }
-          shoulder += 10;
-        }
-        if (!drawn) {
-          ctx.fillStyle = ink(.24);
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(label, nx + 8, ny - 8);
-        }
-
-        ctx.strokeStyle = ink(node.z > 0 ? (active ? .62 : .34) : .14);
-        ctx.lineWidth = active ? 1.05 : .8;
-        ctx.beginPath();
-        ctx.arc(nx, ny, active ? 3.4 : 2.4, 0, TAU);
-        ctx.stroke();
-        if (node.z > 0) {
-          ctx.fillStyle = ink(active ? .7 : .45);
-          ctx.beginPath();
-          ctx.arc(nx, ny, active ? 1.5 : 1, 0, TAU);
-          ctx.fill();
-        }
-      });
-
-      // Core: micro cross-hair with double rings; label only while core locked.
-      ctx.strokeStyle = ink(coreActive ? .6 : .32);
-      ctx.lineWidth = .8;
-      ctx.beginPath();
-      ctx.arc(cx, cy, 2, 0, TAU);
-      ctx.stroke();
-      ctx.strokeStyle = ink(coreActive ? .28 : .16);
-      ctx.beginPath();
-      ctx.arc(cx, cy, 6, 0, TAU);
-      ctx.stroke();
-      if (coreActive) {
-        ctx.strokeStyle = ink(.28);
-        ctx.lineWidth = .6;
-        ctx.beginPath();
-        ctx.moveTo(cx + 6, cy + 6);
-        ctx.lineTo(cx + 22, cy + 20);
-        ctx.stroke();
-      }
-      ctx.fillStyle = ink(coreActive ? .42 : .1);
-      ctx.font = '7.5px -apple-system, "SF Pro Text", sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('AS218834', cx + 27, cy + 24);
-
-      // Lock ripple: single 0.65s confirmation ring.
       const rippleAge = t - state.rippleStart;
-      if (!reduced && rippleAge >= 0 && rippleAge < .65) {
-        const p = rippleAge / .65;
-        ctx.strokeStyle = ink(.35 * (1 - p));
+      if (state.locked && !reduced && rippleAge >= 0 && rippleAge < .65) {
+        const progress = rippleAge / .65;
+        ctx.strokeStyle = ink(.35 * (1 - progress));
         ctx.lineWidth = .85;
         ctx.beginPath();
-        ctx.arc(state.rippleX, state.rippleY, 6 + 22 * p, 0, TAU);
+        ctx.arc(state.rippleX, state.rippleY, 6 + 22 * progress, 0, TAU);
         ctx.stroke();
       }
 
-      // Vernier reticle: two counter-rotating 70° arcs plus four cardinal pins.
-      ctx.save();
-      ctx.translate(state.lockX, state.lockY);
-      ctx.rotate(-t * .25);
-      ctx.strokeStyle = ink(.62);
-      ctx.lineWidth = .85;
-      ctx.beginPath();
-      ctx.arc(0, 0, 10, -.61, .61);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(0, 0, 10, Math.PI - .61, Math.PI + .61);
-      ctx.stroke();
-      ctx.restore();
-      ctx.strokeStyle = ink(.62);
-      ctx.lineWidth = .85;
-      for (let k = 0; k < 4; k += 1) {
-        const a = k * Math.PI / 2;
-        const ca2 = Math.cos(a);
-        const sa2 = Math.sin(a);
+      if (state.locked) {
+        ctx.save();
+        ctx.translate(state.lockX, state.lockY);
+        ctx.rotate(-t * .35);
+        ctx.strokeStyle = ink(.68);
+        ctx.lineWidth = .9;
         ctx.beginPath();
-        ctx.moveTo(state.lockX + ca2 * 4.5, state.lockY + sa2 * 4.5);
-        ctx.lineTo(state.lockX + ca2 * 8.5, state.lockY + sa2 * 8.5);
+        ctx.arc(0, 0, 12, -.61, .61);
         ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(0, 0, 12, Math.PI - .61, Math.PI + .61);
+        ctx.stroke();
+        ctx.restore();
+        ctx.strokeStyle = ink(.68);
+        ctx.lineWidth = .85;
+        for (let k = 0; k < 4; k += 1) {
+          const a = k * Math.PI / 2;
+          ctx.beginPath();
+          ctx.moveTo(state.lockX + Math.cos(a) * 6.5, state.lockY + Math.sin(a) * 6.5);
+          ctx.lineTo(state.lockX + Math.cos(a) * 10.5, state.lockY + Math.sin(a) * 10.5);
+          ctx.stroke();
+        }
       }
     }
 
     function step(now) {
       state.frame = 0;
       if (!state.visible || motion.matches) return;
-      const dt = state.lastTime ? Math.min(.05, (now - state.lastTime) / 1000) : 1 / 60;
+      const dt = state.lastTime ? Math.min(.05, Math.max(0, (now - state.lastTime) / 1000)) : 1 / 60;
       state.lastTime = now;
       state.time += dt;
-      const alpha = 1 - Math.exp(-7 * dt);
+      const alpha = 1 - Math.exp(-8 * dt);
 
-      if (state.active === 'core') state.targetYaw += dt * .12;
-      state.yaw += (state.targetYaw - state.yaw) * alpha;
-      state.pitch += (state.targetPitch - state.pitch) * alpha;
+      if (state.mode === 'locked') {
+        state.yaw += (state.targetYaw - state.yaw) * alpha;
+        state.pitch += (state.targetPitch - state.pitch) * alpha;
+      } else if (state.mode === 'free') {
+        const speed = Math.abs(state.spinYaw) + Math.abs(state.spinPitch);
+        if (speed > .003) {
+          state.yaw += state.spinYaw * dt;
+          state.pitch = clampPitch(state.pitch + state.spinPitch * dt);
+          state.spinYaw *= Math.exp(-3.1 * dt);
+          state.spinPitch *= Math.exp(-3.1 * dt);
+          state.targetYaw = state.yaw;
+          state.targetPitch = state.pitch;
+          state.idleSince = state.time;
+        } else if (state.time - state.idleSince > 2.5) {
+          state.mode = 'auto';
+          state.spinYaw = 0;
+          state.spinPitch = 0;
+        }
+      } else if (state.mode === 'auto') {
+        state.yaw += .075 * dt;
+        state.targetYaw = state.yaw;
+        state.targetPitch = state.pitch;
+      }
+
       state.tiltYaw += (state.targetTiltYaw - state.tiltYaw) * alpha;
       state.tiltPitch += (state.targetTiltPitch - state.tiltPitch) * alpha;
-      const lockAlpha = 1 - Math.exp(-9 * dt);
+      const lockAlpha = 1 - Math.exp(-10 * dt);
       state.lockX += (state.targetLockX - state.lockX) * lockAlpha;
       state.lockY += (state.targetLockY - state.lockY) * lockAlpha;
-      state.lockSize += (state.targetLockSize - state.lockSize) * lockAlpha;
 
       draw();
       state.frame = requestAnimationFrame(step);
@@ -1105,52 +1034,127 @@
       state.lastTime = 0;
     }
 
+    function targetFor(lat, lon) {
+      return {
+        yaw: state.yaw + shortestDelta(-lon * RAD),
+        pitch: lat * RAD
+      };
+    }
+
     function setEntry(entry) {
       const key = entry && entry.dataset ? entry.dataset.node : 'core';
+      let target;
       if (key === 'core' || !key) {
         state.active = 'core';
-        state.targetPitch = 0;
-        state.targetLockSize = 19;
+        target = targetFor(CORE_VIEW.lat, CORE_VIEW.lon);
       } else {
         const index = parseInt(key, 10) - 1;
-        if (Number.isFinite(index) && NODES[index]) {
-          state.active = index;
-          const delta = (((-NODES[index].az - state.yaw) % TAU) + Math.PI * 3) % TAU - Math.PI;
-          state.targetYaw = state.yaw + delta;
-          state.targetPitch = NODES[index].el - .12;
-          state.targetLockSize = 15;
-        }
+        if (!Number.isFinite(index) || !CITIES[index]) return;
+        state.active = index;
+        target = targetFor(CITIES[index].lat, CITIES[index].lon);
       }
+      state.locked = true;
+      state.mode = 'locked';
+      state.targetYaw = target.yaw;
+      state.targetPitch = target.pitch;
+      state.spinYaw = 0;
+      state.spinPitch = 0;
+
       if (motion.matches) {
         state.yaw = state.targetYaw;
         state.pitch = state.targetPitch;
         draw();
         state.lockX = state.targetLockX;
         state.lockY = state.targetLockY;
-        state.lockSize = state.targetLockSize;
         draw();
+      } else {
+        start();
       }
     }
 
+    function onPointerDown(event) {
+      if (!finePointer.matches || motion.matches || event.button !== 0) return;
+      state.dragging = true;
+      state.dragMoved = false;
+      state.pointerId = event.pointerId;
+      state.lastPX = event.clientX;
+      state.lastPY = event.clientY;
+      state.lastMoveAt = performance.now();
+      state.spinYaw = 0;
+      state.spinPitch = 0;
+      state.targetTiltYaw = 0;
+      state.targetTiltPitch = 0;
+      try {
+        wall.setPointerCapture(event.pointerId);
+      } catch (error) {
+        /* pointer capture is best-effort */
+      }
+      start();
+    }
+
     function onPointerMove(event) {
+      if (state.dragging && event.pointerId === state.pointerId) {
+        const dx = event.clientX - state.lastPX;
+        const dy = event.clientY - state.lastPY;
+        const now = performance.now();
+        const dt = Math.max(8, now - state.lastMoveAt) / 1000;
+        state.lastPX = event.clientX;
+        state.lastPY = event.clientY;
+        state.lastMoveAt = now;
+        if (!state.dragMoved && Math.hypot(dx, dy) > 1.5) {
+          state.dragMoved = true;
+          state.locked = false;
+          state.mode = 'drag';
+          wall.classList.add('is-dragging');
+        }
+        if (state.dragMoved) {
+          state.yaw += dx * .0055;
+          state.pitch = clampPitch(state.pitch + dy * .0045);
+          state.targetYaw = state.yaw;
+          state.targetPitch = state.pitch;
+          state.spinYaw = Math.max(-8, Math.min(8, (dx * .0055) / dt));
+          state.spinPitch = Math.max(-6, Math.min(6, (dy * .0045) / dt));
+          start();
+        }
+        return;
+      }
       if (!finePointer.matches || motion.matches) return;
       const rect = wall.getBoundingClientRect();
       const nx = clamp(((event.clientX - rect.left) / rect.width - .5) * 2, -1, 1);
       const ny = clamp(((event.clientY - rect.top) / rect.height - .5) * 2, -1, 1);
-      state.targetTiltYaw = nx * .16;
-      state.targetTiltPitch = -ny * .13;
+      state.targetTiltYaw = nx * .10;
+      state.targetTiltPitch = -ny * .07;
       start();
     }
 
-    function releaseLock() {
-      if (state.active !== 'core') {
-        state.active = 'core';
-        state.targetPitch = 0;
-        state.targetLockSize = 19;
+    function endDrag() {
+      if (!state.dragging) return;
+      state.dragging = false;
+      wall.classList.remove('is-dragging');
+      if (state.pointerId !== null) {
+        try {
+          wall.releasePointerCapture(state.pointerId);
+        } catch (error) {
+          /* pointer capture is best-effort */
+        }
       }
+      state.pointerId = null;
+      if (state.dragMoved) {
+        state.mode = 'free';
+        state.locked = false;
+        state.idleSince = state.time;
+      } else {
+        state.mode = 'locked';
+        state.locked = true;
+      }
+      state.dragMoved = false;
     }
 
+    wall.addEventListener('pointerdown', onPointerDown);
     wall.addEventListener('pointermove', onPointerMove, { passive: true });
+    wall.addEventListener('pointerup', endDrag);
+    wall.addEventListener('pointercancel', endDrag);
+    wall.addEventListener('lostpointercapture', endDrag);
     wall.addEventListener('pointerleave', () => {
       state.targetTiltYaw = 0;
       state.targetTiltPitch = 0;
@@ -1181,6 +1185,7 @@
     else window.addEventListener('resize', resize);
 
     resize();
+    if (motion.matches) draw();
 
     return {
       setEntry(entry) {
@@ -1188,6 +1193,10 @@
       },
       refresh() {
         if (motion.matches) {
+          state.locked = true;
+          state.mode = 'locked';
+          state.yaw = state.targetYaw;
+          state.pitch = state.targetPitch;
           stop();
           draw();
           return;
@@ -1195,7 +1204,9 @@
         if (state.visible) start();
       },
       releaseLock() {
-        releaseLock();
+        state.locked = false;
+        state.mode = 'free';
+        state.idleSince = state.time;
       }
     };
   }

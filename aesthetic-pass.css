@@ -741,6 +741,9 @@ body {
   flex-direction: column;
   justify-content: flex-end;
   padding: clamp(56px, 7svh, 76px) clamp(40px, 4.4vw, 72px) clamp(36px, 4.6svh, 52px);
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .imprint-orbit {
@@ -1236,6 +1239,18 @@ body {
 .work-links a,
 .about-links a {
   transform: translate3d(var(--mag-x, 0px), var(--mag-y, 0px), 0);
+}
+
+/* Draggable globe — touch-free desktop only */
+@media (min-width: 901px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .imprint-wall {
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .imprint-wall.is-dragging {
+    cursor: grabbing;
+  }
 }
 
 /* =========================================================
