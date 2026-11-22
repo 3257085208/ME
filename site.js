@@ -795,7 +795,8 @@
         const index = parseInt(key, 10) - 1;
         if (Number.isFinite(index) && NODES[index]) {
           state.active = index;
-          state.targetYaw = -NODES[index].az;
+          const delta = (((-NODES[index].az - state.yaw) % TAU) + Math.PI * 3) % TAU - Math.PI;
+          state.targetYaw = state.yaw + delta;
           state.targetPitch = NODES[index].el - .12;
           state.targetLockSize = 15;
         }
@@ -831,7 +832,6 @@
     wall.addEventListener('pointerleave', () => {
       state.targetTiltYaw = 0;
       state.targetTiltPitch = 0;
-      releaseLock();
     });
 
     const observer = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
