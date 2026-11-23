@@ -27,17 +27,18 @@
   const splitLight = document.querySelector('.split-backdrop-light');
   const manifestoLines = [...document.querySelectorAll('[data-manifesto-line]')];
   const manifestoProgress = document.querySelector('[data-manifesto-progress]');
+  const manifestoNeedle = document.getElementById('manifestoNeedle');
   const topoEntries = [...document.querySelectorAll('[data-topo]')].map((el) => ({
     el,
     key: el.dataset.topoTarget || el.dataset.topo,
-    primary: el.querySelector('.topo-primary'),
-    lastTransform: '',
-    lastOffset: ''
+    lastTransform: ''
   }));
   const workCards = [...document.querySelectorAll('.work-card')];
   const workMedia = [...document.querySelectorAll('.work-card-media img')];
   const workVeils = [...document.querySelectorAll('.work-card-veil')];
   const aboutClock = document.getElementById('about-clock');
+  const orbitCoords = document.getElementById('orbitCoords');
+  const orbitDragHint = document.getElementById('orbitDragHint');
   const inertiaElements = [...document.querySelectorAll('.act-imprints .imprint-list, .act-about .about-copy')];
   let heroAnimations = [];
   let aboutAnimations = [];
@@ -49,8 +50,12 @@
   const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
   const easeOutCubic = (value) => 1 - Math.pow(1 - clamp(value), 3);
   const easeOutQuint = (value) => 1 - Math.pow(1 - clamp(value), 5);
+  const smoothstep = (value) => {
+    const t = clamp(value);
+    return t * t * (3 - 2 * t);
+  };
   const lenis = window.Lenis && !motion.matches ? new window.Lenis({
-    lerp: .11,
+    lerp: .078,
     smoothWheel: true,
     syncTouch: false,
     wheelMultiplier: 1,
@@ -71,10 +76,13 @@
     chapters: [],
     byNav: {},
     workSlots: [],
+    manifestoRulerTravel: 0,
     acts: [],
     reveals: []
   };
   let lastManifestoPercent = '';
+  let lastManifestoP = null;
+  let lastWorkValues = [];
   let lastSplitAlpha = -1;
   let clockTimer = 0;
   let measureTimer = 0;
@@ -209,6 +217,12 @@
       .map((chapter) => ({ top: chapter.top, split: chapter.split }))
       .filter((stop) => Number.isFinite(stop.split));
 
+    const rulerRail = manifestoNeedle ? manifestoNeedle.parentElement : null;
+    layout.manifestoRulerTravel = rulerRail ? Math.max(0, rulerRail.getBoundingClientRect().height) : 0;
+    lastManifestoP = null;
+    lastWorkValues = [];
+    lastNavAccent = '';
+
     updateNavAccent();
   }
 
@@ -282,28 +296,38 @@
     if (splitLight) splitLight.style.transform = 'translate3d(' + value.toFixed(3) + '%, 0, 0)';
   }
 
-  function stepSplit(now) {
-    splitFrame = 0;
+  function advanceSplit(now) {
     const time = typeof now === 'number' ? now : performance.now();
     const dt = splitLastTime ? Math.min(.05, Math.max(0, (time - splitLastTime) / 1000)) : 1 / 60;
     splitLastTime = time;
 
     const diff = splitTarget - splitCurrent;
     if (Math.abs(diff) < 0.008) {
-      splitCurrent = splitTarget;
+      if (splitCurrent !== splitTarget) {
+        splitCurrent = splitTarget;
+        applySplit(splitCurrent);
+      }
       splitLastTime = 0;
-      applySplit(splitCurrent);
       return;
     }
 
     const alpha = 1 - Math.exp(-SPLIT_RATE * dt);
     splitCurrent += diff * alpha;
     applySplit(splitCurrent);
-    splitFrame = requestAnimationFrame(stepSplit);
+  }
+
+  function stepSplitFrame(now) {
+    splitFrame = 0;
+    advanceSplit(now);
+    if (Math.abs(splitTarget - splitCurrent) >= .008) {
+      splitFrame = requestAnimationFrame(stepSplitFrame);
+    }
   }
 
   function queueSplit(currentChapter, scrollY) {
     if (motion.matches) {
+      if (splitFrame) cancelAnimationFrame(splitFrame);
+      splitFrame = 0;
       const direct = currentChapter ? currentChapter.split : 65;
       splitTarget = Number.isFinite(direct) ? direct : 65;
       splitCurrent = splitTarget;
@@ -312,9 +336,9 @@
       return;
     }
     splitTarget = splitAtScroll(typeof scrollY === 'number' ? scrollY : window.scrollY);
-    if (!splitFrame) {
+    if (!lenis && !splitFrame) {
       splitLastTime = 0;
-      splitFrame = requestAnimationFrame(stepSplit);
+      splitFrame = requestAnimationFrame(stepSplitFrame);
     }
   }
 
@@ -365,6 +389,17 @@
     let currentEntry = entries[0];
     let swapTimer = 0;
 
+    const syncLocked = (node) => {
+      entries.forEach((entry) => {
+        entry.classList.toggle('is-locked', Boolean(node) && entry.dataset.node === node);
+      });
+    };
+
+    syncLocked('core');
+    window.addEventListener('nkx:astrolabe-lock', (event) => {
+      syncLocked(event.detail ? event.detail.node : '');
+    });
+
     const applyEntry = (entry, decode = false) => {
       if (ghost) ghost.textContent = entry.dataset.wallNum || '';
       if (noteEl) noteEl.textContent = entry.dataset.wallNote || '';
@@ -375,6 +410,7 @@
     const showEntry = (entry) => {
       if (!entry || entry === currentEntry) return;
       currentEntry = entry;
+      syncLocked(entry.dataset.node);
       astrolabe?.setEntry(entry);
       if (motion.matches) {
         applyEntry(entry);
@@ -562,6 +598,52 @@
       idleSince: 0
     };
 
+    let lastHudText = '';
+    let lastOrbitLock = '';
+
+    function setOrbitHint(text) {
+      if (orbitDragHint && orbitDragHint.textContent !== text) orbitDragHint.textContent = text;
+    }
+
+    function formatOrbitCoord(lat, lon) {
+      const ns = lat >= 0 ? 'N' : 'S';
+      const ew = lon >= 0 ? 'E' : 'W';
+      return Math.abs(lat).toFixed(2) + '°' + ns + ' · ' + Math.abs(lon).toFixed(2) + '°' + ew;
+    }
+
+    function updateOrbitHud(activeIndex) {
+      if (!orbitCoords || !desktop.matches) return;
+      let lat;
+      let lon;
+      if (state.locked) {
+        if (activeIndex >= 0) {
+          lat = CITIES[activeIndex].lat;
+          lon = CITIES[activeIndex].lon;
+        } else {
+          lat = CORE.lat;
+          lon = CORE.lon;
+        }
+      } else {
+        lat = (state.pitch + state.tiltPitch) / RAD;
+        lon = -(state.yaw + state.tiltYaw) / RAD;
+        lon = ((lon + 540) % 360) - 180;
+      }
+      const text = formatOrbitCoord(lat, lon);
+      if (text !== lastHudText) {
+        lastHudText = text;
+        orbitCoords.textContent = text;
+      }
+    }
+
+    function emitOrbitLock() {
+      const node = state.locked
+        ? (state.active === 'core' ? 'core' : String(state.active + 1))
+        : '';
+      if (node === lastOrbitLock) return;
+      lastOrbitLock = node;
+      window.dispatchEvent(new CustomEvent('nkx:astrolabe-lock', { detail: { node } }));
+    }
+
     function clampPitch(value) {
       return Math.max(-1.26, Math.min(1.26, value));
     }
@@ -665,6 +747,8 @@
       const t = state.time;
       const reduced = motion.matches;
       const activeIndex = state.active === 'core' ? -1 : state.active;
+      updateOrbitHud(activeIndex);
+      emitOrbitLock();
 
       // ---------- immersed sphere shadow + equator reference ----------
       if (state.gradient) {
@@ -1178,6 +1262,7 @@
           state.locked = false;
           state.mode = 'drag';
           wall.classList.add('is-dragging');
+          setOrbitHint('ORBITING');
         }
         if (state.dragMoved) {
           state.yaw += dx * .0055;
@@ -1211,6 +1296,7 @@
         }
       }
       state.pointerId = null;
+      setOrbitHint('[ ⊹ DRAG TO ORBIT ]');
       if (state.dragMoved) {
         state.mode = 'free';
         state.locked = false;
@@ -1485,15 +1571,23 @@
   function updateManifesto(scrollY) {
     const chapter = layout.byNav.manifesto;
     if (!chapter) return;
-    const p = clamp((scrollY - chapter.top) / Math.max(1, chapter.height - layout.innerHeight));
+    const raw = clamp((scrollY - chapter.top) / Math.max(1, chapter.height - layout.innerHeight));
+
     if (!motion.matches && desktop.matches) {
+      if (lastManifestoP !== null && Math.abs(raw - lastManifestoP) < 1e-5) return;
+      lastManifestoP = raw;
+      const p = smoothstep(raw);
       const xs = [-7 + 10 * p, 6 - 10 * p, -5 + 9 * p];
       manifestoLines.forEach((line, index) => {
         line.style.transform = 'translate3d(' + xs[index].toFixed(3) + 'vw, 0, 0)';
       });
+      if (manifestoNeedle && layout.manifestoRulerTravel) {
+        manifestoNeedle.style.transform = 'translate3d(0, ' + (raw * layout.manifestoRulerTravel).toFixed(2) + 'px, 0)';
+      }
     }
+
     if (manifestoProgress) {
-      const percent = String(Math.round(p * 100)).padStart(2, '0') + '%';
+      const percent = String(Math.round(raw * 100)).padStart(2, '0') + '%';
       if (percent !== lastManifestoPercent) {
         manifestoProgress.textContent = percent;
         lastManifestoPercent = percent;
@@ -1519,13 +1613,6 @@
         entry.el.style.transform = 'translate3d(0, ' + offset + 'px, 0)';
         entry.lastTransform = offset;
       }
-      if (entry.primary) {
-        const dash = (1 - p).toFixed(4);
-        if (dash !== entry.lastOffset) {
-          entry.primary.style.strokeDashoffset = dash;
-          entry.lastOffset = dash;
-        }
-      }
     });
   }
 
@@ -1537,19 +1624,22 @@
       const slot = slots[i];
       const card = workCards[i];
       if (!slot || !card) continue;
-      const entry = clamp((layout.innerHeight - (slot.top - scrollY)) / slotTravel);
-      if (workMedia[i]) {
-        workMedia[i].style.transform = 'scale(' + (1.10 - .10 * entry).toFixed(4) + ')';
-      }
+      const entry = smoothstep((layout.innerHeight - (slot.top - scrollY)) / slotTravel);
+      const imageScale = (1.10 - .10 * entry).toFixed(4);
+      let transform = '';
+      let veil = '0';
       if (i < slots.length - 1 && slots[i + 1]) {
         const nextTop = slots[i + 1].top - scrollY;
-        const p = clamp((layout.innerHeight - nextTop) / slotTravel);
-        card.style.transform = 'translate3d(0, ' + (-18 * p).toFixed(2) + 'px, 0) scale(' + (1 - .065 * p).toFixed(4) + ')';
-        if (workVeils[i]) workVeils[i].style.opacity = (.38 * p).toFixed(3);
-      } else {
-        card.style.transform = '';
-        if (workVeils[i]) workVeils[i].style.opacity = '0';
+        const push = easeOutCubic((layout.innerHeight - nextTop) / slotTravel);
+        transform = 'translate3d(0, ' + (-18 * push).toFixed(2) + 'px, 0) scale(' + (1 - .065 * push).toFixed(4) + ')';
+        veil = (.38 * push).toFixed(3);
       }
+      const key = imageScale + '|' + transform + '|' + veil;
+      if (lastWorkValues[i] === key) continue;
+      lastWorkValues[i] = key;
+      if (workMedia[i]) workMedia[i].style.transform = 'scale(' + imageScale + ')';
+      if (card.style.transform !== transform) card.style.transform = transform;
+      if (workVeils[i] && workVeils[i].style.opacity !== veil) workVeils[i].style.opacity = veil;
     }
   }
 
@@ -1576,9 +1666,7 @@
       navAccent.style.opacity = '0';
       return;
     }
-    navAccent.style.left = rect.left.toFixed(2) + 'px';
-    navAccent.style.top = rect.top.toFixed(2) + 'px';
-    navAccent.style.width = rect.width.toFixed(2) + 'px';
+    navAccent.style.transform = 'translate3d(' + rect.left.toFixed(2) + 'px, ' + rect.top.toFixed(2) + 'px, 0) scaleX(' + rect.width.toFixed(2) + ')';
     navAccent.style.opacity = '1';
   }
 
@@ -1846,6 +1934,7 @@
     function raf(time) {
       lenis.raf(time);
       if (inertiaActive || inertiaSkew !== 0 || inertiaLag !== 0) updateScrollInertia(time);
+      advanceSplit(time);
       requestAnimationFrame(raf);
     }
     requestAnimationFrame(raf);

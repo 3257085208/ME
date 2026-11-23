@@ -21,6 +21,9 @@
   });
   if(!gl)return;
 
+  let renderFrame=0;
+  let heroVisible=shared.homeVisible!==false;
+
   const VERT=`
     attribute vec2 a_pos;
     void main(){
@@ -236,9 +239,26 @@
     gl.clear(gl.COLOR_BUFFER_BIT);
   }
 
-  function render(){
-    requestAnimationFrame(render);
+  function startRender(){
+    if(renderFrame || document.hidden || !heroVisible || shared.homeVisible===false)return;
+    renderFrame=requestAnimationFrame(render);
+  }
 
+  function stopRender(){
+    if(renderFrame)cancelAnimationFrame(renderFrame);
+    renderFrame=0;
+  }
+
+  function render(){
+    renderFrame=0;
+    if(document.hidden || !heroVisible || shared.homeVisible===false)return;
+    drawFrame();
+    if(!renderFrame && heroVisible && shared.homeVisible!==false && !document.hidden){
+      renderFrame=requestAnimationFrame(render);
+    }
+  }
+
+  function drawFrame(){
     if(document.documentElement.classList.contains('ink-transition-active')){
       if(hadPixels){
         clear();
@@ -298,5 +318,19 @@
     hadPixels=true;
   }
 
-  requestAnimationFrame(render);
+  if('IntersectionObserver' in window){
+    const observer=new IntersectionObserver(entries=>{
+      heroVisible=entries[0]?.isIntersecting??true;
+      if(heroVisible)startRender();
+      else stopRender();
+    },{rootMargin:'20% 0px'});
+    observer.observe(home);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden)stopRender();
+    else startRender();
+  });
+
+  startRender();
 })();

@@ -1885,8 +1885,8 @@ body {
 
 .topo-lines .topo-primary {
   stroke: rgba(200, 255, 0, .18);
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
+  stroke-dasharray: none;
+  stroke-dashoffset: 0;
 }
 
 .imprint-wall .topo-lines {
@@ -2001,8 +2001,10 @@ body {
 }
 
 .work-chapter > .topo-lines {
-  position: absolute;
-  inset: 0;
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  margin-bottom: -100svh;
   z-index: 0;
 }
 
@@ -2041,7 +2043,9 @@ body {
   height: calc(100svh - 104px);
   margin: 0 clamp(32px, 4.2vw, 68px);
   overflow: hidden;
+  border: 1px solid rgba(14, 14, 13, .10);
   border-radius: 22px;
+  box-shadow: 0 -16px 48px rgba(0, 0, 0, .42);
   transform-origin: center center;
   backface-visibility: hidden;
   will-change: transform;
@@ -2054,6 +2058,7 @@ body {
 
 .work-card--ink {
   background: #151514;
+  border-color: rgba(242, 241, 234, .10);
   color: var(--page-paper);
 }
 
@@ -2177,13 +2182,7 @@ body {
   object-position: top center;
   transform: scale(1.10);
   transform-origin: center center;
-  filter: saturate(.82) contrast(1.03);
-  transition: filter .7s var(--page-ease);
   will-change: transform;
-}
-
-.work-card:hover .work-card-media img {
-  filter: saturate(1.05) contrast(1.02);
 }
 
 .work-card-veil {
@@ -2249,15 +2248,15 @@ body {
   transform: translateY(0);
 }
 
-.work-card-links a > span,
-.about-links a > span {
+.work-card-links a > .arrow,
+.about-links a > .arrow {
   transition: transform .35s var(--page-ease);
 }
 
-.work-card-links a:hover > span,
-.work-card-links a:focus-visible > span,
-.about-links a:hover > span,
-.about-links a:focus-visible > span {
+.work-card-links a:hover > .arrow,
+.work-card-links a:focus-visible > .arrow,
+.about-links a:hover > .arrow,
+.about-links a:focus-visible > .arrow {
   transform: translate3d(2px, -2px, 0);
 }
 
@@ -2342,7 +2341,7 @@ body {
     height: auto;
     min-height: 0;
     justify-content: flex-start;
-    padding: 112px 24px 74px;
+    padding: 112px 24px 54px;
   }
 
   .manifesto-title {
@@ -2373,7 +2372,7 @@ body {
   }
 
   .work-stack {
-    padding: 108px 0 28px;
+    padding: 78px 0 24px;
   }
 
   .work-card-slot + .work-card-slot .work-card {
@@ -2484,14 +2483,637 @@ body {
     display: block;
     position: fixed;
     z-index: 31;
+    left: 0;
+    top: 0;
+    width: 1px;
     height: 1px;
     background: var(--accent);
     pointer-events: none;
     opacity: 0;
-    transition: opacity .22s ease;
+    transform-origin: left center;
+    transition: transform .42s var(--page-ease), opacity .22s ease;
   }
 
   .site-nav a[aria-current="page"]::after {
     background: transparent;
+  }
+}
+/* =========================================================
+   HIGH-CRAFT DETAIL LAYER — slot roll, manifesto matrix/ruler,
+   work specs/HUD/corners, imprint telemetry, about archive
+   ========================================================= */
+
+/* --- B1: vertical slot-roll text --- */
+.roll-text {
+  position: relative;
+  display: inline-flex;
+  overflow: hidden;
+  height: 1.15em;
+  line-height: 1.15;
+  vertical-align: middle;
+}
+
+.roll-inner {
+  display: block;
+  white-space: nowrap;
+  transition: transform .46s var(--page-ease);
+}
+
+.roll-inner + .roll-inner {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate3d(0, 105%, 0);
+}
+
+.site-nav a:hover .roll-inner:first-child,
+.site-nav a:focus-visible .roll-inner:first-child,
+.work-card-links a:hover .roll-inner:first-child,
+.work-card-links a:focus-visible .roll-inner:first-child,
+.about-links a:hover .roll-inner:first-child,
+.about-links a:focus-visible .roll-inner:first-child {
+  transform: translate3d(0, -105%, 0);
+}
+
+.site-nav a:hover .roll-inner + .roll-inner,
+.site-nav a:focus-visible .roll-inner + .roll-inner,
+.work-card-links a:hover .roll-inner + .roll-inner,
+.work-card-links a:focus-visible .roll-inner + .roll-inner,
+.about-links a:hover .roll-inner + .roll-inner,
+.about-links a:focus-visible .roll-inner + .roll-inner {
+  transform: translate3d(0, 0, 0);
+}
+
+/* --- B2: manifesto capability matrix + precision ruler --- */
+.manifesto-capabilities {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: calc(100% - clamp(56px, 5vw, 76px));
+  margin-top: clamp(28px, 5vh, 52px);
+  padding-top: 14px;
+  padding-right: clamp(0px, 4vw, 52px);
+  border-top: 1px solid rgba(242, 241, 234, .16);
+}
+
+.capability {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  min-width: 0;
+  padding: 0 clamp(14px, 1.6vw, 26px) 0 0;
+}
+
+.capability + .capability {
+  padding-left: clamp(18px, 2vw, 32px);
+  border-left: 1px solid rgba(242, 241, 234, .12);
+}
+
+.cap-index {
+  padding-top: 1px;
+  color: rgba(242, 241, 234, .34);
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .12em;
+}
+
+.cap-body {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  margin: 0;
+}
+
+.cap-body strong {
+  color: rgba(242, 241, 234, .9);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.cap-body span {
+  color: rgba(242, 241, 234, .42);
+  font-size: 10px;
+  letter-spacing: .015em;
+  line-height: 1.55;
+}
+
+.manifesto-ruler {
+  position: absolute;
+  z-index: 3;
+  top: clamp(120px, 17svh, 166px);
+  right: clamp(18px, 2vw, 28px);
+  bottom: clamp(128px, 18svh, 176px);
+  width: 44px;
+  pointer-events: none;
+}
+
+.manifesto-ruler-rail {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(242, 241, 234, .18);
+}
+
+.manifesto-ruler-tick {
+  position: absolute;
+  right: 0;
+  display: block;
+  width: 9px;
+  height: 1px;
+  background: rgba(242, 241, 234, .3);
+}
+
+.manifesto-ruler-tick i {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: inherit;
+}
+
+.manifesto-ruler-tick b {
+  position: absolute;
+  top: -4px;
+  right: 14px;
+  color: rgba(242, 241, 234, .35);
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: .08em;
+  line-height: 1;
+}
+
+.manifesto-ruler-needle {
+  position: absolute;
+  top: 0;
+  left: -4px;
+  width: 9px;
+  height: 1px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(14, 14, 13, .2);
+  will-change: transform;
+}
+
+/* --- B3: work specs, physical card depth, progress, plate marks --- */
+.work-card-index {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.work-card-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.work-card-progress i {
+  display: block;
+  width: 9px;
+  height: 2px;
+  background: rgba(14, 14, 13, .18);
+}
+
+.work-card--ink .work-card-progress i {
+  background: rgba(242, 241, 234, .2);
+}
+
+.work-card-progress i.is-active {
+  background: var(--accent);
+}
+
+.work-specs {
+  margin: clamp(18px, 2.4vh, 28px) 0 0;
+  padding: 0;
+  border-top: 1px solid rgba(14, 14, 13, .14);
+}
+
+.work-card--ink .work-specs {
+  border-top-color: rgba(242, 241, 234, .16);
+}
+
+.work-specs div {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(14, 14, 13, .10);
+}
+
+.work-card--ink .work-specs div {
+  border-bottom-color: rgba(242, 241, 234, .12);
+}
+
+.work-specs dt {
+  color: currentColor;
+  font-family: var(--font-display);
+  font-size: 8.5px;
+  font-weight: 500;
+  letter-spacing: .15em;
+  line-height: 1.4;
+  opacity: .44;
+  text-transform: uppercase;
+}
+
+.work-specs dd {
+  min-width: 0;
+  margin: 0;
+  color: currentColor;
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: .015em;
+  line-height: 1.45;
+  opacity: .82;
+}
+
+.spec-dot {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(14, 14, 13, .38);
+  vertical-align: middle;
+}
+
+.work-card--ink .spec-dot {
+  box-shadow: 0 0 0 1px rgba(242, 241, 234, .3);
+}
+
+.media-corner {
+  position: absolute;
+  z-index: 2;
+  width: 8px;
+  height: 8px;
+  opacity: .62;
+  pointer-events: none;
+}
+
+.media-corner--tl {
+  top: 10px;
+  left: 10px;
+  border-top: 1px solid currentColor;
+  border-left: 1px solid currentColor;
+}
+
+.media-corner--tr {
+  top: 10px;
+  right: 10px;
+  border-top: 1px solid currentColor;
+  border-right: 1px solid currentColor;
+}
+
+.media-corner--bl {
+  bottom: 10px;
+  left: 10px;
+  border-bottom: 1px solid currentColor;
+  border-left: 1px solid currentColor;
+}
+
+.media-corner--br {
+  right: 10px;
+  bottom: 10px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+}
+
+.work-card-fig {
+  position: absolute;
+  z-index: 3;
+  left: 12px;
+  bottom: 10px;
+  padding: 5px 7px;
+  border-radius: 2px;
+  background: rgba(14, 14, 13, .78);
+  color: var(--page-paper);
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: .12em;
+  line-height: 1;
+  pointer-events: none;
+  text-transform: uppercase;
+}
+
+/* --- B4: imprint telemetry lock + orbit HUD --- */
+.imprint-asn,
+.imprint-row {
+  position: relative;
+}
+
+.imprint-telemetry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -3px;
+  color: rgba(242, 241, 234, .42);
+  font-family: var(--font-display);
+  font-size: 8.5px;
+  font-weight: 400;
+  letter-spacing: .13em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.imprint-telemetry i {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(242, 241, 234, .22);
+}
+
+.imprint-asn.is-locked::before,
+.imprint-row.is-locked::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(14, 14, 13, .55);
+}
+
+.imprint-asn.is-locked::before {
+  top: 33px;
+}
+
+.orbit-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  font-family: var(--font-display);
+}
+
+.hud-corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: rgba(14, 14, 13, .22);
+  border-style: solid;
+  border-width: 0;
+}
+
+.hud-corner--tl {
+  top: 0;
+  left: 0;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+
+.hud-corner--tr {
+  top: 0;
+  right: 0;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+
+.hud-corner--bl {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+
+.hud-corner--br {
+  right: 0;
+  bottom: 0;
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+}
+
+.orbit-hud-hint {
+  position: absolute;
+  top: 7px;
+  left: 17px;
+  color: rgba(14, 14, 13, .36);
+  font-size: 8px;
+  letter-spacing: .14em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.orbit-hud-coords {
+  position: absolute;
+  top: 7px;
+  right: 17px;
+  color: rgba(14, 14, 13, .5);
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .1em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+/* --- B5: about archive + signature replay --- */
+.about-specs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: 100%;
+  margin-top: clamp(16px, 2.4vh, 26px);
+  border-top: 1px solid var(--hairline-dark);
+}
+
+.about-specs div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hairline-dark);
+  font-family: var(--font-display);
+  line-height: 1.4;
+}
+
+.about-specs div:nth-child(odd) {
+  padding-right: 18px;
+  border-right: 1px solid var(--hairline-dark);
+}
+
+.about-specs div:nth-child(even) {
+  padding-left: 18px;
+}
+
+.about-specs dt {
+  color: var(--page-ink);
+  font-size: 8.5px;
+  letter-spacing: .12em;
+  opacity: .42;
+  text-transform: uppercase;
+}
+
+.about-specs dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--page-ink);
+  font-size: 10px;
+  letter-spacing: .015em;
+  opacity: .78;
+}
+
+.about-signature-wrap {
+  position: relative;
+  display: block;
+  width: max-content;
+  margin-top: clamp(20px, 3.2vh, 32px);
+}
+
+.about-signature-wrap .about-signature {
+  margin: 0;
+}
+
+.about-signature-replay {
+  position: absolute;
+  left: calc(100% + 14px);
+  bottom: 4px;
+  color: var(--page-ink);
+  font-family: var(--font-display);
+  font-size: 8px;
+  letter-spacing: .14em;
+  line-height: 1.4;
+  opacity: .38;
+  pointer-events: none;
+  text-transform: uppercase;
+  transition: opacity .3s ease;
+  white-space: nowrap;
+}
+
+.about-signature-wrap:hover .about-signature-replay,
+.about-signature:focus-visible + .about-signature-replay {
+  opacity: .85;
+}
+
+/* --- responsive detail adjustments --- */
+@media (max-width: 900px) {
+  .manifesto-capabilities {
+    grid-template-columns: 1fr;
+    width: 100%;
+    gap: 0;
+    margin-top: 26px;
+    padding-top: 10px;
+    padding-right: 0;
+  }
+
+  .capability {
+    grid-template-columns: 24px minmax(0, 1fr);
+    padding: 10px 0;
+    border-top: 1px solid rgba(242, 241, 234, .09);
+  }
+
+  .capability + .capability {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .cap-body strong {
+    font-size: 9px;
+  }
+
+  .cap-body span {
+    font-size: 9px;
+  }
+
+  .manifesto-ruler {
+    display: none;
+  }
+
+  .work-card-index {
+    gap: 7px;
+  }
+
+  .work-card-progress i {
+    width: 7px;
+  }
+
+  .work-specs {
+    margin-top: 18px;
+  }
+
+  .work-specs div {
+    grid-template-columns: 64px minmax(0, 1fr);
+    padding: 6px 0;
+  }
+
+  .work-specs dt {
+    font-size: 8px;
+  }
+
+  .work-specs dd {
+    font-size: 10px;
+  }
+
+  .orbit-hud {
+    display: none;
+  }
+
+  .about-specs {
+    grid-template-columns: 1fr;
+    margin-top: 14px;
+  }
+
+  .about-specs div:nth-child(odd),
+  .about-specs div:nth-child(even) {
+    padding-left: 0;
+    padding-right: 0;
+    border-right: 0;
+  }
+
+  .about-signature-wrap {
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  .about-signature-replay {
+    position: static;
+    margin-top: 7px;
+    opacity: .38;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roll-inner {
+    transition: none !important;
+  }
+
+  .site-nav a:hover .roll-inner:first-child,
+  .site-nav a:focus-visible .roll-inner:first-child,
+  .work-card-links a:hover .roll-inner:first-child,
+  .work-card-links a:focus-visible .roll-inner:first-child,
+  .about-links a:hover .roll-inner:first-child,
+  .about-links a:focus-visible .roll-inner:first-child,
+  .site-nav a:hover .roll-inner + .roll-inner,
+  .site-nav a:focus-visible .roll-inner + .roll-inner,
+  .work-card-links a:hover .roll-inner + .roll-inner,
+  .work-card-links a:focus-visible .roll-inner + .roll-inner,
+  .about-links a:hover .roll-inner + .roll-inner,
+  .about-links a:focus-visible .roll-inner + .roll-inner {
+    transform: none !important;
+  }
+
+  .manifesto-ruler-needle {
+    transition: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-accent {
+    transition: none !important;
   }
 }

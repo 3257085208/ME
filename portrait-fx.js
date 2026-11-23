@@ -260,6 +260,7 @@
   let hostPageTop=0;
   let hostPageLeft=0;
   let homeVisible=true;
+  let renderFrame=0;
   let layoutDirty=true;
   let layoutVersion=0;
   let pendingPointer=null;
@@ -289,6 +290,9 @@
     if(!homeVisible){
       activeTarget=0;
       cross.classList.remove('is-active');
+      stopRender();
+    } else {
+      startRender();
     }
   },{rootMargin:'20% 0px'});
   observer.observe(home);
@@ -463,9 +467,27 @@
     shared.scissor.h=Math.max(1,y2-y);
   }
 
-  function render(now){
-    requestAnimationFrame(render);
+  function startRender(){
+    if(renderFrame || document.hidden || !homeVisible)return;
+    last=performance.now();
+    renderFrame=requestAnimationFrame(render);
+  }
 
+  function stopRender(){
+    if(renderFrame)cancelAnimationFrame(renderFrame);
+    renderFrame=0;
+  }
+
+  function render(now){
+    renderFrame=0;
+    if(document.hidden || !homeVisible)return;
+    drawFrame(now);
+    if(!renderFrame && homeVisible && !document.hidden){
+      renderFrame=requestAnimationFrame(render);
+    }
+  }
+
+  function drawFrame(now){
     const dt=Math.min(.05,Math.max(.001,(now-last)/1000));
     last=now;
 
@@ -548,5 +570,9 @@
   }
 
   measure();
-  requestAnimationFrame(render);
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden) stopRender();
+    else startRender();
+  });
+  startRender();
 })();
