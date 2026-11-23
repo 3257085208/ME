@@ -8,10 +8,10 @@
   <title>QQ.SG — Kaixiang Nie</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap">
-  <link rel="stylesheet" href="scroll.css?v=20261122g">
-  <link rel="stylesheet" href="portrait-fx.css?v=20261122g">
-  <link rel="stylesheet" href="aesthetic-pass.css?v=20261122g">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Space+Grotesk:wght@500;700&display=swap">
+  <link rel="stylesheet" href="scroll.css?v=20261123">
+  <link rel="stylesheet" href="portrait-fx.css?v=20261123">
+  <link rel="stylesheet" href="aesthetic-pass.css?v=20261123">
 </head>
 <body class="cinema-edition">
   <a class="skip-link" href="#works">跳到作品</a>
@@ -26,6 +26,7 @@
       <a href="#about">About</a>
     </nav>
   </header>
+  <span class="nav-accent" aria-hidden="true"></span>
 
   <main class="story">
     <section class="chapter home-chapter" id="home" data-nav="home" data-label="Introduction" data-tone="dark" data-split="65">
@@ -70,65 +71,111 @@
       </div>
     </section>
 
-    <section class="chapter act act-works" id="works" data-nav="works" data-label="01 · Selected Works" data-tone="dark" data-split="40" aria-labelledby="works-kicker">
-      <div class="act-grid">
-        <div class="act-face act-face--dark works-index">
-          <p class="act-kicker" id="works-kicker"><span class="mask-line"><span>01 / Selected Works</span></span></p>
-          <ul class="work-list">
-            <li class="work-item is-active" data-work="blog" data-fig="FIG. 01 — NIEKAIXIANG.COM" data-caption="博客首页 · 2026.10" data-desc="记录生活，也记录折腾。" data-visit="https://www.niekaixiang.com" data-source="https://github.com/3257085208/NIE-Higan-Blog">
-              <button class="work-row" type="button" aria-pressed="true">
-                <span class="work-num">01</span>
-                <span class="work-main">
-                  <span class="work-name mask-line"><span>聶.NET</span></span>
-                  <span class="work-kind">Personal Blog</span>
-                </span>
-              </button>
-            </li>
-            <li class="work-item" data-work="sla" data-fig="FIG. 02 — SLA.NIEKAIXIANG.COM" data-caption="公开状态页 · 2026.10" data-desc="把网站与 VPS 的状态放到眼前。" data-visit="https://sla.niekaixiang.com" data-source="https://github.com/3257085208/NIE-SLA">
-              <button class="work-row" type="button" aria-pressed="false">
-                <span class="work-num">02</span>
-                <span class="work-main">
-                  <span class="work-name mask-line"><span>NIE-SLA</span></span>
-                  <span class="work-kind">Uptime &amp; Telemetry</span>
-                </span>
-              </button>
-            </li>
-            <li class="work-item" data-work="nodeget" data-fig="FIG. 03 — STATUS.QQ.SG" data-caption="主题界面 · 公开页面" data-desc="让密集的服务器数据更容易阅读。" data-visit="https://status.qq.sg" data-source="https://github.com/3257085208/NIE-Theme-NodeGet">
-              <button class="work-row" type="button" aria-pressed="false">
-                <span class="work-num">03</span>
-                <span class="work-main">
-                  <span class="work-name mask-line"><span>NIE Theme</span></span>
-                  <span class="work-kind">NodeGet Interface</span>
-                </span>
-              </button>
-            </li>
-          </ul>
-          <div class="work-active-panel" id="work-active-panel" aria-live="polite">
-            <p class="work-desc" id="work-desc">记录生活，也记录折腾。</p>
-            <div class="work-links">
-              <a id="work-visit" href="https://www.niekaixiang.com" target="_blank" rel="noopener noreferrer">Visit <span aria-hidden="true">↗</span></a>
-              <a id="work-source" href="https://github.com/3257085208/NIE-Higan-Blog" target="_blank" rel="noopener noreferrer">Source <span aria-hidden="true">↗</span></a>
-            </div>
-          </div>
+    <section class="chapter manifesto-chapter" id="manifesto" data-nav="manifesto" data-label="00 · Manifesto" data-tone="dark" data-split="52" aria-labelledby="manifesto-title">
+      <div class="manifesto-stage">
+        <div class="topo-lines" data-topo="manifesto" aria-hidden="true">
+          <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" focusable="false">
+            <path d="M-140 620 C120 520 260 700 510 610 C760 520 890 300 1160 360 C1340 400 1490 470 1580 560"/>
+            <path d="M-160 420 C80 300 280 480 520 400 C760 320 900 160 1180 220 C1380 260 1520 360 1600 430"/>
+            <path d="M-120 780 C180 680 340 840 620 760 C880 690 1010 540 1280 600 C1420 630 1520 700 1580 760"/>
+            <path d="M420 180 C620 60 980 90 1120 250 C1260 410 1040 620 760 600 C500 580 300 360 420 180 Z"/>
+            <path d="M110 880 C260 700 360 520 620 480 C860 440 990 560 1180 640 C1300 690 1400 670 1500 620"/>
+            <path class="topo-primary" pathLength="1" d="M-80 700 C160 520 340 660 560 720 C820 790 960 620 1120 560 C1240 515 1360 540 1520 600"/>
+          </svg>
         </div>
+        <h2 class="manifesto-title" id="manifesto-title" aria-label="Crafting pages, running systems, owning networks">
+          <span class="manifesto-line" data-manifesto-line="0">CRAFTING <em>PAGES</em></span>
+          <span class="manifesto-line" data-manifesto-line="1">RUNNING <span class="accent-word">SYSTEMS</span></span>
+          <span class="manifesto-line" data-manifesto-line="2">OWNING <em>NETWORKS</em></span>
+        </h2>
+        <div class="manifesto-telemetry" aria-hidden="true">
+          <span>00 / PRACTICE</span>
+          <span>WEB / INFRASTRUCTURE / AS218834</span>
+          <span>SCROLL <b data-manifesto-progress>00%</b></span>
+        </div>
+      </div>
+    </section>
 
-        <div class="act-face act-face--light gallery-stage">
-          <div class="works-meta">
-            <span class="works-fig" id="works-fig">FIG. 01 — NIEKAIXIANG.COM</span>
-            <span class="works-year">2026</span>
-          </div>
-          <div class="plate-slot">
-            <div class="plate-stack">
-              <img class="plate-img is-active" data-work="blog" src="assets/blog.jpg" alt="聶.NET 博客首页截图" width="1200" height="800" decoding="async">
-              <img class="plate-img" data-work="sla" src="assets/sla.jpg" alt="NIE-SLA 服务状态页面截图" width="1200" height="800" decoding="async" aria-hidden="true">
-              <img class="plate-img" data-work="nodeget" src="assets/nodeget.jpg" alt="NIE Theme 的 NodeGet 界面截图" width="1200" height="675" decoding="async" aria-hidden="true">
-              <div class="plate-shutter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <section class="chapter work-chapter" id="works" data-nav="works" data-label="01 · Selected Works" data-tone="dark" data-split="52" aria-labelledby="work-card-01-title">
+      <div class="topo-lines" data-topo="works" aria-hidden="true">
+        <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" focusable="false">
+          <path d="M-140 620 C120 520 260 700 510 610 C760 520 890 300 1160 360 C1340 400 1490 470 1580 560"/>
+          <path d="M-160 420 C80 300 280 480 520 400 C760 320 900 160 1180 220 C1380 260 1520 360 1600 430"/>
+          <path d="M-120 780 C180 680 340 840 620 760 C880 690 1010 540 1280 600 C1420 630 1520 700 1580 760"/>
+          <path d="M420 180 C620 60 980 90 1120 250 C1260 410 1040 620 760 600 C500 580 300 360 420 180 Z"/>
+          <path d="M110 880 C260 700 360 520 620 480 C860 440 990 560 1180 640 C1300 690 1400 670 1500 620"/>
+          <path class="topo-primary" pathLength="1" d="M-80 700 C160 520 340 660 560 720 C820 790 960 620 1120 560 C1240 515 1360 540 1520 600"/>
+        </svg>
+      </div>
+      <div class="work-stack">
+        <div class="work-card-slot">
+          <article class="work-card work-card--paper" id="work-card-01" aria-labelledby="work-card-01-title">
+            <header class="work-card-head">
+              <span>01 / 03</span>
+              <span>PERSONAL BLOG</span>
+              <span>NIEKAIXIANG.COM</span>
+            </header>
+            <div class="work-card-body">
+              <div class="work-card-copy">
+                <h3 class="work-card-title" id="work-card-01-title">聶.NET</h3>
+                <p class="work-card-desc">记录生活，也记录折腾。</p>
+                <div class="work-card-links">
+                  <a href="https://www.niekaixiang.com" target="_blank" rel="noopener noreferrer">Visit <span aria-hidden="true">↗</span></a>
+                  <a href="https://github.com/3257085208/NIE-Higan-Blog" target="_blank" rel="noopener noreferrer">Source <span aria-hidden="true">↗</span></a>
+                </div>
+              </div>
+              <figure class="work-card-media">
+                <img src="assets/blog.jpg" alt="聶.NET 博客首页截图" width="1200" height="800" decoding="async">
+              </figure>
             </div>
-          </div>
-          <div class="plate-caption">
-            <span class="plate-caption-text" id="plate-caption">博客首页 · 2026.10</span>
-            <span class="works-hint">Hover for color</span>
-          </div>
+            <div class="work-card-veil" aria-hidden="true"></div>
+          </article>
+        </div>
+        <div class="work-card-slot">
+          <article class="work-card work-card--ink" id="work-card-02" aria-labelledby="work-card-02-title">
+            <header class="work-card-head">
+              <span>02 / 03</span>
+              <span><i class="work-status-dot" aria-hidden="true"></i>UPTIME &amp; TELEMETRY</span>
+              <span>SLA.NIEKAIXIANG.COM</span>
+            </header>
+            <div class="work-card-body">
+              <div class="work-card-copy">
+                <h3 class="work-card-title" id="work-card-02-title">NIE-SLA</h3>
+                <p class="work-card-desc">把网站与 VPS 的状态放到眼前。</p>
+                <div class="work-card-links">
+                  <a href="https://sla.niekaixiang.com" target="_blank" rel="noopener noreferrer">Visit <span aria-hidden="true">↗</span></a>
+                  <a href="https://github.com/3257085208/NIE-SLA" target="_blank" rel="noopener noreferrer">Source <span aria-hidden="true">↗</span></a>
+                </div>
+              </div>
+              <figure class="work-card-media">
+                <img src="assets/sla.jpg" alt="NIE-SLA 服务状态页面截图" width="1200" height="800" decoding="async">
+              </figure>
+            </div>
+            <div class="work-card-veil" aria-hidden="true"></div>
+          </article>
+        </div>
+        <div class="work-card-slot">
+          <article class="work-card work-card--paper" id="work-card-03" aria-labelledby="work-card-03-title">
+            <header class="work-card-head">
+              <span>03 / 03</span>
+              <span>THEME INTERFACE</span>
+              <span>STATUS.QQ.SG</span>
+            </header>
+            <div class="work-card-body">
+              <div class="work-card-copy">
+                <h3 class="work-card-title" id="work-card-03-title">NIE Theme</h3>
+                <p class="work-card-desc">让密集的服务器数据更容易阅读。</p>
+                <div class="work-card-links">
+                  <a href="https://status.qq.sg" target="_blank" rel="noopener noreferrer">Visit <span aria-hidden="true">↗</span></a>
+                  <a href="https://github.com/3257085208/NIE-Theme-NodeGet" target="_blank" rel="noopener noreferrer">Source <span aria-hidden="true">↗</span></a>
+                </div>
+              </div>
+              <figure class="work-card-media">
+                <img src="assets/nodeget.jpg" alt="NIE Theme 的 NodeGet 界面截图" width="1200" height="675" decoding="async">
+              </figure>
+            </div>
+            <div class="work-card-veil" aria-hidden="true"></div>
+          </article>
         </div>
       </div>
     </section>
@@ -176,6 +223,16 @@
         </div>
 
         <div class="act-face act-face--light imprint-wall" id="imprint-wall" aria-live="polite">
+                    <div class="topo-lines" data-topo="imprints" aria-hidden="true">
+            <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" focusable="false">
+              <path d="M-140 620 C120 520 260 700 510 610 C760 520 890 300 1160 360 C1340 400 1490 470 1580 560"/>
+              <path d="M-160 420 C80 300 280 480 520 400 C760 320 900 160 1180 220 C1380 260 1520 360 1600 430"/>
+              <path d="M-120 780 C180 680 340 840 620 760 C880 690 1010 540 1280 600 C1420 630 1520 700 1580 760"/>
+              <path d="M420 180 C620 60 980 90 1120 250 C1260 410 1040 620 760 600 C500 580 300 360 420 180 Z"/>
+              <path d="M110 880 C260 700 360 520 620 480 C860 440 990 560 1180 640 C1300 690 1400 670 1500 620"/>
+              <path class="topo-primary" pathLength="1" d="M-80 700 C160 520 340 660 560 720 C820 790 960 620 1120 560 C1240 515 1360 540 1520 600"/>
+            </svg>
+          </div>
           <div class="imprint-orbit"><canvas class="imprint-astrolabe" id="imprintAstrolabe" aria-hidden="true"></canvas></div>
           <span class="imprint-ghost" id="imprint-ghost" aria-hidden="true">AS</span>
           <div class="imprint-wall-inner">
@@ -213,7 +270,9 @@
             <a href="#home">Back to top <span aria-hidden="true">↑</span></a>
           </div>
           <footer class="about-colophon">
-            <span>QQ.SG — 2026</span>
+            <span class="colophon-left">QQ.SG // NKX</span>
+            <span class="colophon-clock">SHANGHAI · <time id="about-clock">00:00:00</time></span>
+            <span class="colophon-right">© 2026</span>
           </footer>
         </div>
       </div>
@@ -228,10 +287,10 @@
   <div class="frame" aria-hidden="true"></div>
   <div class="gallery-cursor" aria-hidden="true"><span class="gallery-cursor-label">Color</span></div>
 
-  <script src="vendor/lenis.min.js?v=20261122g"></script>
-  <script src="world-dots.js?v=20261122g"></script>
-  <script src="site.js?v=20261122g"></script>
-  <script src="portrait-fx.js?v=20261122g"></script>
-  <script src="hero-ink-fx.js?v=20261122g"></script>
+  <script src="vendor/lenis.min.js?v=20261123"></script>
+  <script src="world-dots.js?v=20261123"></script>
+  <script src="site.js?v=20261123"></script>
+  <script src="portrait-fx.js?v=20261123"></script>
+  <script src="hero-ink-fx.js?v=20261123"></script>
 </body>
 </html>

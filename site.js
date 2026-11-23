@@ -22,8 +22,23 @@
   const imprintWall = document.getElementById('imprint-wall');
   const imprintGhost = document.getElementById('imprint-ghost');
   const galleryCursor = document.querySelector('.gallery-cursor');
+  const navAccent = document.querySelector('.nav-accent');
+  const splitBackdrop = document.querySelector('.split-backdrop');
   const splitLight = document.querySelector('.split-backdrop-light');
-  const inertiaElements = [...document.querySelectorAll('.act-works .plate-slot, .act-imprints .imprint-list, .act-about .about-copy')];
+  const manifestoLines = [...document.querySelectorAll('[data-manifesto-line]')];
+  const manifestoProgress = document.querySelector('[data-manifesto-progress]');
+  const topoEntries = [...document.querySelectorAll('[data-topo]')].map((el) => ({
+    el,
+    key: el.dataset.topoTarget || el.dataset.topo,
+    primary: el.querySelector('.topo-primary'),
+    lastTransform: '',
+    lastOffset: ''
+  }));
+  const workCards = [...document.querySelectorAll('.work-card')];
+  const workMedia = [...document.querySelectorAll('.work-card-media img')];
+  const workVeils = [...document.querySelectorAll('.work-card-veil')];
+  const aboutClock = document.getElementById('about-clock');
+  const inertiaElements = [...document.querySelectorAll('.act-imprints .imprint-list, .act-about .about-copy')];
   let heroAnimations = [];
   let aboutAnimations = [];
   let astrolabe = null;
@@ -54,14 +69,20 @@
     imprintTop: 0,
     imprintWallTop: 0,
     chapters: [],
+    byNav: {},
+    workSlots: [],
     acts: [],
     reveals: []
   };
+  let lastManifestoPercent = '';
+  let lastSplitAlpha = -1;
+  let clockTimer = 0;
   let measureTimer = 0;
   let lastJourneyLabel = '';
   let lastJourneyProgress = -1;
   let lastHeaderTone = '';
   let lastJourneyAtHome = '';
+  let lastNavAccent = '';
   let lastAboutShift = null;
   let lastGhostShift = null;
 
@@ -147,6 +168,28 @@
       };
     });
 
+    layout.byNav = {};
+    layout.chapters.forEach((chapter) => {
+      layout.byNav[chapter.nav] = chapter;
+    });
+
+    layout.navRects = navLinks.map((link) => {
+      const rect = link.getBoundingClientRect();
+      return { left: rect.left, top: rect.bottom, width: rect.width };
+    });
+
+    const worksChapter = layout.byNav.works;
+    if (worksChapter && workCards.length) {
+      const cardHeight = layout.innerHeight - 104;
+      const worksTop = worksChapter.top;
+      layout.workSlots = workCards.map((card, index) => ({
+        top: worksTop + 68 + index * (cardHeight + 104),
+        height: cardHeight
+      }));
+    } else {
+      layout.workSlots = [];
+    }
+
     layout.acts = acts.map((act) => {
       const rect = act.getBoundingClientRect();
       return { el: act, top: rect.top + scrollY, height: rect.height };
@@ -165,6 +208,8 @@
     splitStops = layout.chapters
       .map((chapter) => ({ top: chapter.top, split: chapter.split }))
       .filter((stop) => Number.isFinite(stop.split));
+
+    updateNavAccent();
   }
 
   function scheduleMeasure() {
@@ -279,169 +324,14 @@
   const works = document.getElementById('works');
 
   function setupWorks() {
-    if (!works) return;
-    const items = [...works.querySelectorAll('.work-item')];
-    const plates = [...works.querySelectorAll('.plate-img')];
-    const plateStack = works.querySelector('.plate-stack');
-    const fig = document.getElementById('works-fig');
-    const caption = document.getElementById('plate-caption');
-    const panel = document.getElementById('work-active-panel');
-    const descEl = document.getElementById('work-desc');
-    const visitEl = document.getElementById('work-visit');
-    const sourceEl = document.getElementById('work-source');
-    const shutter = works.querySelector('.plate-shutter');
-    if (!items.length) return;
-
-    let currentKey = '';
-    let panelTimer = 0;
-    let prevPlate = null;
-    let prevTimer = 0;
-    let shutterTimer = 0;
-
-    const triggerShutter = () => {
-      if (!shutter || motion.matches) return;
-      shutter.classList.remove('is-wiping');
-      void shutter.offsetWidth;
-      shutter.classList.add('is-wiping');
-      clearTimeout(shutterTimer);
-      shutterTimer = window.setTimeout(() => shutter.classList.remove('is-wiping'), 820);
-    };
-
-    const applyPanel = (item) => {
-      if (descEl) descEl.textContent = item.dataset.desc || '';
-      if (visitEl) visitEl.href = item.dataset.visit || '#';
-      if (sourceEl) sourceEl.href = item.dataset.source || '#';
-      if (panel) panel.classList.remove('is-swapping');
-    };
-
-    const setWork = (key, animate = true) => {
-      const activeItem = items.find((item) => item.dataset.work === key) || items[0];
-      if (!activeItem) return;
-      if (activeItem.dataset.work === currentKey) return;
-      currentKey = activeItem.dataset.work;
-
-      items.forEach((item) => {
-        const active = item === activeItem;
-        item.classList.toggle('is-active', active);
-        const row = item.querySelector('.work-row');
-        if (row) row.setAttribute('aria-pressed', active ? 'true' : 'false');
-      });
-
-      const nextPlate = plates.find((img) => img.dataset.work === activeItem.dataset.work) || plates[0];
-      const currentPlate = plates.find((img) => img.classList.contains('is-active'));
-      clearTimeout(prevTimer);
-      plates.forEach((img) => {
-        if (img !== currentPlate && img !== nextPlate) {
-          img.classList.remove('is-active', 'is-prev');
-          img.setAttribute('aria-hidden', 'true');
-        }
-      });
-      if (nextPlate) {
-        nextPlate.classList.remove('is-prev');
-        nextPlate.classList.add('is-active');
-        nextPlate.setAttribute('aria-hidden', 'false');
-      }
-      if (currentPlate && currentPlate !== nextPlate) {
-        currentPlate.classList.remove('is-active');
-        currentPlate.classList.add('is-prev');
-        currentPlate.setAttribute('aria-hidden', 'true');
-        prevPlate = currentPlate;
-        prevTimer = window.setTimeout(() => {
-          if (prevPlate) prevPlate.classList.remove('is-prev');
-          prevPlate = null;
-        }, 900);
-      }
-
-      if (fig) fig.textContent = activeItem.dataset.fig || '';
-      if (caption) caption.textContent = activeItem.dataset.caption || '';
-      if (animate) triggerShutter();
-      if (!animate || motion.matches || !panel) {
-        applyPanel(activeItem);
-        return;
-      }
-      clearTimeout(panelTimer);
-      panel.classList.add('is-swapping');
-      panelTimer = window.setTimeout(() => applyPanel(activeItem), 140);
-    };
-
-    items.forEach((item) => {
-      const row = item.querySelector('.work-row');
-      if (!row) return;
-      const activate = () => setWork(item.dataset.work);
-      row.addEventListener('mouseenter', activate);
-      row.addEventListener('focus', activate);
-      row.addEventListener('click', activate);
-    });
-
-    setWork(items[0].dataset.work, false);
-
-    /* Hover micro-parallax — fine pointers only, ±8px, damped */
-    if (plateStack) {
-      let targetX = 0;
-      let targetY = 0;
-      let valueX = 0;
-      let valueY = 0;
-      let frame = 0;
-      let lastTime = 0;
-
-      const applyPlate = () => {
-        const active = plateStack.querySelector('.plate-img.is-active');
-        if (!active) return;
-        active.style.setProperty('--plate-px', valueX.toFixed(2) + 'px');
-        active.style.setProperty('--plate-py', valueY.toFixed(2) + 'px');
-      };
-
-      function plateStep(now) {
-        frame = 0;
-        const dt = lastTime ? Math.min(.05, (now - lastTime) / 1000) : 1 / 60;
-        lastTime = now;
-        const alpha = 1 - Math.exp(-12 * dt);
-        valueX += (targetX - valueX) * alpha;
-        valueY += (targetY - valueY) * alpha;
-        applyPlate();
-        if (Math.abs(targetX - valueX) > 0.05 || Math.abs(targetY - valueY) > 0.05) {
-          frame = requestAnimationFrame(plateStep);
-        } else {
-          valueX = targetX;
-          valueY = targetY;
-          lastTime = 0;
-          applyPlate();
-        }
-      }
-
-      function startPlate() {
-        if (frame) return;
-        lastTime = 0;
-        frame = requestAnimationFrame(plateStep);
-      }
-
-      plateStack.addEventListener('pointermove', (event) => {
-        if (!finePointer.matches || motion.matches) return;
-        const rect = plateStack.getBoundingClientRect();
-        const nx = clamp(((event.clientX - rect.left) / rect.width - .5) * 2, -1, 1);
-        const ny = clamp(((event.clientY - rect.top) / rect.height - .5) * 2, -1, 1);
-        targetX = -nx * 8;
-        targetY = -ny * 8;
-        plateStack.style.setProperty('--tilt-x', (-ny * 2.8).toFixed(3) + 'deg');
-        plateStack.style.setProperty('--tilt-y', (nx * 3.2).toFixed(3) + 'deg');
-        startPlate();
-      });
-
-      plateStack.addEventListener('pointerleave', () => {
-        targetX = 0;
-        targetY = 0;
-        plateStack.style.setProperty('--tilt-x', '0deg');
-        plateStack.style.setProperty('--tilt-y', '0deg');
-        startPlate();
-      });
-    }
+    // Sticky work cards are scrubbed from cached slot geometry in updateScrollScrub().
   }
 
   /* ---------------------------------------------------------
      Magnetic editorial links — fine pointers only, ±6px
      --------------------------------------------------------- */
   function setupMagneticLinks() {
-    const links = [...document.querySelectorAll('.work-links a, .about-links a')];
+    const links = [...document.querySelectorAll('.work-card-links a, .about-links a')];
     links.forEach((link) => {
       link.addEventListener('pointermove', (event) => {
         if (!finePointer.matches || motion.matches) return;
@@ -944,10 +834,21 @@
             const px = a.x + (b.x - a.x) * frac;
             const py = a.y + (b.y - a.y) * frac;
             const fade = 1 - j / tail;
-            ctx.fillStyle = ink(active ? .08 + .82 * fade : .03 + .14 * fade);
-            ctx.beginPath();
-            ctx.arc(px, py, active ? .35 + 1.75 * fade : .28 + .72 * fade, 0, TAU);
-            ctx.fill();
+            const radius = active ? .35 + 1.75 * fade : .28 + .72 * fade;
+            if (active && j < 3) {
+              ctx.fillStyle = 'rgba(200, 255, 0, ' + (.92 - j * .14).toFixed(2) + ')';
+              ctx.strokeStyle = 'rgba(14, 14, 13, .92)';
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.arc(px, py, j === 0 ? 2.8 : j === 1 ? 2.2 : 1.7, 0, TAU);
+              ctx.fill();
+              ctx.stroke();
+            } else {
+              ctx.fillStyle = ink(active ? .08 + .82 * fade : .03 + .14 * fade);
+              ctx.beginPath();
+              ctx.arc(px, py, radius, 0, TAU);
+              ctx.fill();
+            }
           }
         }
       }
@@ -1114,8 +1015,8 @@
       const rippleAge = t - state.rippleStart;
       if (state.locked && !reduced && rippleAge >= 0 && rippleAge < .65) {
         const progress = rippleAge / .65;
-        ctx.strokeStyle = ink(.35 * (1 - progress));
-        ctx.lineWidth = .85;
+        ctx.strokeStyle = 'rgba(200, 255, 0, ' + (.92 * (1 - progress)).toFixed(3) + ')';
+        ctx.lineWidth = 1.15;
         ctx.beginPath();
         ctx.arc(state.rippleX, state.rippleY, 6 + 22 * progress, 0, TAU);
         ctx.stroke();
@@ -1441,7 +1342,7 @@
     }
     const plate = target && target.closest ? target.closest('.plate-stack') : null;
     const ring = target && target.closest
-      ? target.closest('.work-row, .imprint-row, .imprint-asn, .about-links a, .work-links a')
+      ? target.closest('.work-card-links a, .imprint-row, .imprint-asn, .about-links a')
       : null;
     galleryCursor.classList.toggle('is-plate', Boolean(plate));
     galleryCursor.classList.toggle('is-ring', !plate && Boolean(ring));
@@ -1548,6 +1449,148 @@
   }
 
   /* ---------------------------------------------------------
+     Scroll-scrub choreography — manifesto, topo, sticky works
+     --------------------------------------------------------- */
+  const shanghaiClock = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Shanghai',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+
+  function tickClock() {
+    if (!aboutClock) return;
+    const value = shanghaiClock.format(new Date());
+    if (aboutClock.textContent !== value) {
+      aboutClock.textContent = value;
+      aboutClock.setAttribute('datetime', value);
+    }
+  }
+
+  function updateAboutClock(scrollY) {
+    if (!aboutClock) return;
+    const chapter = layout.byNav.about;
+    if (!chapter) return;
+    const visible = scrollY + layout.innerHeight > chapter.top && scrollY < chapter.top + chapter.height;
+    if (visible && !clockTimer) {
+      tickClock();
+      clockTimer = window.setInterval(tickClock, 1000);
+    } else if (!visible && clockTimer) {
+      clearInterval(clockTimer);
+      clockTimer = 0;
+    }
+  }
+
+  function updateManifesto(scrollY) {
+    const chapter = layout.byNav.manifesto;
+    if (!chapter) return;
+    const p = clamp((scrollY - chapter.top) / Math.max(1, chapter.height - layout.innerHeight));
+    if (!motion.matches && desktop.matches) {
+      const xs = [-7 + 10 * p, 6 - 10 * p, -5 + 9 * p];
+      manifestoLines.forEach((line, index) => {
+        line.style.transform = 'translate3d(' + xs[index].toFixed(3) + 'vw, 0, 0)';
+      });
+    }
+    if (manifestoProgress) {
+      const percent = String(Math.round(p * 100)).padStart(2, '0') + '%';
+      if (percent !== lastManifestoPercent) {
+        manifestoProgress.textContent = percent;
+        lastManifestoPercent = percent;
+      }
+    }
+  }
+
+  function topoProgress(key, scrollY) {
+    const chapter = layout.byNav[key];
+    if (!chapter) return 0;
+    if (key === 'imprints') {
+      return clamp((scrollY - (chapter.top - layout.innerHeight)) / Math.max(1, chapter.height + layout.innerHeight));
+    }
+    return clamp((scrollY - chapter.top) / Math.max(1, chapter.height - layout.innerHeight));
+  }
+
+  function updateTopography(scrollY) {
+    if (motion.matches || !desktop.matches) return;
+    topoEntries.forEach((entry) => {
+      const p = topoProgress(entry.key, scrollY);
+      const offset = (p * 56 - 28).toFixed(2);
+      if (offset !== entry.lastTransform) {
+        entry.el.style.transform = 'translate3d(0, ' + offset + 'px, 0)';
+        entry.lastTransform = offset;
+      }
+      if (entry.primary) {
+        const dash = (1 - p).toFixed(4);
+        if (dash !== entry.lastOffset) {
+          entry.primary.style.strokeDashoffset = dash;
+          entry.lastOffset = dash;
+        }
+      }
+    });
+  }
+
+  function updateWorkStack(scrollY) {
+    if (!desktop.matches || motion.matches || !layout.workSlots.length) return;
+    const slots = layout.workSlots;
+    const slotTravel = Math.max(1, layout.innerHeight - 68);
+    for (let i = 0; i < workCards.length; i += 1) {
+      const slot = slots[i];
+      const card = workCards[i];
+      if (!slot || !card) continue;
+      const entry = clamp((layout.innerHeight - (slot.top - scrollY)) / slotTravel);
+      if (workMedia[i]) {
+        workMedia[i].style.transform = 'scale(' + (1.10 - .10 * entry).toFixed(4) + ')';
+      }
+      if (i < slots.length - 1 && slots[i + 1]) {
+        const nextTop = slots[i + 1].top - scrollY;
+        const p = clamp((layout.innerHeight - nextTop) / slotTravel);
+        card.style.transform = 'translate3d(0, ' + (-18 * p).toFixed(2) + 'px, 0) scale(' + (1 - .065 * p).toFixed(4) + ')';
+        if (workVeils[i]) workVeils[i].style.opacity = (.38 * p).toFixed(3);
+      } else {
+        card.style.transform = '';
+        if (workVeils[i]) workVeils[i].style.opacity = '0';
+      }
+    }
+  }
+
+  function updateSplitBackdrop(scrollY) {
+    if (!splitBackdrop || !desktop.matches) return;
+    const start = layout.imprintTop - layout.innerHeight;
+    const end = layout.imprintTop - layout.innerHeight * .34;
+    const alpha = clamp((scrollY - start) / Math.max(1, end - start));
+    if (alpha === lastSplitAlpha) return;
+    lastSplitAlpha = alpha;
+    splitBackdrop.style.opacity = alpha.toFixed(3);
+    splitBackdrop.style.visibility = alpha > 0 ? 'visible' : 'hidden';
+  }
+
+  function updateNavAccent() {
+    if (!navAccent || !layout.navRects || !layout.navRects.length) return;
+    const active = navLinks.find((link) => link.getAttribute('aria-current') === 'page');
+    const index = active ? navLinks.indexOf(active) : -1;
+    const rect = index >= 0 ? layout.navRects[index] : null;
+    const key = rect ? rect.left + ':' + rect.top + ':' + rect.width : 'none';
+    if (key === lastNavAccent) return;
+    lastNavAccent = key;
+    if (!rect) {
+      navAccent.style.opacity = '0';
+      return;
+    }
+    navAccent.style.left = rect.left.toFixed(2) + 'px';
+    navAccent.style.top = rect.top.toFixed(2) + 'px';
+    navAccent.style.width = rect.width.toFixed(2) + 'px';
+    navAccent.style.opacity = '1';
+  }
+
+  function updateScrollScrub(scrollY) {
+    updateManifesto(scrollY);
+    updateTopography(scrollY);
+    updateWorkStack(scrollY);
+    updateSplitBackdrop(scrollY);
+    updateAboutClock(scrollY);
+  }
+
+  /* ---------------------------------------------------------
      Scroll state: nav, journey, header tone, split, depth, cursor
      --------------------------------------------------------- */
   function update(scrollYParam) {
@@ -1566,6 +1609,7 @@
         if (link.hash === '#' + currentNav) link.setAttribute('aria-current', 'page');
         else link.removeAttribute('aria-current');
       });
+      updateNavAccent();
     }
 
     const index = current ? Math.max(0, layout.chapters.indexOf(current)) : 0;
@@ -1596,6 +1640,7 @@
     revealVisibleElements(scrollY);
     revealActs(scrollY);
     updateDepthParallax(scrollY);
+    updateScrollScrub(scrollY);
     queueSplit(current, scrollY);
     refreshCursor(scrollY);
   }
@@ -1666,6 +1711,14 @@
     window.addEventListener('scroll', schedule, { passive: true });
   }
   window.addEventListener('resize', scheduleMeasure, { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && clockTimer) {
+      clearInterval(clockTimer);
+      clockTimer = 0;
+    } else if (!document.hidden) {
+      updateAboutClock(window.scrollY);
+    }
+  });
   window.addEventListener('load', () => {
     measureLayout();
     update();
