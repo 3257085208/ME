@@ -201,10 +201,10 @@
 
     const worksChapter = layout.byNav.works;
     if (worksChapter && workCards.length) {
-      const cardHeight = layout.innerHeight - 104;
+      const cardHeight = layout.innerHeight - 114;
       const worksTop = worksChapter.top;
       layout.workSlots = workCards.map((card, index) => ({
-        top: worksTop + 68 + index * (cardHeight + 160),
+        top: worksTop + 76 + index * (cardHeight + 160),
         height: cardHeight
       }));
     } else {
@@ -401,8 +401,13 @@
     const lec = document.querySelector('.demo-lec');
     if (lec) {
       const plans = [...lec.querySelectorAll('.demo-plan')];
+      const regions = [...lec.querySelectorAll('.demo-region')];
+      const regionReadout = lec.querySelector('[data-region-readout]');
+      const planReadout = lec.querySelector('[data-plan-readout]');
+      const runButton = lec.querySelector('[data-lec-run]');
+      const runOutput = lec.querySelector('[data-run-output]');
       const max = { vcpu: 4, memory: 4096, disk: 40, bandwidth: 1000 };
-      const apply = (plan) => {
+      const applyPlan = (plan) => {
         if (!plan) return;
         plans.forEach((item) => {
           const active = item === plan;
@@ -418,9 +423,27 @@
         });
         const command = lec.querySelector('[data-lec-command]');
         if (command) command.textContent = plan.dataset.command || '';
+        if (planReadout) planReadout.textContent = (plan.dataset.plan || '').toUpperCase();
       };
-      plans.forEach((plan) => plan.addEventListener('click', () => apply(plan)));
-      apply(plans.find((plan) => plan.classList.contains('is-active')) || plans[0]);
+      const applyRegion = (region) => {
+        if (!region) return;
+        regions.forEach((item) => {
+          const active = item === region;
+          item.classList.toggle('is-active', active);
+          item.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        if (regionReadout) regionReadout.textContent = region.dataset.label + ' · ' + region.dataset.latency;
+      };
+      plans.forEach((plan) => plan.addEventListener('click', () => applyPlan(plan)));
+      regions.forEach((region) => region.addEventListener('click', () => applyRegion(region)));
+      if (runButton && runOutput) {
+        runButton.addEventListener('click', () => {
+          runOutput.innerHTML = '<span>✓ Instance allocated · IPv6 ready</span><span>✓ KVM virtualisation · 60s deploy</span>';
+          runOutput.classList.add('is-visible');
+        });
+      }
+      applyPlan(plans.find((plan) => plan.classList.contains('is-active')) || plans[0]);
+      applyRegion(regions.find((region) => region.classList.contains('is-active')) || regions[0]);
     }
 
     const onekb = document.querySelector('.demo-1kb');
@@ -429,6 +452,23 @@
       const excerpt = onekb.querySelector('[data-1kb-excerpt]');
       const bytes = onekb.querySelector('[data-1kb-bytes]');
       const dots = [...onekb.querySelectorAll('[data-1kb-dots] i')];
+      const inspector = {
+        total: onekb.querySelector('[data-inspector-total]'),
+        html: onekb.querySelector('[data-inspector="html"]'),
+        css: onekb.querySelector('[data-inspector="css"]'),
+        js: onekb.querySelector('[data-inspector="js"]'),
+        images: onekb.querySelector('[data-inspector="images"]'),
+        fonts: onekb.querySelector('[data-inspector="fonts"]'),
+        ttfb: onekb.querySelector('[data-inspector="ttfb"]'),
+        remaining: onekb.querySelector('[data-inspector="remaining"]'),
+        bars: {
+          html: onekb.querySelector('[data-inspector-bar="html"]'),
+          css: onekb.querySelector('[data-inspector-bar="css"]'),
+          js: onekb.querySelector('[data-inspector-bar="js"]'),
+          images: onekb.querySelector('[data-inspector-bar="images"]'),
+          fonts: onekb.querySelector('[data-inspector-bar="fonts"]')
+        }
+      };
       const apply = (article) => {
         if (!article) return;
         articles.forEach((item) => {
@@ -441,6 +481,20 @@
         if (excerpt) excerpt.textContent = article.dataset.excerpt || '';
         const filled = Math.round(amount / 1024 * dots.length);
         dots.forEach((dot, index) => dot.classList.toggle('is-filled', index < filled));
+        const values = {
+          html: Number(article.dataset.html) || 0,
+          css: Number(article.dataset.css) || 0,
+          js: Number(article.dataset.js) || 0,
+          images: Number(article.dataset.images) || 0,
+          fonts: Number(article.dataset.fonts) || 0
+        };
+        Object.keys(values).forEach((key) => {
+          if (inspector[key]) inspector[key].textContent = values[key] + ' B';
+          if (inspector.bars[key]) inspector.bars[key].style.width = (values[key] / 1024 * 100).toFixed(1) + '%';
+        });
+        if (inspector.total) inspector.total.textContent = amount + ' B';
+        if (inspector.ttfb) inspector.ttfb.textContent = article.dataset.ttfb + ' ms';
+        if (inspector.remaining) inspector.remaining.textContent = article.dataset.remaining + ' B';
       };
       articles.forEach((article) => article.addEventListener('click', () => apply(article)));
       apply(articles.find((article) => article.classList.contains('is-active')) || articles[0]);
@@ -450,31 +504,54 @@
     if (blog) {
       const tags = [...blog.querySelectorAll('.demo-tag')];
       const posts = [...blog.querySelectorAll('.demo-blog-post')];
-      const apply = (tag) => {
+      const search = blog.querySelector('[data-blog-search]');
+      let activeTag = 'all';
+      const apply = () => {
+        const query = (search ? search.value : '').trim().toLowerCase();
         tags.forEach((item) => {
-          const active = item.dataset.tag === tag;
+          const active = item.dataset.tag === activeTag;
           item.classList.toggle('is-active', active);
           item.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
         posts.forEach((post) => {
-          post.hidden = tag !== 'all' && !(post.dataset.tags || '').split(/\s+/).includes(tag);
+          const tagsMatch = activeTag === 'all' || (post.dataset.tags || '').split(/\s+/).includes(activeTag);
+          const queryMatch = !query || (post.dataset.search || '').toLowerCase().includes(query);
+          post.hidden = !(tagsMatch && queryMatch);
         });
       };
-      tags.forEach((tag) => tag.addEventListener('click', () => apply(tag.dataset.tag || 'all')));
-      apply('all');
+      tags.forEach((tag) => tag.addEventListener('click', () => {
+        activeTag = tag.dataset.tag || 'all';
+        apply();
+      }));
+      if (search) search.addEventListener('input', apply);
+      apply();
     }
 
     const sla = document.querySelector('.demo-sla');
     if (sla) {
       const detail = sla.querySelector('[data-sla-detail]');
+      const filters = [...sla.querySelectorAll('.demo-sla-filter')];
+      const nodes = [...sla.querySelectorAll('.demo-sla-node')];
+      const apply = (group) => {
+        filters.forEach((item) => {
+          const active = item.dataset.group === group;
+          item.classList.toggle('is-active', active);
+          item.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        nodes.forEach((node) => {
+          node.hidden = group !== 'all' && node.dataset.region !== group;
+        });
+      };
+      filters.forEach((filter) => filter.addEventListener('click', () => apply(filter.dataset.group || 'all')));
       sla.addEventListener('pointerover', (event) => {
         const bar = event.target.closest ? event.target.closest('.demo-bar') : null;
         if (!bar || !detail) return;
-        detail.textContent = bar.dataset.node + ' · 90D ' + bar.dataset.uptime + '% · ' + bar.dataset.latency + 'ms';
+        detail.textContent = bar.dataset.node + ' · ' + bar.dataset.time + ' · ' + bar.dataset.uptime + '% · ' + bar.dataset.latency + 'ms';
       });
       sla.addEventListener('pointerleave', () => {
-        if (detail) detail.textContent = '90D TELEMETRY · HOVER A STATUS CELL';
+        if (detail) detail.textContent = 'ALL SYSTEMS · 41 SERVICES · CLOUDFLARE WORKERS + RUST AGENT';
       });
+      apply('all');
     }
   }
 
@@ -597,9 +674,15 @@
     let currentEntry = entries[0];
     let swapTimer = 0;
 
+    const cityButtons = [...imprints.querySelectorAll('[data-city-node]')];
     const syncLocked = (node) => {
       entries.forEach((entry) => {
         entry.classList.toggle('is-locked', Boolean(node) && entry.dataset.node === node);
+      });
+      cityButtons.forEach((button) => {
+        const active = Boolean(node) && button.dataset.cityNode === node;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
     };
 
@@ -635,6 +718,13 @@
     entries.forEach((entry) => {
       entry.addEventListener('mouseenter', () => showEntry(entry));
       entry.addEventListener('focus', () => showEntry(entry));
+    });
+
+    cityButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const entry = entries.find((item) => item.dataset.node === button.dataset.cityNode);
+        if (entry) showEntry(entry);
+      });
     });
 
     applyEntry(currentEntry);
@@ -708,7 +798,7 @@
       { lat: 34.05, lon: -118.24, label: 'US · 04' },
       { lat: 1.35, lon: 103.82, label: 'SG · 05' },
       { lat: 22.32, lon: 114.17, label: 'HK · 06' },
-      { lat: 31.23, lon: 121.47, label: 'CN · 07' }
+      { lat: 51.51, lon: -0.13, label: 'UK · 07' }
     ];
     const DEGREE_LABELS = ['000°', '090°', '180°', '270°'];
     const CITY_FONT = '9px -apple-system, "SF Pro Text", sans-serif';
@@ -800,6 +890,8 @@
       dragging: false,
       dragMoved: false,
       pointerId: null,
+      startPX: 0,
+      startPY: 0,
       lastPX: 0,
       lastPY: 0,
       lastMoveAt: 0,
@@ -822,7 +914,7 @@
     }
 
     function updateOrbitHud(activeIndex) {
-      if (!orbitCoords || !desktop.matches) return;
+      if (!orbitCoords) return;
       let lat;
       let lon;
       if (state.locked) {
@@ -952,8 +1044,7 @@
       const syaw = Math.sin(yaw);
       const cp = Math.cos(pitch);
       const sp = Math.sin(pitch);
-      const narrow = w < 460;
-      const stride = narrow ? 2 : 1;
+      const stride = 1;
       const t = state.time;
       const reduced = motion.matches;
       const activeIndex = state.active === 'core' ? -1 : state.active;
@@ -1439,10 +1530,14 @@
     }
 
     function onPointerDown(event) {
-      if (!finePointer.matches || motion.matches || event.button !== 0) return;
+      if (motion.matches || event.button !== 0) return;
+      if (!finePointer.matches && event.pointerType !== 'touch') return;
+      if (event.target.closest && event.target.closest('.imprint-cities, .imprint-row, .imprint-asn, .orbit-hud')) return;
       state.dragging = true;
       state.dragMoved = false;
       state.pointerId = event.pointerId;
+      state.startPX = event.clientX;
+      state.startPY = event.clientY;
       state.lastPX = event.clientX;
       state.lastPY = event.clientY;
       state.lastMoveAt = performance.now();
@@ -1450,10 +1545,12 @@
       state.spinPitch = 0;
       state.targetTiltYaw = 0;
       state.targetTiltPitch = 0;
-      try {
-        wall.setPointerCapture(event.pointerId);
-      } catch (error) {
-        /* pointer capture is best-effort */
+      if (event.pointerType !== 'touch') {
+        try {
+          wall.setPointerCapture(event.pointerId);
+        } catch (error) {
+          /* pointer capture is best-effort */
+        }
       }
       start();
     }
@@ -1462,18 +1559,33 @@
       if (state.dragging && event.pointerId === state.pointerId) {
         const dx = event.clientX - state.lastPX;
         const dy = event.clientY - state.lastPY;
+        const totalX = event.clientX - state.startPX;
+        const totalY = event.clientY - state.startPY;
         const now = performance.now();
         const dt = Math.max(8, now - state.lastMoveAt) / 1000;
-        state.lastPX = event.clientX;
-        state.lastPY = event.clientY;
-        state.lastMoveAt = now;
-        if (!state.dragMoved && Math.hypot(dx, dy) > 1.5) {
+        if (!state.dragMoved && event.pointerType === 'touch' && Math.abs(totalY) > Math.abs(totalX) && Math.abs(totalY) > 5) {
+          state.dragging = false;
+          state.pointerId = null;
+          return;
+        }
+        if (!state.dragMoved) {
+          if (Math.abs(totalX) < 4 || Math.abs(totalX) <= Math.abs(totalY)) return;
           state.dragMoved = true;
           state.locked = false;
           state.mode = 'drag';
           wall.classList.add('is-dragging');
           setOrbitHint('ORBITING');
+          if (event.pointerType === 'touch') {
+            try {
+              wall.setPointerCapture(event.pointerId);
+            } catch (error) {
+              /* pointer capture is best-effort */
+            }
+          }
         }
+        state.lastPX = event.clientX;
+        state.lastPY = event.clientY;
+        state.lastMoveAt = now;
         if (state.dragMoved) {
           state.yaw += dx * .0055;
           state.pitch = clampPitch(state.pitch + dy * .0045);
