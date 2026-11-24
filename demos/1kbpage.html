@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1KB.Page — 1 KiB PAGE CHALLENGE</title>
+<style>
+:root{--paper:#f5f1e9;--ink:#554f49;--soft:#8a8178;--line:#c8c0b6;--accent:#76594c}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--paper);color:var(--ink)}
+body{font:18px/1.55 Georgia,"Times New Roman","Songti SC",serif;display:flex;flex-direction:column;min-height:100vh}
+a{color:var(--accent)}
+button{font:inherit;color:inherit}
+.shell{width:min(62em,calc(100% - 64px));margin:0 auto;display:flex;flex-direction:column;min-height:100vh;padding:2em 0 1.4em}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:1em;width:min(48em,100%);margin:0 auto;padding-bottom:.55em;border-bottom:1px solid var(--line);font-size:16px}
+.brand{font-weight:700;text-decoration:none;font-size:18px;letter-spacing:-.02em}
+nav{display:flex;flex-wrap:wrap;gap:.1em;color:var(--soft);font-size:14px}
+nav button{border:0;background:none;padding:0;color:var(--accent);cursor:pointer}
+nav button:hover,nav button[aria-current="page"]{color:var(--ink)}
+nav .sep{color:var(--line)}
+main{flex:1;width:min(48em,100%);margin:0 auto;padding:2.2em 0 2em;display:flex;flex-direction:column}
+.view{display:none;animation:enter .28s ease both}
+.view.active{display:block}
+@keyframes enter{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.home h1{font-size:clamp(28px,3vw,38px);font-weight:400;margin:0 0 .35em;letter-spacing:-.02em}
+.home-note{color:var(--soft);font-size:14px;margin:0 0 2em}
+section h2{font-weight:400;font-size:20px;border-bottom:1px solid var(--line);padding-bottom:.35em;margin:0 0 .2em}
+.post-link{display:flex;justify-content:space-between;gap:18px;width:100%;border:0;border-bottom:1px dotted var(--line);background:none;text-align:left;padding:.75em 0;cursor:pointer;color:var(--ink)}
+.post-link:hover{color:var(--accent)}
+.post-link time{font-size:13px;color:var(--soft);white-space:nowrap;padding-top:4px}
+.view-title{font-size:26px;font-weight:400;margin:0 0 1em}
+.back{border:0;background:none;padding:0;color:var(--accent);font-size:14px;cursor:pointer;margin-bottom:1.2em}
+.article h1{font-size:clamp(26px,3vw,36px);font-weight:400;line-height:1.2;margin:0 0 .4em}
+.article-meta{font-size:13px;color:var(--soft);margin:0 0 1.6em}
+.article p{font-size:17px;line-height:1.75;margin:0 0 1.1em}
+.minimal-list{border-top:1px solid var(--line);margin:0;padding:0;list-style:none}
+.minimal-list li{border-bottom:1px dotted var(--line);padding:.75em 0;font-size:16px}
+.about-copy p{font-size:16px;line-height:1.75;margin:0 0 1em;max-width:36em}
+footer{position:relative;width:min(48em,100%);margin:0 auto;padding-top:1em;border-top:1px solid var(--line);font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--soft)}
+.transfer{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.transfer button{border:0;background:none;padding:0;color:var(--ink);font:inherit;cursor:pointer}
+.blocks{letter-spacing:1px;color:var(--accent);font-size:11px;white-space:nowrap}
+.blocks span{display:inline-block;width:6px;height:9px;margin-right:2px;background:rgba(118,89,76,.18)}
+.blocks span.on{background:var(--accent)}
+.bytes-pop{position:absolute;left:0;bottom:2.6em;border:1px solid var(--line);background:var(--paper);padding:8px 10px;font-size:12px;color:var(--ink);opacity:0;transform:translateY(4px);pointer-events:none;transition:.2s ease;white-space:nowrap}
+.bytes-pop.show{opacity:1;transform:none}
+@media(prefers-color-scheme:dark){:root{--paper:#282725;--ink:#eee;--soft:#aaa;--line:#514d47;--accent:#d8b28f}.blocks span{background:rgba(216,178,143,.2)}.blocks span.on{background:var(--accent)}}
+@media(max-width:620px){body{font-size:16px}.shell{width:calc(100% - 32px);padding-top:1.2em}header{font-size:15px}nav{font-size:13px;line-height:1.8}main{padding-top:1.4em}.home h1{font-size:28px}footer{font-size:11px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header><a class="brand" href="#" data-view="home">1KB.Page</a><nav aria-label="主导航">
+<button data-view="home" aria-current="page">首页</button><span class="sep">·</span>
+<button data-view="notes">动态</button><span class="sep">·</span>
+<button data-view="archive">归档</button><span class="sep">·</span>
+<button data-view="links">友链</button><span class="sep">·</span>
+<button data-view="about">关于</button><span class="sep">·</span>
+<button data-view="rss">RSS</button>
+</nav></header>
+<main>
+<section class="view home active" data-page="home"><h1>1 KiB PAGE CHALLENGE</h1><p class="home-note">一页网站，一个预算：1024 字节。没有 JavaScript，没有图片，没有多余请求。</p>
+<section><h2>近期</h2>
+<button class="post-link" data-article="start"><span>这里是一切的开始</span><time>2026.01.18</time></button>
+<button class="post-link" data-article="asn"><span>AS218834：用60美元，和世界建立互联</span><time>2026.02.23</time></button>
+</section></section>
+<section class="view article" data-page="start"><button class="back" data-back>← 返回首页</button><h1>这里是一切的开始</h1><p class="article-meta">2026.01.18 · 笔记 · 918 B</p><p>把一页网站压进 1,024 字节，是一种约束，也是一种练习。</p><p>没有 JavaScript，没有图片，没有多余请求。只留下文字、留白，以及一个必须被认真对待的预算。</p><p>当每一个字节都被看见，写作就重新变成了选择：什么值得留下，什么可以删掉。</p></section>
+<section class="view article" data-page="asn"><button class="back" data-back>← 返回首页</button><h1>AS218834：用60美元，和世界建立互联</h1><p class="article-meta">2026.02.23 · 网络 · 986 B</p><p>AS218834 是连接世界的起点：用 60 美元和一套 BGP 路由，让一台服务器拥有自己的网络身份。</p><p>网络不是一条抽象线，而是一条可被看见、可被验证的路径。一个 ASN，一组前缀，和一次正确的握手。</p></section>
+<section class="view" data-page="notes"><h1 class="view-title">动态</h1><ul class="minimal-list"><li>2026.03.02 — 把页面再删掉 12 个字节。</li><li>2026.02.23 — AS218834 已接入新的上游。</li><li>2026.01.18 — 1KB.Page 正式开始。</li></ul></section>
+<section class="view" data-page="archive"><h1 class="view-title">归档</h1><ul class="minimal-list"><li>2026 — 2 篇</li><li>2025 — 0 篇</li></ul></section>
+<section class="view" data-page="links"><h1 class="view-title">友链</h1><ul class="minimal-list"><li><a href="https://www.niekaixiang.com" target="_blank" rel="noreferrer">聶.NET</a> — 花有重开日，人无再少年</li><li><a href="https://lowend.cloud" target="_blank" rel="noreferrer">LowEnd.Cloud</a> — 算力按月，价格写在明处</li></ul></section>
+<section class="view" data-page="about"><h1 class="view-title">关于</h1><div class="about-copy"><p>这是一个关于约束的实验：在 1,024 字节内，仍然把话说完。</p><p>站点由纯 HTML 与内联 CSS 构成，没有脚本，没有图片，没有追踪。</p></div></section>
+<section class="view" data-page="rss"><h1 class="view-title">RSS</h1><p class="about-copy">订阅地址：<a href="/feed.xml">/feed.xml</a></p></section>
+</main>
+<footer><div class="bytes-pop" id="bytesPop">HTML 512 B · CSS 248 B · 0 B JS · 0 B IMG</div><div class="transfer"><button id="byteButton">transfer <b id="byteCount">834 B</b> / 1024 B</button><span class="blocks" id="blocks" aria-hidden="true"></span></div></footer>
+</div>
+<script>
+(()=>{
+const bytes={home:834,start:918,asn:986,notes:372,archive:410,links:344,about:286,rss:196};
+const labels={home:'首页',start:'这里是一切的开始',asn:'AS218834',notes:'动态',archive:'归档',links:'友链',about:'关于',rss:'RSS'};
+const pages=[...document.querySelectorAll('.view')];const nav=[...document.querySelectorAll('nav button')];
+function drawBytes(n){
+ document.getElementById('byteCount').textContent=n+' B';
+ const cells=20,on=Math.round(n/1024*cells);
+ document.getElementById('blocks').innerHTML=Array.from({length:cells},(_,i)=>'<span class="'+(i<on?'on':'')+'"></span>').join('');
+ const html=Math.round(n*.61),css=n-html;
+ document.getElementById('bytesPop').textContent='HTML '+html+' B · CSS '+css+' B · 0 B JS · 0 B IMG';
+}
+function show(id,replace=true){
+ pages.forEach(p=>p.classList.toggle('active',p.dataset.page===id));
+ nav.forEach(b=>{const active=b.dataset.view===id||(id==='start'||id==='asn')&&b.dataset.view==='home';b.toggleAttribute('aria-current',active);if(active)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+ drawBytes(bytes[id]||834);
+ if(replace){try{history.replaceState(null,'','#'+id)}catch(e){}}
+}
+document.addEventListener('click',e=>{
+ const view=e.target.closest('[data-view]');if(view){e.preventDefault();show(view.dataset.view);return}
+ const article=e.target.closest('[data-article]');if(article){show(article.dataset.article);return}
+ if(e.target.closest('[data-back]')){show('home');return}
+ if(e.target.closest('#byteButton')){document.getElementById('bytesPop').classList.toggle('show');return}
+});
+document.addEventListener('click',e=>{if(!e.target.closest('.bytes-pop')&&!e.target.closest('#byteButton'))document.getElementById('bytesPop').classList.remove('show')});
+show((location.hash||'#home').slice(1)===''?'home':(location.hash||'#home').slice(1));
+const send=(dy,dx=0,mode=0)=>parent.postMessage({type:'demo-scroll',dy,dx,mode},'*');
+addEventListener('wheel',e=>{e.preventDefault();send(e.deltaY,e.deltaX,e.deltaMode)},{passive:false});
+let ty=0,tx=0,tracking=false;
+addEventListener('touchstart',e=>{if(e.touches.length===1){tracking=true;ty=e.touches[0].clientY;tx=e.touches[0].clientX}},{passive:true});
+addEventListener('touchmove',e=>{if(!tracking||e.touches.length!==1)return;const t=e.touches[0],dy=ty-t.clientY,dx=tx-t.clientX;if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>2){e.preventDefault();send(dy);ty=t.clientY;tx=t.clientX}},{passive:false});
+addEventListener('touchend',()=>{tracking=false},{passive:true});
+})();
+</script>
+</body>
+</html>

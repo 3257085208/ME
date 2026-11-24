@@ -8,9 +8,16 @@
 
 - **#home**：作者原创首屏。左侧 65% 黑 / 右侧白，人像与手写签名、WebGL 墨迹交互保持原样。
 - **#manifesto**：桌面端 320svh（粘性行程 220svh）三段式长卷。三行超宽不换行字轨（实心 / 描边 / 酸柠绿重复片段）以纯 GPU 横滚：0→-46vw、-48→+2vw、-4→-42vw；Lenis 速度驱动 ±6° skewX 迎风倾斜并在停滚时阻尼归零。保留 3 栏能力矩阵、00–100 精密标尺、末段内容 scale(.94) 退暗；移动端/reduced 仅显示首组完整文字。
-- **#works**：四张近全幅 sticky 叠层王牌卡（LowEndCloud / 1Kb.Page / 聶.NET / NIE-SLA），纸白与炭黑交替，卡片 top 76px、4 格进度微条、160px 卡距、底部 18svh 呼吸与顶部 76px 安全背板。右侧原生产品窗口：LowEndCloud 地区/套餐/Run 终端、1KB 阅读页 + Live Payload Inspector、聶.NET 搜索 + 标签筛选 + 4 篇文章、NIE-SLA 分组筛选 + 4×28 格悬停遥测。截图 assets 仅供下方 Selected Archive hover 预览。
+- **#works**：四张近全幅 sticky 叠层王牌卡（LowEndCloud / 1Kb.Page / 聶.NET / NIE-SLA），纸白与炭黑交替，卡片 top 76px、4 格进度微条、160px 卡距、底部 18svh 呼吸与顶部 68px 渐隐安全背板。右侧改为独立同源静态微应用 iframe：demos/lowendcloud、1kbpage、blog、sla，以 1200px 原站桌面画布按容器等比缩放（仅初始化/resize 计算 --demo-scale），移动端切 100% 宽 + 560px 高响应式；窗口顶栏保留三圆点、域名胶囊与 INTERACTIVE REPLICA，无角标遮挡。微应用内滚轮/纵向触摸统一 postMessage 转发给主站 Lenis。截图 assets 仅供下方 Selected Archive hover 预览。
 - **#imprints**：52% / 48% 暗场网络印记。左侧黑面为 AS218834 与七条域名索引（新增 lowend.cloud / 1kb.page），副标含 BGP · IPv4/IPv6 · 7 ACTIVE ENDPOINTS 徽条，当前锁定项带 4px 酸柠绿微点；右侧白墙是一颗真实世界高反差墨点地球：3,232 个 Natural Earth 陆地点构成清晰可辨的中国、日本、东南亚、欧洲、美洲、澳洲，正面陆地为浓黑墨点（alpha .55–.95），背面为 .06–.09 的极淡通透点；AS218834（北京）与七个入口（上海、东京、法兰克福、洛杉矶、新加坡、香港、伦敦）以真实经纬度落点，洲际 3D SLERP 拱起飞线、14 节渐隐彗尾信号流、城市信标短标与旋转游标准星。左侧悬停/聚焦时按最短角差平滑转至对应城市并锁定；右侧地球可按住拖拽旋转、松手惯性滑行，停稳 2.5s 后恢复缓慢自转。白墙叠加轻淡等高线；激活 BGP 脉冲头部 3 节与锁定雷达涟漪使用酸柠绿。地球四角为 HTML HUD：DRAG TO ORBIT / ORBITING、实时经纬度、L 型仪器角框。底部为 Telemetry 铭牌，主名切换执行 0.42s 字符解码。
 - **#about**：36% / 64% 镜像尾声。左侧黑面底部人像带 ±12px 滚动纵深视差；右侧白面为放大的标题、简介、2×2 档案规格格、现场逐笔书写的签名与 ↺ REPLAY SIGNATURE 微提示，以及三段遥测落款，含仅在本幕运行时更新的 SHANGHAI · HH:MM:SS 实时时钟。
+
+## 微应用源码采集
+
+- LowEndCloud：读取线上 https://www.lowend.cloud/ 的真实 DOM / CSS 变量（accent #0052ff、border #e2e5ec、浅灰网格与 MiSans 字系），保留真实导航、徽章、主标语、拓扑舞台与 deploy-preview 语言；套餐和地区按任务指定静态数据集驱动。
+- 1KB.Page：按 https://1kb.page/ 原始 GBK HTML 逐项还原（Georgia、#f5f1e9、48em 留白、虚线文章分隔、20 格 transfer 点阵），扩展为本地多视图与字节构成提示。
+- 聶.NET：读取本地 NIE-Higan-Blog-sync 的 Higan tokens（accent #42b983、text #50616d、border #f0f2f5）与线上真实头像，复刻头部、签名、搜索、文章列表与明暗主题。
+- NIE-SLA：读取本地 NIE-SLA/frontend/themes/nodeget-nie-sla 与线上 sla.niekaixiang.com 的 NodeGet / NIE 主题 tokens（IBM Plex Sans / JetBrains Mono、绿色语义、8px 圆角、卡片阴影），以干净节点命名重建 30 格遥测与故障记录。
 
 ## 动态黑白对切
 
@@ -35,7 +42,7 @@ manifesto / works 为不透明炭黑舞台；imprints / about 透明浮在分割
 
 ## 移动端（≤900px）
 
-隐藏固定对切层。首页完整保留 mobile-hero.css 构图；宣言带改为自然高度、无 sticky，三行与三栏能力全部静态可见；作品改为四张全宽圆角王牌卡与可筛选档案表自然纵向排列；印记以纯黑域名列表收束，并在其下以 min(82vw,340px) 的高清地球展台、精简 HUD、城市切换胶囊与 Telemetry 铭牌收束；关于为纸白单栏并以全宽无黑缝人像画框收尾，实时时钟继续运行。移动端不加载磁吸与滚动惯性；宣言显示两组文字并以 26s/30s/28s CSS 反向 marquee 运动；地球展台放大到 min(82vw,340px)，支持拇指横向拖拽、精简 HUD 与 AS218834/CN/JP/DE/US/SG/HK 城市胶囊；四张王牌卡改为自适应单栏产品窗口、无固定 390px 截断；辅助字号不低于 10px，筛选/标签触控热区不低于 36px；About 人像画框为 36px 上距 + 20px 侧距 + 16px 圆角。
+隐藏固定对切层。首页完整保留 mobile-hero.css 构图；宣言带改为自然高度、无 sticky，三行与三栏能力全部静态可见；作品改为四张全宽圆角王牌卡与可筛选档案表自然纵向排列；印记以纯黑域名列表收束，并在其下以 min(82vw,340px) 的高清地球展台、精简 HUD、城市切换胶囊与 Telemetry 铭牌收束；关于为纸白单栏并以全宽无黑缝人像画框收尾，实时时钟继续运行。移动端不加载磁吸与滚动惯性；宣言显示两组文字并以 26s/30s/28s CSS 反向 marquee 运动；地球展台放大到 min(82vw,340px)，支持拇指横向拖拽、精简 HUD 与 AS218834/CN/JP/DE/US/SG/HK 城市胶囊；四张王牌卡改用 100% 宽 iframe 微应用、560px 视口并触发原站移动布局；辅助字号不低于 10px，筛选/标签触控热区不低于 36px；About 人像画框为 36px 上距 + 20px 侧距 + 16px 圆角。
 
 ## 文件
 
@@ -43,9 +50,10 @@ manifesto / works 为不透明炭黑舞台；imprints / about 透明浮在分割
 - scroll.css：全局底座（首屏 65% 分割与人像合成、影院外框、章节基础布局）。
 - portrait-fx.css：首屏人像 WebGL 墨迹样式，并引入 mobile-hero.css。
 - mobile-hero.css：移动端首屏排版、角标与安全区适配（由 portrait-fx.css 引入）。
-- aesthetic-pass.css：五幕舞台、sticky 叠层作品卡、宣言长字轨/能力矩阵/游标标尺、等高线、Slot Roll、工作规格/HUD/档案格、隔离的 .demo-* 交互演示、星盘与铭牌、光标与响应式样式。
+- aesthetic-pass.css：五幕舞台、sticky 叠层作品卡、宣言长字轨/能力矩阵/游标标尺、等高线、Slot Roll、工作规格/HUD/档案格、iframe 产品窗框、星盘与铭牌、光标与响应式样式。
+- demos/：四个完全独立的同源静态微应用：lowendcloud.html、1kbpage.html、blog.html、sla.html，以及本地真实头像 assets/avatar.jpg；全部内联 CSS/JS、无后端、无统计脚本。
 - world-dots.js：Natural Earth 陆地点的压缩静态数据（Int16 base64，3,232 点 / 25.9KB），挂在 window.__QQSG_WORLD_DOTS__。
-- site.js：滚动与对切插值（含 Lenis 单循环）、manifesto 长字轨/velocity skew、scroll-scrub、真实墨点地球与 BGP 飞线/经纬度 HUD、拖拽惯性、sticky 作品卡、原生演示交互、印记联动、字符解码、边界视差、磁吸、实时时钟与签名重播。
+- site.js：滚动与对切插值（含 Lenis 单循环）、manifesto 长字轨/velocity skew、scroll-scrub、真实墨点地球与 BGP 飞线/经纬度 HUD、拖拽惯性、sticky 作品卡、iframe 等比缩放与滚轮透传、印记联动、字符解码、边界视差、磁吸、实时时钟与签名重播。
 - portrait-fx.js：首屏人像墨迹 WebGL 交互，离屏/隐藏时停帧。
 - hero-ink-fx.js：首屏墨迹拖尾 WebGL 交互，离屏/隐藏时停帧。
 - vendor/lenis.min.js：平滑滚动库（许可证见 vendor/LENIS_LICENSE.txt）。

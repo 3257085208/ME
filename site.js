@@ -245,6 +245,26 @@
     lastWorkValues = [];
     lastNavAccent = '';
 
+    document.querySelectorAll('.demo-viewport').forEach((viewport) => {
+      const frame = viewport.querySelector('.demo-frame');
+      if (!frame) return;
+      if (!desktop.matches) {
+        frame.style.width = '100%';
+        frame.style.height = '100%';
+        frame.style.transform = 'none';
+        viewport.style.removeProperty('--demo-scale');
+        return;
+      }
+      const width = viewport.clientWidth;
+      const height = viewport.clientHeight;
+      if (!width || !height) return;
+      const scale = width / 1200;
+      viewport.style.setProperty('--demo-scale', scale.toFixed(5));
+      frame.style.width = '1200px';
+      frame.style.height = (height / scale).toFixed(2) + 'px';
+      frame.style.transform = 'scale(' + scale.toFixed(5) + ')';
+    });
+
     updateNavAccent();
   }
 
@@ -397,162 +417,27 @@
   /* ---------------------------------------------------------
      Interactive card demos — event-driven, no scroll rAF/BCR
      --------------------------------------------------------- */
-  function setupDemos() {
-    const lec = document.querySelector('.demo-lec');
-    if (lec) {
-      const plans = [...lec.querySelectorAll('.demo-plan')];
-      const regions = [...lec.querySelectorAll('.demo-region')];
-      const regionReadout = lec.querySelector('[data-region-readout]');
-      const planReadout = lec.querySelector('[data-plan-readout]');
-      const runButton = lec.querySelector('[data-lec-run]');
-      const runOutput = lec.querySelector('[data-run-output]');
-      const max = { vcpu: 4, memory: 4096, disk: 40, bandwidth: 1000 };
-      const applyPlan = (plan) => {
-        if (!plan) return;
-        plans.forEach((item) => {
-          const active = item === plan;
-          item.classList.toggle('is-active', active);
-          item.setAttribute('aria-pressed', active ? 'true' : 'false');
-        });
-        ['vcpu', 'memory', 'disk', 'bandwidth'].forEach((key) => {
-          const value = Number(plan.dataset[key]) || 0;
-          const out = lec.querySelector('[data-lec-spec="' + key + '"]');
-          const meter = lec.querySelector('[data-lec-meter="' + key + '"]');
-          if (out) out.textContent = String(value);
-          if (meter) meter.style.width = Math.min(100, value / max[key] * 100).toFixed(1) + '%';
-        });
-        const command = lec.querySelector('[data-lec-command]');
-        if (command) command.textContent = plan.dataset.command || '';
-        if (planReadout) planReadout.textContent = (plan.dataset.plan || '').toUpperCase();
-      };
-      const applyRegion = (region) => {
-        if (!region) return;
-        regions.forEach((item) => {
-          const active = item === region;
-          item.classList.toggle('is-active', active);
-          item.setAttribute('aria-pressed', active ? 'true' : 'false');
-        });
-        if (regionReadout) regionReadout.textContent = region.dataset.label + ' · ' + region.dataset.latency;
-      };
-      plans.forEach((plan) => plan.addEventListener('click', () => applyPlan(plan)));
-      regions.forEach((region) => region.addEventListener('click', () => applyRegion(region)));
-      if (runButton && runOutput) {
-        runButton.addEventListener('click', () => {
-          runOutput.innerHTML = '<span>✓ Instance allocated · IPv6 ready</span><span>✓ KVM virtualisation · 60s deploy</span>';
-          runOutput.classList.add('is-visible');
-        });
+  function setupDemoFrames() {
+    window.addEventListener('message', (event) => {
+      if (event.origin !== location.origin && event.origin !== 'null') return;
+      const data = event.data;
+      if (!data || data.type !== 'demo-scroll') return;
+      const mode = data.mode === 1 ? 16 : data.mode === 2 ? layout.innerHeight : 1;
+      const dy = (Number(data.dy) || 0) * mode;
+      const dx = (Number(data.dx) || 0) * mode;
+      if (Math.abs(dy) < .4 && Math.abs(dx) < .4) return;
+      if (motion.matches) {
+        window.scrollBy(dx, dy);
+        return;
       }
-      applyPlan(plans.find((plan) => plan.classList.contains('is-active')) || plans[0]);
-      applyRegion(regions.find((region) => region.classList.contains('is-active')) || regions[0]);
-    }
-
-    const onekb = document.querySelector('.demo-1kb');
-    if (onekb) {
-      const articles = [...onekb.querySelectorAll('.demo-article')];
-      const excerpt = onekb.querySelector('[data-1kb-excerpt]');
-      const bytes = onekb.querySelector('[data-1kb-bytes]');
-      const dots = [...onekb.querySelectorAll('[data-1kb-dots] i')];
-      const inspector = {
-        total: onekb.querySelector('[data-inspector-total]'),
-        html: onekb.querySelector('[data-inspector="html"]'),
-        css: onekb.querySelector('[data-inspector="css"]'),
-        js: onekb.querySelector('[data-inspector="js"]'),
-        images: onekb.querySelector('[data-inspector="images"]'),
-        fonts: onekb.querySelector('[data-inspector="fonts"]'),
-        ttfb: onekb.querySelector('[data-inspector="ttfb"]'),
-        remaining: onekb.querySelector('[data-inspector="remaining"]'),
-        bars: {
-          html: onekb.querySelector('[data-inspector-bar="html"]'),
-          css: onekb.querySelector('[data-inspector-bar="css"]'),
-          js: onekb.querySelector('[data-inspector-bar="js"]'),
-          images: onekb.querySelector('[data-inspector-bar="images"]'),
-          fonts: onekb.querySelector('[data-inspector-bar="fonts"]')
-        }
-      };
-      const apply = (article) => {
-        if (!article) return;
-        articles.forEach((item) => {
-          const active = item === article;
-          item.classList.toggle('is-active', active);
-          item.setAttribute('aria-pressed', active ? 'true' : 'false');
-        });
-        const amount = Number(article.dataset.bytes) || 0;
-        if (bytes) bytes.textContent = amount + ' B';
-        if (excerpt) excerpt.textContent = article.dataset.excerpt || '';
-        const filled = Math.round(amount / 1024 * dots.length);
-        dots.forEach((dot, index) => dot.classList.toggle('is-filled', index < filled));
-        const values = {
-          html: Number(article.dataset.html) || 0,
-          css: Number(article.dataset.css) || 0,
-          js: Number(article.dataset.js) || 0,
-          images: Number(article.dataset.images) || 0,
-          fonts: Number(article.dataset.fonts) || 0
-        };
-        Object.keys(values).forEach((key) => {
-          if (inspector[key]) inspector[key].textContent = values[key] + ' B';
-          if (inspector.bars[key]) inspector.bars[key].style.width = (values[key] / 1024 * 100).toFixed(1) + '%';
-        });
-        if (inspector.total) inspector.total.textContent = amount + ' B';
-        if (inspector.ttfb) inspector.ttfb.textContent = article.dataset.ttfb + ' ms';
-        if (inspector.remaining) inspector.remaining.textContent = article.dataset.remaining + ' B';
-      };
-      articles.forEach((article) => article.addEventListener('click', () => apply(article)));
-      apply(articles.find((article) => article.classList.contains('is-active')) || articles[0]);
-    }
-
-    const blog = document.querySelector('.demo-blog');
-    if (blog) {
-      const tags = [...blog.querySelectorAll('.demo-tag')];
-      const posts = [...blog.querySelectorAll('.demo-blog-post')];
-      const search = blog.querySelector('[data-blog-search]');
-      let activeTag = 'all';
-      const apply = () => {
-        const query = (search ? search.value : '').trim().toLowerCase();
-        tags.forEach((item) => {
-          const active = item.dataset.tag === activeTag;
-          item.classList.toggle('is-active', active);
-          item.setAttribute('aria-pressed', active ? 'true' : 'false');
-        });
-        posts.forEach((post) => {
-          const tagsMatch = activeTag === 'all' || (post.dataset.tags || '').split(/\s+/).includes(activeTag);
-          const queryMatch = !query || (post.dataset.search || '').toLowerCase().includes(query);
-          post.hidden = !(tagsMatch && queryMatch);
-        });
-      };
-      tags.forEach((tag) => tag.addEventListener('click', () => {
-        activeTag = tag.dataset.tag || 'all';
-        apply();
-      }));
-      if (search) search.addEventListener('input', apply);
-      apply();
-    }
-
-    const sla = document.querySelector('.demo-sla');
-    if (sla) {
-      const detail = sla.querySelector('[data-sla-detail]');
-      const filters = [...sla.querySelectorAll('.demo-sla-filter')];
-      const nodes = [...sla.querySelectorAll('.demo-sla-node')];
-      const apply = (group) => {
-        filters.forEach((item) => {
-          const active = item.dataset.group === group;
-          item.classList.toggle('is-active', active);
-          item.setAttribute('aria-pressed', active ? 'true' : 'false');
-        });
-        nodes.forEach((node) => {
-          node.hidden = group !== 'all' && node.dataset.region !== group;
-        });
-      };
-      filters.forEach((filter) => filter.addEventListener('click', () => apply(filter.dataset.group || 'all')));
-      sla.addEventListener('pointerover', (event) => {
-        const bar = event.target.closest ? event.target.closest('.demo-bar') : null;
-        if (!bar || !detail) return;
-        detail.textContent = bar.dataset.node + ' · ' + bar.dataset.time + ' · ' + bar.dataset.uptime + '% · ' + bar.dataset.latency + 'ms';
-      });
-      sla.addEventListener('pointerleave', () => {
-        if (detail) detail.textContent = 'ALL SYSTEMS · 41 SERVICES · CLOUDFLARE WORKERS + RUST AGENT';
-      });
-      apply('all');
-    }
+      const max = Math.max(0, document.documentElement.scrollHeight - layout.innerHeight);
+      const target = clamp(window.scrollY + dy, 0, max);
+      if (lenis) {
+        lenis.scrollTo(target, { duration: .45, lock: false });
+      } else {
+        window.scrollTo({ top: target, left: 0, behavior: 'smooth' });
+      }
+    });
   }
 
   /* ---------------------------------------------------------
@@ -2329,7 +2214,7 @@
   setupImprints();
   setupMagneticLinks();
   setupArchive();
-  setupDemos();
+  setupDemoFrames();
 
   playHeroSignature();
   update();

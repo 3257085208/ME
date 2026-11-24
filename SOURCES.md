@@ -25,3 +25,13 @@ Works 四张王牌卡右侧的 .demo-* 为基于上述真实首页截图的原�
 
 About 的短介绍为基于用户资料拟写的首页文案，未加入年龄、地址、学历等个人信息。
 IDC 系统按用户要求不展示。
+
+
+## 微应用源码采集（demos/）
+
+- LowEndCloud：线上 https://www.lowend.cloud/ 的真实 DOM 与 CSS tokens（accent #0052ff、border #e2e5ec、浅灰网格、MiSans 字系）；保留真实导航、徽章、主标语、LIVE TOPOLOGY 与 deploy-preview 语义。
+- 1KB.Page：https://1kb.page/ 的原始 GBK HTML/CSS（Georgia、#f5f1e9、48em 留白、虚线分隔、transfer 834 B / 1024 B 点阵），本地扩展多视图与字节构成提示。
+- 聶.NET：本地 NIE-Higan-Blog-sync 的 Higan CSS tokens（accent #42b983、text #50616d、border #f0f2f5）与线上真实头像（demos/assets/avatar.jpg）；复刻头部、签名、搜索、文章列表、明暗主题与正文抽屉。
+- NIE-SLA：本地 NIE-SLA/frontend/themes/nodeget-nie-sla 与线上 sla.niekaixiang.com 的 NodeGet / NIE tokens（IBM Plex Sans / JetBrains Mono、绿色语义、8px 圆角、卡片阴影）；节点命名已做干净化处理，遥测数据为真实结构的静态样例。
+
+四个页面均内联 CSS/JS，不依赖外部后端、统计脚本或远程字体；滚轮/纵向触摸通过 postMessage 转发给主站 Lenis。

@@ -1,4 +1,4 @@
-@import url("mobile-hero.css?v=20261125");
+@import url("mobile-hero.css?v=20261125b");
 
 /* Homepage portrait ink reveal. Kept isolated from the main layout. */
 #home .hero-canvas{isolation:isolate}
