@@ -77,6 +77,9 @@
     aboutTop: 0,
     imprintTop: 0,
     imprintWallTop: 0,
+    imprintWallLeft: 0,
+    imprintWallWidth: 1,
+    imprintWallHeight: 1,
     chapters: [],
     byNav: {},
     workSlots: [],
@@ -215,7 +218,15 @@
 
     const imprintSection = document.getElementById('imprints');
     layout.imprintTop = imprintSection ? imprintSection.getBoundingClientRect().top + scrollY : 0;
-    layout.imprintWallTop = imprintWall ? imprintWall.getBoundingClientRect().top + scrollY : layout.imprintTop;
+    if (imprintWall) {
+      const wallRect = imprintWall.getBoundingClientRect();
+      layout.imprintWallTop = wallRect.top + scrollY;
+      layout.imprintWallLeft = wallRect.left;
+      layout.imprintWallWidth = wallRect.width;
+      layout.imprintWallHeight = wallRect.height;
+    } else {
+      layout.imprintWallTop = layout.imprintTop;
+    }
     layout.aboutTop = aboutSection ? aboutSection.getBoundingClientRect().top + scrollY : 0;
 
     splitStops = layout.chapters
@@ -379,6 +390,108 @@
   }
 
   /* ---------------------------------------------------------
+     Selected Archive — filterable ledger + hover preview only
+     --------------------------------------------------------- */
+  function setupArchive() {
+    const archive = document.getElementById('work-archive');
+    if (!archive) return;
+    const rows = [...archive.querySelectorAll('.archive-row')];
+    const filters = [...archive.querySelectorAll('.archive-filter')];
+    const preview = document.getElementById('archivePreview');
+    const previewImg = document.getElementById('archivePreviewImg');
+    const fine = matchMedia('(hover: hover) and (pointer: fine)');
+    let previewFrame = 0;
+    let previewVisible = false;
+    let activeRow = null;
+    let targetX = -999;
+    let targetY = -999;
+    let currentX = -999;
+    let currentY = -999;
+
+    function hidePreview() {
+      previewVisible = false;
+      activeRow = null;
+      if (previewFrame) cancelAnimationFrame(previewFrame);
+      previewFrame = 0;
+      if (preview) preview.classList.remove('is-visible');
+    }
+
+    function pointFor(event) {
+      let x = event.clientX + 20;
+      let y = event.clientY - 90;
+      if (x + 260 > innerWidth - 12) x = event.clientX - 280;
+      x = Math.max(12, Math.min(x, innerWidth - 272));
+      y = Math.max(12, Math.min(y, innerHeight - 186));
+      return { x, y };
+    }
+
+    function previewStep() {
+      previewFrame = 0;
+      if (!previewVisible || !preview || !previewImg) return;
+      currentX += (targetX - currentX) * .22;
+      currentY += (targetY - currentY) * .22;
+      preview.style.transform = 'translate3d(' + currentX.toFixed(2) + 'px, ' + currentY.toFixed(2) + 'px, 0)';
+      if (previewVisible) previewFrame = requestAnimationFrame(previewStep);
+    }
+
+    function showPreview(row, event) {
+      if (!preview || !previewImg || !fine.matches || motion.matches || !row.dataset.preview) return;
+      const src = row.dataset.preview;
+      if (previewImg.getAttribute('src') !== src) {
+        previewImg.src = src;
+        const name = row.querySelector('.archive-project');
+        previewImg.alt = name ? name.textContent + ' 界面预览' : '';
+      }
+      const point = pointFor(event);
+      activeRow = row;
+      if (!previewVisible) {
+        currentX = point.x;
+        currentY = point.y;
+        preview.style.transform = 'translate3d(' + currentX + 'px, ' + currentY + 'px, 0)';
+      }
+      targetX = point.x;
+      targetY = point.y;
+      previewVisible = true;
+      preview.classList.add('is-visible');
+      if (!previewFrame) previewFrame = requestAnimationFrame(previewStep);
+    }
+
+    function applyFilter(value) {
+      filters.forEach((button) => {
+        const active = button.dataset.filter === value;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      rows.forEach((row) => {
+        row.hidden = value !== 'all' && row.dataset.category !== value;
+      });
+      hidePreview();
+      measureLayout();
+      update(window.scrollY);
+    }
+
+    filters.forEach((button) => {
+      button.addEventListener('click', () => applyFilter(button.dataset.filter || 'all'));
+    });
+
+    archive.addEventListener('pointermove', (event) => {
+      if (!fine.matches || motion.matches) return;
+      const row = event.target.closest ? event.target.closest('.archive-row') : null;
+      if (!row || row.hidden || !row.dataset.preview) {
+        if (previewVisible) hidePreview();
+        return;
+      }
+      if (row !== activeRow || !previewVisible) showPreview(row, event);
+      const point = pointFor(event);
+      targetX = point.x;
+      targetY = point.y;
+    }, { passive: true });
+
+    archive.addEventListener('pointerleave', hidePreview);
+    window.addEventListener('scroll', hidePreview, { passive: true });
+  }
+
+  /* ---------------------------------------------------------
      Imprints — coordinate wall + depth parallax
      --------------------------------------------------------- */
   const imprints = document.getElementById('imprints');
@@ -504,7 +617,9 @@
       { lat: 35.70, lon: 139.70, label: 'JP · 02' },
       { lat: 50.11, lon: 8.68, label: 'DE · 03' },
       { lat: 34.05, lon: -118.24, label: 'US · 04' },
-      { lat: 1.35, lon: 103.82, label: 'SG · 05' }
+      { lat: 1.35, lon: 103.82, label: 'SG · 05' },
+      { lat: 22.32, lon: 114.17, label: 'HK · 06' },
+      { lat: 31.23, lon: 121.47, label: 'CN · 07' }
     ];
     const DEGREE_LABELS = ['000°', '090°', '180°', '270°'];
     const CITY_FONT = '9px -apple-system, "SF Pro Text", sans-serif';
@@ -1282,9 +1397,9 @@
         return;
       }
       if (!finePointer.matches || motion.matches) return;
-      const rect = wall.getBoundingClientRect();
-      const nx = clamp(((event.clientX - rect.left) / rect.width - .5) * 2, -1, 1);
-      const ny = clamp(((event.clientY - rect.top) / rect.height - .5) * 2, -1, 1);
+      const wallTop = layout.imprintWallTop - window.scrollY;
+      const nx = clamp(((event.clientX - layout.imprintWallLeft) / layout.imprintWallWidth - .5) * 2, -1, 1);
+      const ny = clamp(((event.clientY - wallTop) / layout.imprintWallHeight - .5) * 2, -1, 1);
       state.targetTiltYaw = nx * .10;
       state.targetTiltPitch = -ny * .07;
       start();
@@ -1979,6 +2094,7 @@
   astrolabe = setupAstrolabe();
   setupImprints();
   setupMagneticLinks();
+  setupArchive();
 
   playHeroSignature();
   update();

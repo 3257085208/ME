@@ -8,8 +8,8 @@
 
 - **#home**：作者原创首屏。左侧 65% 黑 / 右侧白，人像与手写签名、WebGL 墨迹交互保持原样。
 - **#manifesto**：桌面端 320svh（粘性行程 220svh）三段式长卷。sticky 100svh 舞台内三行 Space Grotesk 粗黑宣言与 Cormorant 斜体撞击：0–38% 远距错位汇入并逐行聚光，38–74% 活体慢漂且 3 栏能力矩阵依次浮现，74–100% 大字向两侧张开、内容 scale(.94) 退暗交棒 Works；右侧 00–100 游标与刻度档位高亮贯穿全程，等高线只做 ±42px / scale(1→1.06) 纯 GPU 视差。
-- **#works**：三张近全幅 sticky 叠层作品卡。深炭黑 + 100svh sticky 有机等高线背景上，纸白 / 炭黑 / 纸白三张卡以 100svh 步进压叠；上一张随下一张入场按 smoothstep/easeOutCubic 退后并加暗幕，卡内大图原生无 filter 地从 scale(1.10) 回落；卡片间距 160px、底部 18svh 呼吸过渡；每张卡含 4 行技术规格、3 格进度微条、图版四角定位角标与 FIG. // LIVE CAPTURE、物理投影与内描边；胶囊 Visit/Source 按钮 hover 时酸柠绿液态扫底、双层文字上滚。
-- **#imprints**：52% / 48% 暗场网络印记。左侧黑面为 AS218834 与五条域名索引，副标含 BGP · IPv4/IPv6 · 5 ACTIVE ENDPOINTS 徽条，当前锁定项带 4px 酸柠绿微点；右侧白墙是一颗真实世界高反差墨点地球：3,232 个 Natural Earth 陆地点构成清晰可辨的中国、日本、东南亚、欧洲、美洲、澳洲，正面陆地为浓黑墨点（alpha .55–.95），背面为 .06–.09 的极淡通透点；AS218834（北京）与五个入口（上海、东京、法兰克福、洛杉矶、新加坡）以真实经纬度落点，洲际 3D SLERP 拱起飞线、14 节渐隐彗尾信号流、城市信标短标与旋转游标准星。左侧悬停/聚焦时按最短角差平滑转至对应城市并锁定；右侧地球可按住拖拽旋转、松手惯性滑行，停稳 2.5s 后恢复缓慢自转。白墙叠加轻淡等高线；激活 BGP 脉冲头部 3 节与锁定雷达涟漪使用酸柠绿。地球四角为 HTML HUD：DRAG TO ORBIT / ORBITING、实时经纬度、L 型仪器角框。底部为 Telemetry 铭牌，主名切换执行 0.42s 字符解码。
+- **#works**：四张近全幅 sticky 叠层王牌卡（LowEndCloud / 1Kb.Page / 聶.NET / NIE-SLA），纸白与炭黑交替，4 格进度微条、160px 卡距、底部 18svh 呼吸；卡内含真实截图、4 行技术规格、图版角标与 FIG. 标记。随后是 100svh 的 Selected Archive：All 08 / Cloud & Net / Web & UI / Tools 四组胶囊筛选，8 条真实项目行；桌面 hover 以 260×174 阻尼预览真实截图，移出或滚动即停 rAF。
+- **#imprints**：52% / 48% 暗场网络印记。左侧黑面为 AS218834 与七条域名索引（新增 lowend.cloud / 1kb.page），副标含 BGP · IPv4/IPv6 · 7 ACTIVE ENDPOINTS 徽条，当前锁定项带 4px 酸柠绿微点；右侧白墙是一颗真实世界高反差墨点地球：3,232 个 Natural Earth 陆地点构成清晰可辨的中国、日本、东南亚、欧洲、美洲、澳洲，正面陆地为浓黑墨点（alpha .55–.95），背面为 .06–.09 的极淡通透点；AS218834（北京）与七个入口（上海、东京、法兰克福、洛杉矶、新加坡、香港、上海）以真实经纬度落点，洲际 3D SLERP 拱起飞线、14 节渐隐彗尾信号流、城市信标短标与旋转游标准星。左侧悬停/聚焦时按最短角差平滑转至对应城市并锁定；右侧地球可按住拖拽旋转、松手惯性滑行，停稳 2.5s 后恢复缓慢自转。白墙叠加轻淡等高线；激活 BGP 脉冲头部 3 节与锁定雷达涟漪使用酸柠绿。地球四角为 HTML HUD：DRAG TO ORBIT / ORBITING、实时经纬度、L 型仪器角框。底部为 Telemetry 铭牌，主名切换执行 0.42s 字符解码。
 - **#about**：36% / 64% 镜像尾声。左侧黑面底部人像带 ±12px 滚动纵深视差；右侧白面为放大的标题、简介、2×2 档案规格格、现场逐笔书写的签名与 ↺ REPLAY SIGNATURE 微提示，以及三段遥测落款，含仅在本幕运行时更新的 SHANGHAI · HH:MM:SS 实时时钟。
 
 ## 动态黑白对切
@@ -34,7 +34,7 @@ manifesto / works 为不透明炭黑舞台；imprints / about 透明浮在分割
 
 ## 移动端（≤900px）
 
-隐藏固定对切层。首页完整保留 mobile-hero.css 构图；宣言带改为自然高度、无 sticky，三行与三栏能力全部静态可见；作品改为三张全宽圆角卡片自然纵向排列；印记以纯黑域名列表收束，并在其下以 260px 紧凑高度展示真实世界高反差墨点地球与当前 Telemetry 铭牌；关于为纸白单栏并以全宽无黑缝人像画框收尾，实时时钟继续运行。移动端不加载光标、磁吸、拖拽与滚动惯性；HUD 与精密标尺隐藏，能力矩阵改为单列，作品规格表与档案格保持完整；星盘仍按视口暂停。
+隐藏固定对切层。首页完整保留 mobile-hero.css 构图；宣言带改为自然高度、无 sticky，三行与三栏能力全部静态可见；作品改为四张全宽圆角王牌卡与可筛选档案表自然纵向排列；印记以纯黑域名列表收束，并在其下以 260px 紧凑高度展示真实世界高反差墨点地球与当前 Telemetry 铭牌；关于为纸白单栏并以全宽无黑缝人像画框收尾，实时时钟继续运行。移动端不加载光标、磁吸、拖拽与滚动惯性；HUD 与精密标尺隐藏，能力矩阵改为单列；档案筛选胶囊横向换行、8 条项目行折为两行，作品规格表与档案格保持完整；星盘仍按视口暂停。
 
 ## 文件
 
@@ -49,13 +49,13 @@ manifesto / works 为不透明炭黑舞台；imprints / about 透明浮在分割
 - hero-ink-fx.js：首屏墨迹拖尾 WebGL 交互，离屏/隐藏时停帧。
 - vendor/lenis.min.js：平滑滚动库（许可证见 vendor/LENIS_LICENSE.txt）。
 - portrait-cutout-clean.png：当前使用的人像抠图。
-- assets/：真实项目界面截图（blog.jpg、sla.jpg、nodeget.jpg）。
+- assets/：真实项目界面截图（lowendcloud.jpg、1kbpage.jpg、blog.jpg、sla.jpg、nodeget.jpg）。
 - SOURCES.md：内容与截图来源。
 
 当前 index.html 实际加载链：scroll.css → portrait-fx.css（@import mobile-hero.css）→ aesthetic-pass.css → vendor/lenis.min.js → world-dots.js → site.js → portrait-fx.js → hero-ink-fx.js。
 
 签名使用原版速度：长度乘 2.65，长笔画 240–1150 毫秒，点笔画 90 毫秒，笔间停顿 40 / 68 毫秒。
 
-作品截图是截取时的界面，不是实时监控。域名按用户提供的信息列出，不代表每个域名均配置了网页服务。IDC 系统按用户要求未展示。
+作品截图是截取时的界面，不是实时监控；lowend.cloud 与 1kb.page 为 2026-11-24 在 1200×800 浏览器视口下的真实首页截图，未使用 Cloudflare 质询页或空白错误页。域名按用户提供的信息列出，不代表每个域名均配置了网页服务。IDC 系统按用户要求未展示。
 
 线上入口：https://www.qq.sg/（qq.sg 301 → www.qq.sg，Vercel 自动部署）。本地入口只需要 index.html。
