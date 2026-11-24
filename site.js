@@ -28,6 +28,9 @@
   const manifestoLines = [...document.querySelectorAll('[data-manifesto-line]')];
   const manifestoProgress = document.querySelector('[data-manifesto-progress]');
   const manifestoNeedle = document.getElementById('manifestoNeedle');
+  const manifestoContent = document.querySelector('.manifesto-content');
+  const manifestoCapabilities = [...document.querySelectorAll('.manifesto-capabilities .capability')];
+  const manifestoRulerTicks = [...document.querySelectorAll('.manifesto-ruler-tick')];
   const topoEntries = [...document.querySelectorAll('[data-topo]')].map((el) => ({
     el,
     key: el.dataset.topoTarget || el.dataset.topo,
@@ -54,6 +57,7 @@
     const t = clamp(value);
     return t * t * (3 - 2 * t);
   };
+  const seg = (value, start, end) => smoothstep((value - start) / Math.max(1e-6, end - start));
   const lenis = window.Lenis && !motion.matches ? new window.Lenis({
     lerp: .078,
     smoothWheel: true,
@@ -82,6 +86,7 @@
   };
   let lastManifestoPercent = '';
   let lastManifestoP = null;
+  let lastRulerState = '';
   let lastWorkValues = [];
   let lastSplitAlpha = -1;
   let clockTimer = 0;
@@ -191,7 +196,7 @@
       const cardHeight = layout.innerHeight - 104;
       const worksTop = worksChapter.top;
       layout.workSlots = workCards.map((card, index) => ({
-        top: worksTop + 68 + index * (cardHeight + 104),
+        top: worksTop + 68 + index * (cardHeight + 160),
         height: cardHeight
       }));
     } else {
@@ -220,6 +225,7 @@
     const rulerRail = manifestoNeedle ? manifestoNeedle.parentElement : null;
     layout.manifestoRulerTravel = rulerRail ? Math.max(0, rulerRail.getBoundingClientRect().height) : 0;
     lastManifestoP = null;
+    lastRulerState = '';
     lastWorkValues = [];
     lastNavAccent = '';
 
@@ -1576,13 +1582,55 @@
     if (!motion.matches && desktop.matches) {
       if (lastManifestoP !== null && Math.abs(raw - lastManifestoP) < 1e-5) return;
       lastManifestoP = raw;
-      const p = smoothstep(raw);
-      const xs = [-7 + 10 * p, 6 - 10 * p, -5 + 9 * p];
+
+      const v1 = seg(raw, 0, .38);
+      const v2 = seg(raw, .38, .74);
+      const v3 = seg(raw, .74, 1);
+      const lineScale = .82 + .18 * v1;
+      const lineX = [
+        -16 * (1 - v1) - 2.4 * v2 - 4.5 * v3,
+        16 * (1 - v1) + 2.4 * v2 + 4.5 * v3,
+        -13 * (1 - v1) - 1.8 * v2 - 3.5 * v3
+      ];
+      const lineOpacity = [
+        .16 + .84 * seg(raw, 0, .18),
+        .16 + .84 * seg(raw, .10, .28),
+        .16 + .84 * seg(raw, .20, .38)
+      ];
       manifestoLines.forEach((line, index) => {
-        line.style.transform = 'translate3d(' + xs[index].toFixed(3) + 'vw, 0, 0)';
+        line.style.transform = 'translate3d(' + lineX[index].toFixed(3) + 'vw, 0, 0) scale(' + lineScale.toFixed(4) + ')';
+        line.style.opacity = lineOpacity[index].toFixed(3);
       });
+
+      manifestoCapabilities.forEach((capability, index) => {
+        const start = .36 + index * .12;
+        const end = start + .14;
+        const reveal = seg(raw, start, end);
+        capability.style.transform = 'translate3d(0, ' + (22 * (1 - reveal)).toFixed(2) + 'px, 0)';
+        capability.style.opacity = reveal.toFixed(3);
+      });
+
+      if (manifestoContent) {
+        manifestoContent.style.transform = 'scale(' + (1 - .06 * v3).toFixed(4) + ')';
+        manifestoContent.style.opacity = (1 - .68 * v3).toFixed(3);
+      }
+
       if (manifestoNeedle && layout.manifestoRulerTravel) {
         manifestoNeedle.style.transform = 'translate3d(0, ' + (raw * layout.manifestoRulerTravel).toFixed(2) + 'px, 0)';
+      }
+
+      const currentTick = Math.min(4, Math.max(0, Math.round(raw * 4)));
+      const rulerState = manifestoRulerTicks.map((tick, index) => {
+        const passed = index < currentTick ? 1 : 0;
+        const current = index === currentTick ? 1 : 0;
+        return passed + '' + current;
+      }).join('');
+      if (rulerState !== lastRulerState) {
+        lastRulerState = rulerState;
+        manifestoRulerTicks.forEach((tick, index) => {
+          tick.classList.toggle('is-passed', index < currentTick);
+          tick.classList.toggle('is-current', index === currentTick);
+        });
       }
     }
 
@@ -1608,10 +1656,15 @@
     if (motion.matches || !desktop.matches) return;
     topoEntries.forEach((entry) => {
       const p = topoProgress(entry.key, scrollY);
-      const offset = (p * 56 - 28).toFixed(2);
-      if (offset !== entry.lastTransform) {
-        entry.el.style.transform = 'translate3d(0, ' + offset + 'px, 0)';
-        entry.lastTransform = offset;
+      let transform;
+      if (entry.key === 'manifesto') {
+        transform = 'translate3d(0, ' + (p * 84 - 42).toFixed(2) + 'px, 0) scale(' + (1 + .06 * p).toFixed(4) + ')';
+      } else {
+        transform = 'translate3d(0, ' + (p * 56 - 28).toFixed(2) + 'px, 0)';
+      }
+      if (transform !== entry.lastTransform) {
+        entry.el.style.transform = transform;
+        entry.lastTransform = transform;
       }
     });
   }

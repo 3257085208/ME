@@ -7,8 +7,8 @@
 首页 → 宣言 → 作品 → 网络印记 → 关于，共五幕。
 
 - **#home**：作者原创首屏。左侧 65% 黑 / 右侧白，人像与手写签名、WebGL 墨迹交互保持原样。
-- **#manifesto**：全新 155svh 巨幅滚轮错位宣言带。sticky 100svh 舞台内三行 Space Grotesk 粗黑宣言与 Cormorant 斜体撞击，酸柠绿关键词；滚动进度以缓存坐标驱动三行反向 X 位移与 STATIC 等高线纯 GPU 视差；底部 3 栏能力矩阵（FRONTEND & UI / SELF-HOSTED OPS / AUTONOMOUS NET），右侧 00–100 精密刻度与酸柠绿游标。
-- **#works**：三张近全幅 sticky 叠层作品卡。深炭黑 + 100svh sticky 有机等高线背景上，纸白 / 炭黑 / 纸白三张卡以 100svh 步进压叠；上一张随下一张入场按 smoothstep/easeOutCubic 退后并加暗幕，卡内大图原生无 filter 地从 scale(1.10) 回落；每张卡含 4 行技术规格、3 格进度微条、图版四角定位角标与 FIG. // LIVE CAPTURE、物理投影与内描边；胶囊 Visit/Source 按钮 hover 时酸柠绿液态扫底、双层文字上滚。
+- **#manifesto**：桌面端 320svh（粘性行程 220svh）三段式长卷。sticky 100svh 舞台内三行 Space Grotesk 粗黑宣言与 Cormorant 斜体撞击：0–38% 远距错位汇入并逐行聚光，38–74% 活体慢漂且 3 栏能力矩阵依次浮现，74–100% 大字向两侧张开、内容 scale(.94) 退暗交棒 Works；右侧 00–100 游标与刻度档位高亮贯穿全程，等高线只做 ±42px / scale(1→1.06) 纯 GPU 视差。
+- **#works**：三张近全幅 sticky 叠层作品卡。深炭黑 + 100svh sticky 有机等高线背景上，纸白 / 炭黑 / 纸白三张卡以 100svh 步进压叠；上一张随下一张入场按 smoothstep/easeOutCubic 退后并加暗幕，卡内大图原生无 filter 地从 scale(1.10) 回落；卡片间距 160px、底部 18svh 呼吸过渡；每张卡含 4 行技术规格、3 格进度微条、图版四角定位角标与 FIG. // LIVE CAPTURE、物理投影与内描边；胶囊 Visit/Source 按钮 hover 时酸柠绿液态扫底、双层文字上滚。
 - **#imprints**：52% / 48% 暗场网络印记。左侧黑面为 AS218834 与五条域名索引，副标含 BGP · IPv4/IPv6 · 5 ACTIVE ENDPOINTS 徽条，当前锁定项带 4px 酸柠绿微点；右侧白墙是一颗真实世界高反差墨点地球：3,232 个 Natural Earth 陆地点构成清晰可辨的中国、日本、东南亚、欧洲、美洲、澳洲，正面陆地为浓黑墨点（alpha .55–.95），背面为 .06–.09 的极淡通透点；AS218834（北京）与五个入口（上海、东京、法兰克福、洛杉矶、新加坡）以真实经纬度落点，洲际 3D SLERP 拱起飞线、14 节渐隐彗尾信号流、城市信标短标与旋转游标准星。左侧悬停/聚焦时按最短角差平滑转至对应城市并锁定；右侧地球可按住拖拽旋转、松手惯性滑行，停稳 2.5s 后恢复缓慢自转。白墙叠加轻淡等高线；激活 BGP 脉冲头部 3 节与锁定雷达涟漪使用酸柠绿。地球四角为 HTML HUD：DRAG TO ORBIT / ORBITING、实时经纬度、L 型仪器角框。底部为 Telemetry 铭牌，主名切换执行 0.42s 字符解码。
 - **#about**：36% / 64% 镜像尾声。左侧黑面底部人像带 ±12px 滚动纵深视差；右侧白面为放大的标题、简介、2×2 档案规格格、现场逐笔书写的签名与 ↺ REPLAY SIGNATURE 微提示，以及三段遥测落款，含仅在本幕运行时更新的 SHANGHAI · HH:MM:SS 实时时钟。
 
@@ -21,7 +21,7 @@
 - 地球 Canvas 只使用 #060606 / #f4f3ee 墨色，DPR 封顶 1.5；3,232 个真实陆地点按明暗档位映射到 8 枚离屏预渲染圆点 Sprite，DPR>=1.25 时每帧以设备像素 1:1 drawImage 绘制，低 DPR 自动回落为抗锯齿 Path2D 圆点以保持锐利；文字宽度在 resize 时一次性 measureText 缓存。由 IntersectionObserver 控制，仅 #imprints 在视口内渲染，离屏即暂停，标签页隐藏时同样暂停。
 - 陆地点来自 Natural Earth 50m 陆地 TopoJSON（为台湾、新加坡等小岛保留真实轮廓），以 11,000 个斐波那契候选点做点在多边形判定后压缩为本地静态 world-dots.js（3,232 点 / 25.9KB）；运行时无任何地图数据外链。
 - 桌面精确指针可在右侧白墙按住拖拽旋转地球，带惯性角速度衰减；停稳 2.5s 后恢复缓慢自转。悬停左侧入口会中断自转并按最短角差锁定城市。
-- Works 使用缓存的卡片拓扑坐标做 sticky 压叠 scrub；manifesto 三行错位、等高线纯 transform 位移、地球强调色与 About 时钟分别由纯数值滚动进度驱动，滚动帧内不读取任何布局。等高线不做 stroke-dashoffset 动画，work 背景等高线改为 100svh sticky 单屏以降低合成像素。
+- Works 使用缓存的卡片拓扑坐标（与 CSS 160px 间距严格一致）做 sticky 压叠 scrub；manifesto 三行错位、3 段能力/标尺/后缩编排、等高线纯 transform 位移、地球强调色与 About 时钟分别由纯数值滚动进度驱动，滚动帧内不读取任何布局。等高线不做 stroke-dashoffset 动画，work 背景等高线为 100svh sticky 单屏。
 - Lenis 滚动速度直接以帧率无关阻尼写 imprint 列表与 About 文案的 transform；惯性静止立即停写并清除临时 will-change。
 - 滚动热路径零 getBoundingClientRect() / document.elementFromPoint()：章节、首屏、Imprints/About 坐标与 scrollHeight 只在初始化/resize 时测量，滚动帧全部用缓存坐标和 scrollY 做纯数值计算。
 - 对切层与滚动惯性直接写目标元素 transform，不再每帧写 :root CSS 变量；惯性静止后立即停写并清除临时 will-change。Lenis 开启时由 lenis.on('scroll') 同帧驱动 update 与惯性，lerp: .078；分割层阻尼已合入 Lenis 唯一主 rAF，不再另开循环。
@@ -34,7 +34,7 @@ manifesto / works 为不透明炭黑舞台；imprints / about 透明浮在分割
 
 ## 移动端（≤900px）
 
-隐藏固定对切层。首页完整保留 mobile-hero.css 构图；宣言带改为自然高度、无 sticky；作品改为三张全宽圆角卡片自然纵向排列；印记以纯黑域名列表收束，并在其下以 260px 紧凑高度展示真实世界高反差墨点地球与当前 Telemetry 铭牌；关于为纸白单栏并以全宽无黑缝人像画框收尾，实时时钟继续运行。移动端不加载光标、磁吸、拖拽与滚动惯性；HUD 与精密标尺隐藏，能力矩阵改为单列，作品规格表与档案格保持完整；星盘仍按视口暂停。
+隐藏固定对切层。首页完整保留 mobile-hero.css 构图；宣言带改为自然高度、无 sticky，三行与三栏能力全部静态可见；作品改为三张全宽圆角卡片自然纵向排列；印记以纯黑域名列表收束，并在其下以 260px 紧凑高度展示真实世界高反差墨点地球与当前 Telemetry 铭牌；关于为纸白单栏并以全宽无黑缝人像画框收尾，实时时钟继续运行。移动端不加载光标、磁吸、拖拽与滚动惯性；HUD 与精密标尺隐藏，能力矩阵改为单列，作品规格表与档案格保持完整；星盘仍按视口暂停。
 
 ## 文件
 

@@ -1905,7 +1905,7 @@ body {
 .manifesto-chapter {
   position: relative;
   z-index: 3;
-  height: 155svh;
+  height: 320svh;
   overflow: clip;
   background: var(--page-ink);
   color: var(--page-paper);
@@ -1920,6 +1920,14 @@ body {
   justify-content: center;
   overflow: hidden;
   padding: clamp(92px, 12svh, 132px) clamp(28px, 4.2vw, 68px) clamp(86px, 12svh, 118px);
+}
+
+.manifesto-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  transform-origin: center center;
+  will-change: transform, opacity;
 }
 
 .manifesto-title {
@@ -1940,7 +1948,8 @@ body {
 .manifesto-line {
   display: block;
   white-space: nowrap;
-  will-change: transform;
+  opacity: .16;
+  will-change: transform, opacity;
 }
 
 .manifesto-line:nth-child(1) {
@@ -2012,6 +2021,7 @@ body {
   position: relative;
   z-index: 1;
   padding-top: 68px;
+  padding-bottom: 18svh;
 }
 
 /* Flatten slots so each card's sticky containing block is the whole stack. */
@@ -2020,7 +2030,7 @@ body {
 }
 
 .work-card-slot + .work-card-slot .work-card {
-  margin-top: 104px;
+  margin-top: 160px;
 }
 
 .work-card-slot:nth-child(1) .work-card {
@@ -2588,7 +2598,7 @@ body {
 }
 
 .cap-body strong {
-  color: rgba(242, 241, 234, .9);
+  color: rgba(242, 241, 234, .92);
   font-family: var(--font-display);
   font-size: 10px;
   font-weight: 500;
@@ -2598,7 +2608,7 @@ body {
 }
 
 .cap-body span {
-  color: rgba(242, 241, 234, .42);
+  color: rgba(242, 241, 234, .62);
   font-size: 10px;
   letter-spacing: .015em;
   line-height: 1.55;
@@ -3115,5 +3125,66 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .nav-accent {
     transition: none !important;
+  }
+}
+
+.manifesto-ruler-tick.is-passed {
+  background: rgba(242, 241, 234, .58);
+}
+
+.manifesto-ruler-tick.is-passed b {
+  color: rgba(242, 241, 234, .68);
+}
+
+.manifesto-ruler-tick.is-current {
+  background: var(--accent);
+}
+
+.manifesto-ruler-tick.is-current b {
+  color: var(--accent);
+}
+
+@media (min-width: 901px) and (prefers-reduced-motion: no-preference) {
+  .manifesto-content .capability {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+  }
+}
+
+@media (max-width: 900px), (prefers-reduced-motion: reduce) {
+  .manifesto-content,
+  .manifesto-line,
+  .manifesto-capabilities .capability {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .manifesto-chapter {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .manifesto-stage {
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: 0;
+    justify-content: flex-start;
+    padding: clamp(96px, 13vh, 132px) clamp(28px, 4.2vw, 68px) 64px;
+  }
+
+  .manifesto-telemetry {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    margin-top: 44px;
+  }
+
+  .manifesto-ruler {
+    display: none;
   }
 }
