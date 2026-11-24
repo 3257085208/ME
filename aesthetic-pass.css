@@ -2799,24 +2799,6 @@ body {
   border-bottom: 1px solid currentColor;
 }
 
-.work-card-fig {
-  position: absolute;
-  z-index: 3;
-  left: 12px;
-  bottom: 10px;
-  padding: 5px 7px;
-  border-radius: 2px;
-  background: rgba(14, 14, 13, .78);
-  color: var(--page-paper);
-  font-family: var(--font-display);
-  font-size: 8px;
-  font-weight: 500;
-  letter-spacing: .12em;
-  line-height: 1;
-  pointer-events: none;
-  text-transform: uppercase;
-}
-
 /* --- B4: imprint telemetry lock + orbit HUD --- */
 .imprint-asn,
 .imprint-row {
@@ -3973,14 +3955,6 @@ body {
     min-height: 0;
   }
 
-  .work-card-media .demo-window .demo {
-    position: relative;
-    flex: none;
-    height: auto;
-    min-height: 0;
-    overflow: visible;
-  }
-
   .about-visual {
     width: calc(100% - 40px);
     margin: 36px 20px 0;
@@ -4019,7 +3993,6 @@ body {
 }
 
 @media (max-width: 900px) {
-  .work-card-fig,
   .archive-kicker,
   .cap-index,
   .archive-num {

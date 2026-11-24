@@ -418,24 +418,42 @@
      Interactive card demos — event-driven, no scroll rAF/BCR
      --------------------------------------------------------- */
   function setupDemoFrames() {
+    let wheelTarget = 0;
+    let wheelAt = -1e9;
     window.addEventListener('message', (event) => {
       if (event.origin !== location.origin && event.origin !== 'null') return;
       const data = event.data;
       if (!data || data.type !== 'demo-scroll') return;
+      const kind = data.kind === 'touch' ? 'touch' : 'wheel';
+      const rawDy = Number(data.dy);
+      const rawDx = Number(data.dx);
+      if (!Number.isFinite(rawDy) || !Number.isFinite(rawDx)) return;
       const mode = data.mode === 1 ? 16 : data.mode === 2 ? layout.innerHeight : 1;
-      const dy = (Number(data.dy) || 0) * mode;
-      const dx = (Number(data.dx) || 0) * mode;
+      const dy = clamp(rawDy * mode, -2400, 2400);
+      const dx = clamp(rawDx * mode, -2400, 2400);
       if (Math.abs(dy) < .4 && Math.abs(dx) < .4) return;
-      if (motion.matches) {
-        window.scrollBy(dx, dy);
+
+      if (kind === 'touch') {
+        const target = clamp(window.scrollY + dy, 0, layout.maxScroll);
+        if (lenis) {
+          lenis.scrollTo(target, { immediate: true });
+        } else {
+          window.scrollBy(0, dy);
+        }
         return;
       }
-      const max = Math.max(0, document.documentElement.scrollHeight - layout.innerHeight);
-      const target = clamp(window.scrollY + dy, 0, max);
+
+      const max = Math.max(0, layout.maxScroll);
+      const now = performance.now();
+      const liveTarget = lenis && Number.isFinite(lenis.targetScroll) ? lenis.targetScroll : window.scrollY;
+      const base = now - wheelAt < 180 ? wheelTarget : liveTarget;
+      const target = clamp(base + dy, 0, max);
+      wheelAt = now;
+      wheelTarget = target;
       if (lenis) {
-        lenis.scrollTo(target, { duration: .45, lock: false });
+        lenis.scrollTo(target, { lerp: .078, lock: false });
       } else {
-        window.scrollTo({ top: target, left: 0, behavior: 'smooth' });
+        window.scrollTo(0, target);
       }
     });
   }

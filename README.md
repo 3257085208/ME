@@ -8,7 +8,7 @@
 
 - **#home**：作者原创首屏。左侧 65% 黑 / 右侧白，人像与手写签名、WebGL 墨迹交互保持原样。
 - **#manifesto**：桌面端 320svh（粘性行程 220svh）三段式长卷。三行超宽不换行字轨（实心 / 描边 / 酸柠绿重复片段）以纯 GPU 横滚：0→-46vw、-48→+2vw、-4→-42vw；Lenis 速度驱动 ±6° skewX 迎风倾斜并在停滚时阻尼归零。保留 3 栏能力矩阵、00–100 精密标尺、末段内容 scale(.94) 退暗；移动端/reduced 仅显示首组完整文字。
-- **#works**：四张近全幅 sticky 叠层王牌卡（LowEndCloud / 1Kb.Page / 聶.NET / NIE-SLA），纸白与炭黑交替，卡片 top 76px、4 格进度微条、160px 卡距、底部 18svh 呼吸与顶部 68px 渐隐安全背板。右侧改为独立同源静态微应用 iframe：demos/lowendcloud、1kbpage、blog、sla，以 1200px 原站桌面画布按容器等比缩放（仅初始化/resize 计算 --demo-scale），移动端切 100% 宽 + 560px 高响应式；窗口顶栏保留三圆点、域名胶囊与 INTERACTIVE REPLICA，无角标遮挡。微应用内滚轮/纵向触摸统一 postMessage 转发给主站 Lenis。截图 assets 仅供下方 Selected Archive hover 预览。
+- **#works**：四张近全幅 sticky 叠层王牌卡（LowEndCloud / 1Kb.Page / 聶.NET / NIE-SLA），纸白与炭黑交替，卡片 top 76px、4 格进度微条、160px 卡距、底部 18svh 呼吸与顶部 68px 渐隐安全背板。右侧改为独立同源静态微应用 iframe：demos/lowendcloud、1kbpage、blog、sla，以 1200px 原站桌面画布按容器等比缩放（仅初始化/resize 计算 --demo-scale），移动端切 100% 宽 + 560px 高响应式；窗口顶栏保留三圆点、域名胶囊与 INTERACTIVE REPLICA，无角标遮挡。微应用内滚轮/纵向触摸统一 postMessage 转发给主站 Lenis；消息带 kind，目标源为自身 origin，主站用缓存的 maxScroll 与 Lenis targetScroll 叠加，不读取滚动期布局。截图 assets 仅供下方 Selected Archive hover 预览。
 - **#imprints**：52% / 48% 暗场网络印记。左侧黑面为 AS218834 与七条域名索引（新增 lowend.cloud / 1kb.page），副标含 BGP · IPv4/IPv6 · 7 ACTIVE ENDPOINTS 徽条，当前锁定项带 4px 酸柠绿微点；右侧白墙是一颗真实世界高反差墨点地球：3,232 个 Natural Earth 陆地点构成清晰可辨的中国、日本、东南亚、欧洲、美洲、澳洲，正面陆地为浓黑墨点（alpha .55–.95），背面为 .06–.09 的极淡通透点；AS218834（北京）与七个入口（上海、东京、法兰克福、洛杉矶、新加坡、香港、伦敦）以真实经纬度落点，洲际 3D SLERP 拱起飞线、14 节渐隐彗尾信号流、城市信标短标与旋转游标准星。左侧悬停/聚焦时按最短角差平滑转至对应城市并锁定；右侧地球可按住拖拽旋转、松手惯性滑行，停稳 2.5s 后恢复缓慢自转。白墙叠加轻淡等高线；激活 BGP 脉冲头部 3 节与锁定雷达涟漪使用酸柠绿。地球四角为 HTML HUD：DRAG TO ORBIT / ORBITING、实时经纬度、L 型仪器角框。底部为 Telemetry 铭牌，主名切换执行 0.42s 字符解码。
 - **#about**：36% / 64% 镜像尾声。左侧黑面底部人像带 ±12px 滚动纵深视差；右侧白面为放大的标题、简介、2×2 档案规格格、现场逐笔书写的签名与 ↺ REPLAY SIGNATURE 微提示，以及三段遥测落款，含仅在本幕运行时更新的 SHANGHAI · HH:MM:SS 实时时钟。
 
@@ -68,3 +68,12 @@ manifesto / works 为不透明炭黑舞台；imprints / about 透明浮在分割
 作品截图是截取时的界面，不是实时监控；lowend.cloud 与 1kb.page 为 2026-11-24 在 1200×800 浏览器视口下的真实首页截图，未使用 Cloudflare 质询页或空白错误页。域名按用户提供的信息列出，不代表每个域名均配置了网页服务。IDC 系统按用户要求未展示。
 
 线上入口：https://www.qq.sg/（qq.sg 301 → www.qq.sg，Vercel 自动部署）。本地入口只需要 index.html。
+
+
+## 审查修复（20261125c）
+
+- iframe 透传：4 个 demo 的 postMessage 使用 location.origin；wheel/touch 带 kind；主站只读 layout.maxScroll，对 delta 做有限数/±2400 限幅，wheel 以 lenis.targetScroll 叠加并使用 lerp .078，touch 使用 immediate。
+- NIE-SLA：6 张干净节点卡、30 格独立遥测、全部 / VPS / Web / 商家 / 国家地区 / 价格档 / 机器类型均有真实筛选或排序变化；故障面板 40 条、内部滚动、总高 ≤240px。
+- LowEndCloud/SLA 移动端媒体块各合并为 1 块；LowEnd 套餐单列、公告可关闭、导航/登录/注册有反馈；SLA 移动端单列展示前 3 张完整卡，字号 ≥10px。
+- 1KB.Page 默认锁定暖纸色，手动 ☾/☀ 切换；RSS 指向真实 https://1kb.page/feed.xml 并展示只读预览。
+- Blog 5 篇文章、顶栏导航/联系入口全部可达、筛选单篇不再被 flex 拉伸；移除废弃角标 CSS。

@@ -6,6 +6,7 @@
 <title>1KB.Page — 1 KiB PAGE CHALLENGE</title>
 <style>
 :root{--paper:#f5f1e9;--ink:#554f49;--soft:#8a8178;--line:#c8c0b6;--accent:#76594c}
+html[data-theme="dark"]{--paper:#282725;--ink:#eee;--soft:#aaa;--line:#514d47;--accent:#d8b28f;color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--paper);color:var(--ink)}
 body{font:18px/1.55 Georgia,"Times New Roman","Songti SC",serif;display:flex;flex-direction:column;min-height:100vh}
@@ -44,7 +45,9 @@ footer{position:relative;width:min(48em,100%);margin:0 auto;padding-top:1em;bord
 .blocks span.on{background:var(--accent)}
 .bytes-pop{position:absolute;left:0;bottom:2.6em;border:1px solid var(--line);background:var(--paper);padding:8px 10px;font-size:12px;color:var(--ink);opacity:0;transform:translateY(4px);pointer-events:none;transition:.2s ease;white-space:nowrap}
 .bytes-pop.show{opacity:1;transform:none}
-@media(prefers-color-scheme:dark){:root{--paper:#282725;--ink:#eee;--soft:#aaa;--line:#514d47;--accent:#d8b28f}.blocks span{background:rgba(216,178,143,.2)}.blocks span.on{background:var(--accent)}}
+html[data-theme="dark"] .blocks span{background:rgba(216,178,143,.2)}html[data-theme="dark"] .blocks span.on{background:var(--accent)}
+.theme{border:1px solid var(--line);background:transparent;color:var(--accent);font:13px/1 Georgia,serif;padding:5px 8px;border-radius:999px;cursor:pointer;margin-left:8px}
+.rss-preview{border:1px solid var(--line);background:rgba(118,89,76,.035);padding:14px 16px;margin-top:18px;font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--soft);white-space:pre-wrap}
 @media(max-width:620px){body{font-size:16px}.shell{width:calc(100% - 32px);padding-top:1.2em}header{font-size:15px}nav{font-size:13px;line-height:1.8}main{padding-top:1.4em}.home h1{font-size:28px}footer{font-size:11px}}
 </style>
 </head>
@@ -57,7 +60,7 @@ footer{position:relative;width:min(48em,100%);margin:0 auto;padding-top:1em;bord
 <button data-view="links">友链</button><span class="sep">·</span>
 <button data-view="about">关于</button><span class="sep">·</span>
 <button data-view="rss">RSS</button>
-</nav></header>
+</nav><button class="theme" id="paperTheme" type="button" aria-label="切换纸墨">☾</button></header>
 <main>
 <section class="view home active" data-page="home"><h1>1 KiB PAGE CHALLENGE</h1><p class="home-note">一页网站，一个预算：1024 字节。没有 JavaScript，没有图片，没有多余请求。</p>
 <section><h2>近期</h2>
@@ -70,14 +73,20 @@ footer{position:relative;width:min(48em,100%);margin:0 auto;padding-top:1em;bord
 <section class="view" data-page="archive"><h1 class="view-title">归档</h1><ul class="minimal-list"><li>2026 — 2 篇</li><li>2025 — 0 篇</li></ul></section>
 <section class="view" data-page="links"><h1 class="view-title">友链</h1><ul class="minimal-list"><li><a href="https://www.niekaixiang.com" target="_blank" rel="noreferrer">聶.NET</a> — 花有重开日，人无再少年</li><li><a href="https://lowend.cloud" target="_blank" rel="noreferrer">LowEnd.Cloud</a> — 算力按月，价格写在明处</li></ul></section>
 <section class="view" data-page="about"><h1 class="view-title">关于</h1><div class="about-copy"><p>这是一个关于约束的实验：在 1,024 字节内，仍然把话说完。</p><p>站点由纯 HTML 与内联 CSS 构成，没有脚本，没有图片，没有追踪。</p></div></section>
-<section class="view" data-page="rss"><h1 class="view-title">RSS</h1><p class="about-copy">订阅地址：<a href="/feed.xml">/feed.xml</a></p></section>
+<section class="view" data-page="rss"><h1 class="view-title">RSS</h1><p class="about-copy">订阅地址：<a href="https://1kb.page/feed.xml" target="_blank" rel="noopener noreferrer">https://1kb.page/feed.xml</a></p><pre class="rss-preview" aria-label="RSS 静态预览">&lt;rss version="2.0"&gt;
+  &lt;channel&gt;
+    &lt;title&gt;1KB.Page&lt;/title&gt;
+    &lt;link&gt;https://1kb.page/&lt;/link&gt;
+    &lt;item&gt;&lt;title&gt;这里是一切的开始&lt;/title&gt;&lt;/item&gt;
+    &lt;item&gt;&lt;title&gt;AS218834：用60美元，和世界建立互联&lt;/title&gt;&lt;/item&gt;
+  &lt;/channel&gt;
+&lt;/rss&gt;</pre></section>
 </main>
 <footer><div class="bytes-pop" id="bytesPop">HTML 512 B · CSS 248 B · 0 B JS · 0 B IMG</div><div class="transfer"><button id="byteButton">transfer <b id="byteCount">834 B</b> / 1024 B</button><span class="blocks" id="blocks" aria-hidden="true"></span></div></footer>
 </div>
 <script>
 (()=>{
 const bytes={home:834,start:918,asn:986,notes:372,archive:410,links:344,about:286,rss:196};
-const labels={home:'首页',start:'这里是一切的开始',asn:'AS218834',notes:'动态',archive:'归档',links:'友链',about:'关于',rss:'RSS'};
 const pages=[...document.querySelectorAll('.view')];const nav=[...document.querySelectorAll('nav button')];
 function drawBytes(n){
  document.getElementById('byteCount').textContent=n+' B';
@@ -100,11 +109,12 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('click',e=>{if(!e.target.closest('.bytes-pop')&&!e.target.closest('#byteButton'))document.getElementById('bytesPop').classList.remove('show')});
 show((location.hash||'#home').slice(1)===''?'home':(location.hash||'#home').slice(1));
-const send=(dy,dx=0,mode=0)=>parent.postMessage({type:'demo-scroll',dy,dx,mode},'*');
-addEventListener('wheel',e=>{e.preventDefault();send(e.deltaY,e.deltaX,e.deltaMode)},{passive:false});
+const themeButton=document.getElementById('paperTheme');themeButton.addEventListener('click',()=>{const dark=document.documentElement.dataset.theme==='dark';if(dark)delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme='dark';themeButton.textContent=dark?'☾':'☀'});
+const targetOrigin=location.origin==='null'?'*':location.origin;const send=(kind,dy,dx=0,mode=0)=>parent.postMessage({type:'demo-scroll',kind,dy,dx:kind==='touch'?0:dx,mode:kind==='touch'?0:mode},targetOrigin);
+addEventListener('wheel',e=>{e.preventDefault();send('wheel',e.deltaY,e.deltaX,e.deltaMode)},{passive:false});
 let ty=0,tx=0,tracking=false;
 addEventListener('touchstart',e=>{if(e.touches.length===1){tracking=true;ty=e.touches[0].clientY;tx=e.touches[0].clientX}},{passive:true});
-addEventListener('touchmove',e=>{if(!tracking||e.touches.length!==1)return;const t=e.touches[0],dy=ty-t.clientY,dx=tx-t.clientX;if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>2){e.preventDefault();send(dy);ty=t.clientY;tx=t.clientX}},{passive:false});
+addEventListener('touchmove',e=>{if(!tracking||e.touches.length!==1)return;const t=e.touches[0],dy=ty-t.clientY,dx=tx-t.clientX;if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>2){e.preventDefault();send('touch',dy);ty=t.clientY;tx=t.clientX}},{passive:false});
 addEventListener('touchend',()=>{tracking=false},{passive:true});
 })();
 </script>

@@ -7,30 +7,63 @@
 <style>
 :root{--bg:#fafafa;--surface:#fff;--soft:#f5f5f5;--muted:#737373;--line:#e5e5e5;--line2:#d4d4d4;--text:#111;--softtext:#525252;--green:#16a34a;--green-dark:#15803d;--green-soft:#f0fdf4;--red:#dc2626;--red-soft:#fef2f2;--blue:#2563eb;--amber:#d97706;--mono:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,monospace;--sans:"IBM Plex Sans","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif}
 html[data-theme="dark"]{--bg:#171717;--surface:#202020;--soft:#262626;--muted:#a3a3a3;--line:#333;--line2:#444;--text:#f5f5f5;--softtext:#d4d4d4;--green:#4ade80;--green-dark:#22c55e;--green-soft:#14291d;--red:#f87171;--red-soft:#2a1616;--blue:#60a5fa;--amber:#fbbf24}
-*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden}body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.5;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}body:before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(115,115,115,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(115,115,115,.045) 1px,transparent 1px);background-size:22px 22px}.app{position:relative;height:100%;display:flex;flex-direction:column;width:min(1180px,calc(100% - 56px));margin:auto;padding:14px 0 12px}.top{display:flex;align-items:center;gap:14px;min-height:52px;border-bottom:1px solid var(--line);padding-bottom:10px}.brand{display:flex;align-items:center;gap:9px}.mark{width:24px;height:24px;border-radius:6px;background:var(--green);display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700}.brand strong{font-size:18px;letter-spacing:-.04em;color:var(--green-dark);font-weight:700}.brand span{font-size:9px;color:var(--muted);letter-spacing:.12em;border-left:1px solid var(--line);padding-left:10px;margin-left:3px}.cf{margin-left:auto;display:flex;align-items:center;gap:6px;font:500 9px var(--mono);color:var(--muted);letter-spacing:.04em}.cf-cloud{width:25px;height:18px;position:relative}.cf-cloud:before,.cf-cloud:after{content:"";position:absolute;background:#f38020;border-radius:50%}.cf-cloud:before{width:18px;height:18px;left:2px;top:2px}.cf-cloud:after{width:13px;height:13px;right:0;top:6px;box-shadow:-7px 1px 0 #f38020}.theme{border:1px solid var(--line);background:var(--surface);border-radius:6px;width:30px;height:30px;display:grid;place-items:center;color:var(--muted);cursor:pointer;margin-left:10px;font-size:13px}.banner{margin-top:12px;display:flex;align-items:center;gap:11px;border:1px solid #bbf7d0;background:var(--green-soft);border-radius:8px;padding:10px 13px;color:var(--green-dark);font-size:12px;font-weight:600;cursor:pointer;transition:.25s ease}.banner .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(22,163,74,.12);flex:none}.banner .sub{margin-left:auto;color:var(--muted);font-size:9px;font-weight:500;white-space:nowrap}.banner .toggle{border:1px solid rgba(22,163,74,.3);border-radius:4px;background:transparent;color:var(--green-dark);font:500 9px var(--sans);padding:3px 6px;cursor:pointer}.banner.alert{border-color:#fecaca;background:var(--red-soft);color:var(--red)}.banner.alert .dot{background:var(--red);box-shadow:0 0 0 4px rgba(220,38,38,.12)}.banner.alert .toggle{border-color:rgba(220,38,38,.3);color:var(--red)}.summary{display:grid;grid-template-columns:1.8fr repeat(4,1fr);gap:6px;margin-top:8px}.sum{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 9px;min-width:0}.sum span{display:block;color:var(--muted);font-size:8px;letter-spacing:.08em;text-transform:uppercase}.sum b{display:block;font:600 13px/1.2 var(--mono);margin-top:2px;white-space:nowrap}.sum b.green{color:var(--green-dark)}.sum b.red{color:var(--red)}.toolbar{display:flex;align-items:center;gap:8px;margin-top:9px}.search{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 10px;flex:1;max-width:300px;min-height:32px;color:var(--muted)}.search svg{width:13px;height:13px;flex:none}.search input{border:0;outline:0;background:none;color:var(--text);width:100%;font:500 11px/1.4 var(--sans)}.group-tabs{display:flex;align-items:center;gap:4px;margin-left:auto;flex-wrap:nowrap;overflow:hidden}.group-label{color:var(--muted);font-size:9px;margin-right:2px;white-space:nowrap}.gtab{border:1px solid var(--line);background:var(--surface);color:var(--softtext);border-radius:4px;padding:5px 7px;font:500 9px/1 var(--sans);white-space:nowrap;cursor:pointer}.gtab.active{border-color:var(--green);background:var(--green-soft);color:var(--green-dark)}.incident-toggle{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 9px;color:var(--softtext);font:500 10px/1 var(--sans);white-space:nowrap;cursor:pointer;margin-top:9px;display:flex;align-items:center;gap:7px;width:100%;text-align:left}.incident-toggle b{color:var(--red);font-weight:600}.incident-toggle .plus{margin-left:auto;color:var(--muted);font:600 12px var(--mono)}.incident-panel{position:absolute;z-index:12;top:154px;right:0;width:420px;border:1px solid var(--line2);background:var(--surface);box-shadow:0 12px 30px rgba(0,0,0,.12);border-radius:7px;padding:9px;display:none}.incident-panel.show{display:block}.incident-panel h3{margin:0 0 4px;font-size:11px;color:var(--text)}.incident-list{display:grid;grid-template-columns:1fr 1fr;gap:0 10px;max-height:174px;overflow:hidden}.incident-panel p{margin:0;color:var(--muted);font-size:9px;line-height:1.45}.incident-item{display:flex;gap:8px;padding:5px 0;border-top:1px solid var(--line);font-size:9px;color:var(--softtext)}.incident-item time{font-family:var(--mono);color:var(--muted);white-space:nowrap}.incident-item b{font-weight:600}.incident-item span{margin-left:auto;color:var(--green-dark);white-space:nowrap}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;flex:1;min-height:0}.node{position:relative;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 11px;box-shadow:0 1px 2px rgba(0,0,0,.025);display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;transition:.2s}.node:hover{border-color:var(--line2);box-shadow:0 1px 4px rgba(0,0,0,.05)}.node[hidden]{display:none}.node-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.node-name{font-size:12px;font-weight:600;line-height:1.25;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.node-state{display:flex;align-items:center;gap:4px;color:var(--green-dark);font-size:9px;white-space:nowrap}.node-state:before{content:"";width:5px;height:5px;border-radius:50%;background:var(--green)}.node.alert .node-state{color:var(--red)}.node.alert .node-state:before{background:var(--red)}.node-tags{display:flex;gap:3px;flex-wrap:wrap;margin-top:5px;min-height:16px}.ntag{font:500 8px/1.3 var(--mono);border:1px solid var(--line);border-radius:3px;background:var(--soft);color:var(--muted);padding:2px 5px;white-space:nowrap}.ntag.blue{color:var(--blue);border-color:#bfdbfe;background:#eff6ff}.ntag.green{color:var(--green-dark);border-color:#bbf7d0;background:var(--green-soft)}.node-meta{display:flex;align-items:center;gap:10px;margin-top:4px;color:var(--muted);font:400 8px/1.3 var(--mono);white-space:nowrap}.node-meta b{color:var(--text);font-weight:500}.node-bars{display:grid;grid-template-columns:repeat(30,minmax(0,1fr));gap:2px;height:8px;margin-top:7px}.hbar{border-radius:2px;background:#65a30d;opacity:.78;min-width:0;cursor:crosshair;transition:.15s}.hbar.warn{background:var(--amber);opacity:.7}.hbar.down{background:var(--red);opacity:.65}.hbar:hover{opacity:1;background:var(--green);transform:scaleY(1.7)}.traffic{display:flex;align-items:center;gap:7px;margin-top:auto;padding-top:7px;color:var(--muted);font-size:8px;white-space:nowrap}.traffic .track{flex:1;height:4px;border-radius:4px;background:var(--soft);overflow:hidden}.traffic .track i{display:block;height:100%;background:var(--blue);border-radius:4px}.traffic b{color:var(--blue);font-weight:500}.empty{display:none;padding:30px;text-align:center;color:var(--muted);font-size:12px}.footer{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);margin-top:7px;padding-top:6px;color:var(--muted);font-size:8px}.tooltip{position:fixed;z-index:50;border:1px solid var(--line2);background:var(--surface);box-shadow:0 8px 24px rgba(0,0,0,.13);border-radius:5px;padding:5px 7px;font:500 10px/1.4 var(--mono);color:var(--text);pointer-events:none;opacity:0;transform:translateY(3px);transition:.12s}.tooltip.show{opacity:1;transform:none}.tooltip b{color:var(--green-dark)}
-@media(max-width:900px){.app{width:calc(100% - 24px);padding:8px 0 6px}.top{min-height:42px;padding-bottom:6px;gap:7px}.mark{width:21px;height:21px;font-size:9px}.brand strong{font-size:15px}.brand span{font-size:7px;padding-left:6px}.cf span{display:none}.cf-cloud{width:21px;height:15px}.cf-cloud:before{width:15px;height:15px}.cf-cloud:after{width:11px;height:11px;top:5px}.theme{width:26px;height:26px;font-size:11px;margin-left:2px}.banner{margin-top:7px;padding:7px 9px;font-size:10px;gap:6px}.banner .sub{display:none}.banner .toggle{font-size:8px;padding:2px 4px}.summary{grid-template-columns:repeat(3,1fr);gap:4px;margin-top:6px}.sum{padding:4px 6px}.sum span{font-size:7px}.sum b{font-size:10px}.sum:nth-child(1){grid-column:span 2}.sum:nth-child(4),.sum:nth-child(5){display:none}.toolbar{margin-top:6px;gap:5px}.search{max-width:none;min-height:29px;padding:5px 7px}.search input{font-size:10px}.group-tabs{display:none}.incident-toggle{margin-top:5px;padding:5px 7px;font-size:8px}.grid{grid-template-columns:1fr;gap:5px;margin-top:5px;overflow:hidden}.node{padding:6px 8px;border-radius:6px}.node-name{font-size:10px}.node-state{font-size:8px}.node-tags{margin-top:3px;min-height:0}.ntag{font-size:7px;padding:1px 3px}.node-meta{font-size:7px;margin-top:2px;gap:6px}.node-bars{height:6px;margin-top:4px;gap:1px}.traffic{font-size:7px;padding-top:4px}.footer{margin-top:4px;padding-top:4px;font-size:7px}.incident-panel{top:132px;right:0;width:100%}.incident-panel p{font-size:8px}.incident-item{font-size:8px;padding:3px 0}.empty{font-size:10px;padding:12px}}
+*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden}body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.5;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}body:before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(115,115,115,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(115,115,115,.045) 1px,transparent 1px);background-size:22px 22px}.app{position:relative;height:100%;display:flex;flex-direction:column;width:min(1180px,calc(100% - 56px));margin:auto;padding:14px 0 12px}.top{display:flex;align-items:center;gap:14px;min-height:52px;border-bottom:1px solid var(--line);padding-bottom:10px}.brand{display:flex;align-items:center;gap:9px}.mark{width:24px;height:24px;border-radius:6px;background:var(--green);display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700}.brand strong{font-size:18px;letter-spacing:-.04em;color:var(--green-dark);font-weight:700}.brand span{font-size:9px;color:var(--muted);letter-spacing:.12em;border-left:1px solid var(--line);padding-left:10px;margin-left:3px}.cf{margin-left:auto;display:flex;align-items:center;gap:6px;font:500 9px var(--mono);color:var(--muted);letter-spacing:.04em}.cf-cloud{width:25px;height:18px;position:relative}.cf-cloud:before,.cf-cloud:after{content:"";position:absolute;background:#f38020;border-radius:50%}.cf-cloud:before{width:18px;height:18px;left:2px;top:2px}.cf-cloud:after{width:13px;height:13px;right:0;top:6px;box-shadow:-7px 1px 0 #f38020}.theme{border:1px solid var(--line);background:var(--surface);border-radius:6px;width:30px;height:30px;display:grid;place-items:center;color:var(--muted);cursor:pointer;margin-left:10px;font-size:13px}.banner{margin-top:12px;display:flex;align-items:center;gap:11px;border:1px solid #bbf7d0;background:var(--green-soft);border-radius:8px;padding:10px 13px;color:var(--green-dark);font-size:12px;font-weight:600;cursor:pointer;transition:.25s ease}.banner .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(22,163,74,.12);flex:none}.banner .sub{margin-left:auto;color:var(--muted);font-size:9px;font-weight:500;white-space:nowrap}.banner .toggle{border:1px solid rgba(22,163,74,.3);border-radius:4px;background:transparent;color:var(--green-dark);font:500 9px var(--sans);padding:3px 6px;cursor:pointer}.banner.alert{border-color:#fecaca;background:var(--red-soft);color:var(--red)}.banner.alert .dot{background:var(--red);box-shadow:0 0 0 4px rgba(220,38,38,.12)}.banner.alert .toggle{border-color:rgba(220,38,38,.3);color:var(--red)}.summary{display:grid;grid-template-columns:1.8fr repeat(4,1fr);gap:6px;margin-top:8px}.sum{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 9px;min-width:0}.sum span{display:block;color:var(--muted);font-size:8px;letter-spacing:.08em;text-transform:uppercase}.sum b{display:block;font:600 13px/1.2 var(--mono);margin-top:2px;white-space:nowrap}.sum b.green{color:var(--green-dark)}.sum b.red{color:var(--red)}.toolbar{display:flex;align-items:center;gap:8px;margin-top:9px}.search{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 10px;flex:1;max-width:300px;min-height:32px;color:var(--muted)}.search svg{width:13px;height:13px;flex:none}.search input{border:0;outline:0;background:none;color:var(--text);width:100%;font:500 11px/1.4 var(--sans)}.group-tabs{display:flex;align-items:center;gap:4px;margin-left:auto;flex-wrap:nowrap;overflow:hidden}.group-label{color:var(--muted);font-size:9px;margin-right:2px;white-space:nowrap}.gtab{border:1px solid var(--line);background:var(--surface);color:var(--softtext);border-radius:4px;padding:5px 7px;font:500 9px/1 var(--sans);white-space:nowrap;cursor:pointer}.gtab.active{border-color:var(--green);background:var(--green-soft);color:var(--green-dark)}.incident-toggle{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 9px;color:var(--softtext);font:500 10px/1 var(--sans);white-space:nowrap;cursor:pointer;margin-top:9px;display:flex;align-items:center;gap:7px;width:100%;text-align:left}.incident-toggle b{color:var(--red);font-weight:600}.incident-toggle .plus{margin-left:auto;color:var(--muted);font:600 12px var(--mono)}.incident-panel{position:absolute;z-index:12;top:272px;right:0;width:420px;border:1px solid var(--line2);background:var(--surface);box-shadow:0 12px 30px rgba(0,0,0,.12);border-radius:7px;padding:9px;display:none}.incident-panel.show{display:block}.incident-panel h3{margin:0 0 4px;font-size:11px;color:var(--text)}.incident-list{display:grid;grid-template-columns:1fr 1fr;gap:0 10px;max-height:174px;overflow:hidden}.incident-panel p{margin:0;color:var(--muted);font-size:9px;line-height:1.45}.incident-item{display:flex;gap:8px;padding:5px 0;border-top:1px solid var(--line);font-size:9px;color:var(--softtext)}.incident-item time{font-family:var(--mono);color:var(--muted);white-space:nowrap}.incident-item b{font-weight:600}.incident-item span{margin-left:auto;color:var(--green-dark);white-space:nowrap}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;flex:1;min-height:0}.node{position:relative;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 11px;box-shadow:0 1px 2px rgba(0,0,0,.025);display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;transition:.2s}.node:hover{border-color:var(--line2);box-shadow:0 1px 4px rgba(0,0,0,.05)}.node[hidden]{display:none}.node-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.node-name{font-size:12px;font-weight:600;line-height:1.25;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.node-state{display:flex;align-items:center;gap:4px;color:var(--green-dark);font-size:9px;white-space:nowrap}.node-state:before{content:"";width:5px;height:5px;border-radius:50%;background:var(--green)}.node.alert .node-state{color:var(--red)}.node.alert .node-state:before{background:var(--red)}.node-tags{display:flex;gap:3px;flex-wrap:wrap;margin-top:5px;min-height:16px}.ntag{font:500 8px/1.3 var(--mono);border:1px solid var(--line);border-radius:3px;background:var(--soft);color:var(--muted);padding:2px 5px;white-space:nowrap}.ntag.blue{color:var(--blue);border-color:#bfdbfe;background:#eff6ff}.ntag.green{color:var(--green-dark);border-color:#bbf7d0;background:var(--green-soft)}.node-meta{display:flex;align-items:center;gap:10px;margin-top:4px;color:var(--muted);font:400 8px/1.3 var(--mono);white-space:nowrap}.node-meta b{color:var(--text);font-weight:500}.node-bars{display:grid;grid-template-columns:repeat(30,minmax(0,1fr));gap:2px;height:8px;margin-top:7px}.hbar{border-radius:2px;background:#65a30d;opacity:.78;min-width:0;cursor:crosshair;transition:.15s}.hbar.warn{background:var(--amber);opacity:.7}.hbar.down{background:var(--red);opacity:.65}.hbar:hover{opacity:1;background:var(--green);transform:scaleY(1.7)}.traffic{display:flex;align-items:center;gap:7px;margin-top:auto;padding-top:7px;color:var(--muted);font-size:8px;white-space:nowrap}.traffic .track{flex:1;height:4px;border-radius:4px;background:var(--soft);overflow:hidden}.traffic .track i{display:block;height:100%;background:var(--blue);border-radius:4px}.traffic b{color:var(--blue);font-weight:500}.empty{display:none;padding:30px;text-align:center;color:var(--muted);font-size:12px}.footer{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);margin-top:7px;padding-top:6px;color:var(--muted);font-size:8px}.tooltip{position:fixed;z-index:50;border:1px solid var(--line2);background:var(--surface);box-shadow:0 8px 24px rgba(0,0,0,.13);border-radius:5px;padding:5px 7px;font:500 11px/1.4 var(--mono);color:var(--text);pointer-events:none;opacity:0;transform:translateY(3px);transition:.12s}.tooltip.show{opacity:1;transform:none}.tooltip b{color:var(--green-dark)}
+
+
+
+/* Desktop readability and compact six-card telemetry */
+.brand span,.cf,.banner .sub,.banner .toggle,.sum span,.group-label,.gtab,.incident-toggle,.incident-panel p,.incident-item,.node-state,.ntag,.node-meta,.traffic,.footer{font-size:11px}
+.node-name{font-size:13px}
+.search input{font-size:12px}
+.grid{grid-template-rows:repeat(3,minmax(0,1fr));align-content:start}
+.node-bars{flex:1;height:auto;min-height:24px;align-items:end}.hbar{height:100%}
+.traffic{margin-top:5px;padding-top:4px}
+.incident-list{max-height:220px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.incident-panel{max-height:240px;overflow:hidden}.incident-panel.show{display:flex;flex-direction:column}.incident-panel .incident-list{min-height:0;flex:1}
+.group-status{font:500 11px/1 var(--mono);color:var(--muted);white-space:nowrap;margin-left:6px}
+.group-status b{color:var(--green-dark);font-weight:600}
+/*
+  Unified mobile layout: 1 block only.
+  Single-column, first four complete cards, all labels >=10px.
+*/
 @media(max-width:900px){
-.brand span{font-size:10px!important}
-.mark{font-size:10px!important}
-.cf{font-size:10px!important}
-.banner{font-size:10px!important}
-.banner .toggle{font-size:10px!important}
-.sum span{font-size:10px!important}.sum b{font-size:10px!important}
-.search input{font-size:10px!important}
-.incident-toggle{font-size:10px!important}
-.incident-panel h3{font-size:10px!important}.incident-panel p{font-size:10px!important}.incident-item{font-size:10px!important}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.node{padding:5px 6px}
-.node-name{font-size:10px!important}
-.node-state{font-size:10px!important}
-.node-tags{gap:2px}
-.ntag{font-size:10px!important;padding:1px 3px}
-.node-tags .ntag:nth-child(n+3){display:none}
-.node-meta{font-size:10px!important;gap:4px;flex-wrap:wrap}
-.node-bars{height:7px;gap:1px}
-.traffic{font-size:10px!important}
-.footer{font-size:10px!important}
-.group-tabs{display:none}
+  .app{width:calc(100% - 24px);padding:8px 0 6px}
+  .top{min-height:42px;padding-bottom:6px;gap:7px}
+  .mark{width:21px;height:21px;font-size:10px}
+  .brand strong{font-size:15px}
+  .brand span{font-size:10px;padding-left:6px}
+  .cf{font-size:10px}
+  .cf span{display:none}
+  .cf-cloud{width:21px;height:15px}
+  .cf-cloud:before{width:15px;height:15px}
+  .cf-cloud:after{width:11px;height:11px;top:5px}
+  .theme{width:26px;height:26px;font-size:11px;margin-left:2px}
+  .banner{margin-top:7px;padding:7px 9px;font-size:10px;gap:6px}
+  .banner .sub{display:none}
+  .banner .toggle{font-size:10px;padding:2px 4px}
+  .summary{display:none}
+  .toolbar{margin-top:6px;gap:5px}
+  .search{max-width:none;min-height:30px;padding:5px 8px}
+  .search input{font-size:10px}
+  .group-tabs,.group-status{display:none}
+  .incident-toggle{margin-top:5px;padding:5px 7px;font-size:10px}
+  .grid{display:flex;flex-direction:column;gap:5px;margin-top:5px;overflow:hidden;flex:1;min-height:0}
+  .node{flex:none;padding:6px 8px;border-radius:6px;overflow:hidden}
+  .node:nth-child(n+4){display:none!important}
+  .node-name{font-size:10px;white-space:normal;overflow:visible;text-overflow:clip}
+  .node-state{font-size:10px}
+  .node-tags{margin-top:3px;min-height:0;gap:2px}
+  .ntag{font-size:10px;padding:1px 3px}
+  .node-tags .ntag:nth-child(n+3){display:none}
+  .node-meta{font-size:10px;margin-top:2px;gap:6px;flex-wrap:wrap}
+  .node-bars{flex:none;height:6px;min-height:6px;margin-top:4px;gap:1px}
+  .traffic{font-size:10px;padding-top:4px;margin-top:4px}
+  .footer{margin-top:4px;padding-top:4px;font-size:10px}
+  .incident-panel{top:176px;right:0;width:100%;max-height:240px}
+  .incident-panel p{font-size:10px}
+  .incident-list{max-height:190px}
+  .incident-item{font-size:10px;padding:3px 0}
+  .empty{font-size:10px;padding:12px}
 }
 </style>
 </head>
@@ -39,22 +72,28 @@ html[data-theme="dark"]{--bg:#171717;--surface:#202020;--soft:#262626;--muted:#a
 <header class="top"><div class="brand"><div class="mark">N</div><strong>NIE-SLA</strong><span>STATUS · RUST AGENT</span></div><div class="cf"><i class="cf-cloud"></i><span>CLOUDFLARE · WORKERS</span></div><button class="theme" id="themeBtn" aria-label="切换外观">☾</button></header>
 <div class="banner" id="banner" role="status"><span class="dot"></span><span id="bannerText">全部 41 个服务运行正常</span><span class="sub">LAST CHECK · 18s AGO · 99.97%</span><button class="toggle" id="bannerToggle">模拟故障演示</button></div>
 <section class="summary" aria-label="汇总"><div class="sum"><span>41 SERVICES</span><b class="green">ALL SYSTEMS OPERATIONAL</b></div><div class="sum"><span>正常</span><b class="green" id="sumOk">41</b></div><div class="sum"><span>离线</span><b id="sumDown">0</b></div><div class="sum"><span>AVG LATENCY</span><b>28 ms</b></div><div class="sum"><span>UPDATED</span><b id="sumTime">18s ago</b></div></section>
-<div class="toolbar"><label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="search" type="search" placeholder="搜索节点、商家、地区…" aria-label="搜索节点"></label><div class="group-tabs" role="group" aria-label="分组方式"><span class="group-label">分组方式</span><button class="gtab active" data-group="vps">VPS</button><button class="gtab" data-group="web">Web</button><button class="gtab" data-group="provider">商家</button><button class="gtab" data-group="country">国家/地区</button><button class="gtab" data-group="price">价格档</button><button class="gtab" data-group="type">机器类型</button></div></div>
+<div class="toolbar"><label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="search" type="search" placeholder="搜索节点、商家、地区…" aria-label="搜索节点"></label><div class="group-tabs" role="group" aria-label="分组方式"><span class="group-label">分组方式</span><button class="gtab active" data-group="all">全部</button><button class="gtab" data-group="vps">VPS</button><button class="gtab" data-group="web">Web</button><button class="gtab" data-group="provider">商家</button><button class="gtab" data-group="country">国家/地区</button><button class="gtab" data-group="price">价格档</button><button class="gtab" data-group="type">机器类型</button></div><span class="group-status" id="groupStatus">全部节点 · <b>6</b></span></div>
 <button class="incident-toggle" id="incidentToggle"><span>故障记录 · <b>40 条记录</b></span><span class="plus" id="incidentPlus">[ + ]</span></button>
-<div class="incident-panel" id="incidentPanel"><h3>故障记录 · 最近 40 条</h3><p>真实历史事件的本地静态样例；按时间倒序。</p><div id="incidentList"></div></div>
+<div class="incident-panel" id="incidentPanel"><h3>故障记录 · 最近 40 条</h3><p>真实历史事件的本地静态样例；按时间倒序。</p><div id="incidentList" class="incident-list"></div></div>
 <main class="grid" id="grid">
-<article class="node" data-search="聶.NET 铂金8529CL 中国 北京 Beijing CN2 GIA 电信 联通 移动 250" data-provider="NIE" data-country="CN" data-price="250" data-type="VPS">
+<article class="node" data-search="聶.NET 铂金8529CL 中国 北京 Beijing CN2 GIA 电信 联通 移动 250" data-provider="NIE" data-country="CN" data-price="250" data-kind="vps" data-machine="kvm" data-latency="282" data-uptime="97.96" data-id="1">
 <div class="node-head"><div><div class="node-name">聶.NET 铂金8529CL</div><div class="node-tags"><span class="ntag green">NQ</span><span class="ntag blue">电信 / 联通 / 移动路由</span><span class="ntag">CN2 GIA</span><span class="ntag">中国 · Beijing</span></div></div><div class="node-state">运行正常</div></div>
 <div class="node-meta"><span><b>282</b> ms</span><span><b>97.96%</b> 在线率</span><span>¥250.00/月</span></div><div class="node-bars" aria-label="30日状态"></div><div class="traffic"><span>TRAFFIC</span><span class="track"><i style="width:68%"></i></span><b>68%</b><span>剩余</span></div></article>
-<article class="node" data-search="BandwagonHost MegaBoxPro 美国 洛杉矶 Los Angeles NQ CN2 GIA 49" data-provider="BandwagonHost" data-country="US" data-price="49" data-type="VPS">
+<article class="node" data-search="BandwagonHost MegaBoxPro 美国 洛杉矶 Los Angeles NQ CN2 GIA 49" data-provider="BandwagonHost" data-country="US" data-price="49" data-kind="vps" data-machine="kvm" data-latency="168" data-uptime="99.99" data-id="2">
 <div class="node-head"><div><div class="node-name">BandwagonHost MegaBoxPro</div><div class="node-tags"><span class="ntag green">NQ</span><span class="ntag blue">CN2 GIA</span><span class="ntag">IPv6</span><span class="ntag">美国 · Los Angeles</span></div></div><div class="node-state">运行正常</div></div>
 <div class="node-meta"><span><b>168</b> ms</span><span><b>99.99%</b> 在线率</span><span>¥49.99/月</span></div><div class="node-bars" aria-label="30日状态"></div><div class="traffic"><span>TRAFFIC</span><span class="track"><i style="width:42%"></i></span><b>42%</b><span>剩余</span></div></article>
-<article class="node" data-search="LowEndCloud Frankfurt 法兰克福 德国 DE BGP IPv6 Rust Agent 8" data-provider="LowEndCloud" data-country="DE" data-price="8" data-type="VPS">
+<article class="node" data-search="LowEndCloud Frankfurt 法兰克福 德国 DE BGP IPv6 Rust Agent 8" data-provider="LowEndCloud" data-country="DE" data-price="8" data-kind="vps" data-machine="kvm" data-latency="33" data-uptime="99.94" data-id="3">
 <div class="node-head"><div><div class="node-name">LowEndCloud Frankfurt</div><div class="node-tags"><span class="ntag">BGP</span><span class="ntag">IPv6</span><span class="ntag green">Rust Agent</span><span class="ntag">德国 · Frankfurt</span></div></div><div class="node-state">运行正常</div></div>
 <div class="node-meta"><span><b>33</b> ms</span><span><b>99.94%</b> 在线率</span><span>¥8.89/月</span></div><div class="node-bars" aria-label="30日状态"></div><div class="traffic"><span>TRAFFIC</span><span class="track"><i style="width:31%"></i></span><b>31%</b><span>剩余</span></div></article>
-<article class="node" data-search="LowEndCloud Hong Kong 中国 香港 中国香港 HK BGP IPv6 Rust Agent 5" data-provider="LowEndCloud" data-country="HK" data-price="5" data-type="VPS">
+<article class="node" data-search="LowEndCloud Hong Kong 中国 香港 中国香港 HK BGP IPv6 Rust Agent 5" data-provider="LowEndCloud" data-country="HK" data-price="5" data-kind="vps" data-machine="kvm" data-latency="11" data-uptime="99.98" data-id="4">
 <div class="node-head"><div><div class="node-name">LowEndCloud Hong Kong</div><div class="node-tags"><span class="ntag">BGP</span><span class="ntag">IPv6</span><span class="ntag green">Rust Agent</span><span class="ntag">中国香港 · HK</span></div></div><div class="node-state">运行正常</div></div>
 <div class="node-meta"><span><b>11</b> ms</span><span><b>99.98%</b> 在线率</span><span>¥5.00/月</span></div><div class="node-bars" aria-label="30日状态"></div><div class="traffic"><span>TRAFFIC</span><span class="track"><i style="width:56%"></i></span><b>56%</b><span>剩余</span></div></article>
+<article class="node" data-search="LowEndCloud Tokyo 东京 日本 JP BGP IPv6 Rust Agent 7" data-provider="LowEndCloud" data-country="JP" data-price="7" data-kind="vps" data-machine="kvm" data-latency="18" data-uptime="99.97" data-id="5">
+<div class="node-head"><div><div class="node-name">LowEndCloud Tokyo</div><div class="node-tags"><span class="ntag">BGP</span><span class="ntag">IPv6</span><span class="ntag green">Rust Agent</span><span class="ntag">日本 · Tokyo</span></div></div><div class="node-state">运行正常</div></div>
+<div class="node-meta"><span><b>18</b> ms</span><span><b>99.97%</b> 在线率</span><span>¥7.00/月</span></div><div class="node-bars" aria-label="30日状态"></div><div class="traffic"><span>TRAFFIC</span><span class="track"><i style="width:44%"></i></span><b>44%</b><span>剩余</span></div></article>
+<article class="node" data-search="1Kb.Page Edge 全球 Global Web Edge Worker 0" data-provider="1Kb.Page" data-country="Global" data-price="0" data-kind="web" data-machine="edge" data-latency="42" data-uptime="99.99" data-id="6">
+<div class="node-head"><div><div class="node-name">1Kb.Page Edge</div><div class="node-tags"><span class="ntag green">WEB</span><span class="ntag blue">Edge Worker</span><span class="ntag">Global · Anycast</span></div></div><div class="node-state">运行正常</div></div>
+<div class="node-meta"><span><b>42</b> ms</span><span><b>99.99%</b> 在线率</span><span>免费额度</span></div><div class="node-bars" aria-label="30日状态"></div><div class="traffic"><span>CACHE</span><span class="track"><i style="width:86%"></i></span><b>86%</b><span>命中</span></div></article>
 <div class="empty" id="empty">没有匹配的节点</div>
 </main>
 <footer class="footer"><span>NIE-SLA · 41 SERVICES · CLOUDFLARE WORKERS + RUST AGENT</span><span>© 2026 NIE-SLA · 演示数据</span></footer>
@@ -62,20 +101,99 @@ html[data-theme="dark"]{--bg:#171717;--surface:#202020;--soft:#262626;--muted:#a
 </div>
 <script>
 (()=>{
-const nodes=[...document.querySelectorAll('.node')],tooltip=document.getElementById('tooltip');
-const states=['ok','ok','ok','ok','ok','ok','ok','warn','ok','ok','ok','ok','ok','ok','ok','ok','warn','ok','ok','ok','ok','ok','ok','ok','ok','ok','ok','ok','ok','ok'];
-nodes.forEach((n,ni)=>{n.querySelectorAll('.node-bars').forEach(b=>{b.innerHTML=states.map((s,i)=>'<i class="hbar '+(s==='warn'?'warn':'')+'" data-day="'+(30-i)+'" data-state="'+(s==='warn'?'波动':'正常')+'" data-lat="'+(10+((i*7+ni*13)%28))+'ms" data-up="'+(99.9-(i%3)*.02).toFixed(2)+'"></i>').join('')})});
-nodes.forEach(n=>{n.addEventListener('pointerover',e=>{const b=e.target.closest('.hbar');if(!b)return;tooltip.innerHTML='DAY '+b.dataset.day+' · <b>'+b.dataset.up+'%</b> · '+b.dataset.lat+'<br><span style="color:#737373">'+b.dataset.state+'</span>';tooltip.classList.add('show');const r=b.getBoundingClientRect();tooltip.style.left=Math.min(innerWidth-160,r.left)+'px';tooltip.style.top=Math.max(8,r.top-42)+'px'})});
-document.addEventListener('pointerout',e=>{if(e.target.closest('.hbar'))tooltip.classList.remove('show')});
-function setAlert(on){const b=document.getElementById('banner');b.classList.toggle('alert',on);document.getElementById('bannerText').textContent=on?'模拟故障：3 个服务响应异常，2 个节点离线':'全部 41 个服务运行正常';document.getElementById('bannerToggle').textContent=on?'恢复正常演示':'模拟故障演示';document.getElementById('sumOk').textContent=on?'36':'41';document.getElementById('sumDown').textContent=on?'2':'0';document.getElementById('sumOk').className=on?'red':'green';document.getElementById('sumDown').className=on?'red':'';nodes.forEach((n,i)=>n.classList.toggle('alert',on&&i<2));}
-document.getElementById('banner').addEventListener('click',e=>{if(!e.target.closest('.toggle'))setAlert(!document.getElementById('banner').classList.contains('alert'))});document.getElementById('bannerToggle').addEventListener('click',e=>{e.stopPropagation();setAlert(!document.getElementById('banner').classList.contains('alert'))});
-const search=document.getElementById('search');function filter(){const q=search.value.trim().toLowerCase();let n=0;nodes.forEach(node=>{const ok=!q||(node.dataset.search||'').toLowerCase().includes(q);node.hidden=!ok;if(ok)n++});document.getElementById('empty').style.display=n?'none':'block'}
-search.addEventListener('input',filter);
-const grid=document.getElementById('grid');const localNodes=[...document.querySelectorAll('.node')];document.querySelectorAll('.gtab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.gtab').forEach(x=>x.classList.toggle('active',x===t));const mode=t.dataset.group;const order=[...localNodes];if(mode==='provider')order.sort((a,b)=>a.dataset.provider.localeCompare(b.dataset.provider));if(mode==='country')order.sort((a,b)=>a.dataset.country.localeCompare(b.dataset.country));if(mode==='price')order.sort((a,b)=>Number(a.dataset.price)-Number(b.dataset.price));if(mode==='type'||mode==='web'||mode==='vps')order.sort((a,b)=>a.dataset.provider.localeCompare(b.dataset.provider));order.forEach(n=>grid.insertBefore(n,document.getElementById('empty')));}));
-const panel=document.getElementById('incidentPanel');document.getElementById('incidentToggle').addEventListener('click',()=>{const s=panel.classList.toggle('show');document.getElementById('incidentPlus').textContent=s?'[ − ]':'[ + ]'});
-const eventNames=['Frankfurt · 网络抖动 42s','BandwagonHost · TCP 重传瞬时升高','LowEndCloud HK · 探针重连','Beijing · 路由切换完成','Cloudflare Worker · 冷启动延迟','东京节点 · 丢包短时升高','香港节点 · BGP 会话重建','Rust Agent · 心跳恢复'];const records=Array.from({length:40},(_,i)=>{const day=24-Math.floor(i/2);const hh=String(18-(i%12)).padStart(2,'0');const mm=String((i*7)%60).padStart(2,'0');return '<div class="incident-item"><time>2026-11-'+String(Math.max(1,day)).padStart(2,'0')+' '+hh+':'+mm+'</time><b>'+eventNames[i%eventNames.length]+'</b><span>已恢复</span></div>'});document.getElementById('incidentList').innerHTML=records.join('');
+const nodes=[...document.querySelectorAll('.node')];
+const grid=document.getElementById('grid');
+const empty=document.getElementById('empty');
+const search=document.getElementById('search');
+const groupStatus=document.getElementById('groupStatus');
+const tooltip=document.getElementById('tooltip');
+let mode='all';
+const nodeName=n=>n.querySelector('.node-name').textContent;
+const groupMeta={
+ all:()=>'全部节点 · <b>'+nodes.length+'</b>',
+ vps:()=>'VPS · <b>'+nodes.filter(n=>n.dataset.kind==='vps').length+'</b>',
+ web:()=>'Web / Edge · <b>'+nodes.filter(n=>n.dataset.kind==='web').length+'</b>',
+ provider:()=>'商家 · <b>'+new Set(nodes.map(n=>n.dataset.provider)).size+'</b> 个',
+ country:()=>'国家/地区 · <b>'+new Set(nodes.map(n=>n.dataset.country)).size+'</b> 个',
+ price:()=>'价格档 · <b>免费 → ¥250</b>',
+ type:()=>'机器类型 · <b>KVM 5 / Edge 1</b>'
+};
+nodes.forEach(node=>{
+  const baseLat=Number(node.dataset.latency)||20;
+  const baseUp=Number(node.dataset.uptime)||99.9;
+  const seed=Number(node.dataset.id)||1;
+  const bars=node.querySelector('.node-bars');
+  const spread=baseLat>=100?15:baseLat>=20?5:3;
+  bars.innerHTML=Array.from({length:30},(_,i)=>{
+    const lat=Math.max(1,Math.round(baseLat+Math.sin((i+seed)*1.73)*spread));
+    const day=30-i;
+    return '<i class="hbar" data-day="'+day+'" data-node="'+nodeName(node)+'" data-state="正常" data-lat="'+lat+'ms" data-up="'+baseUp.toFixed(2)+'" aria-label="Day '+day+' · '+baseUp.toFixed(2)+'% · '+lat+'ms"></i>';
+  }).join('');
+});
+function render(){
+  const q=search.value.trim().toLowerCase();
+  let visible=nodes.filter(node=>{
+    const kindOk=mode!=='vps'&&mode!=='web'||node.dataset.kind===mode;
+    const queryOk=!q||(node.dataset.search||'').toLowerCase().includes(q);
+    return kindOk&&queryOk;
+  });
+  const order=[...nodes];
+  if(mode==='provider')order.sort((a,b)=>a.dataset.provider.localeCompare(b.dataset.provider));
+  if(mode==='country')order.sort((a,b)=>a.dataset.country.localeCompare(b.dataset.country));
+  if(mode==='price')order.sort((a,b)=>Number(a.dataset.price)-Number(b.dataset.price));
+  if(mode==='type')order.sort((a,b)=>(a.dataset.machine==='edge'?-1:1)-(b.dataset.machine==='edge'?-1:1));
+  nodes.forEach(n=>n.hidden=true);
+  const orderedVisible=order.filter(n=>visible.includes(n));
+  orderedVisible.forEach(n=>{n.hidden=false;grid.insertBefore(n,empty)});
+  order.forEach(n=>{if(!visible.includes(n))grid.insertBefore(n,empty)});
+  empty.style.display=visible.length?'none':'block';
+  if(groupStatus)groupStatus.innerHTML=groupMeta[mode]();
+}
+document.querySelectorAll('.gtab').forEach(tab=>tab.addEventListener('click',()=>{
+  document.querySelectorAll('.gtab').forEach(x=>x.classList.toggle('active',x===tab));
+  mode=tab.dataset.group||'all';
+  render();
+}));
+search.addEventListener('input',render);
+nodes.forEach(node=>node.addEventListener('pointerover',event=>{
+  const bar=event.target.closest('.hbar');if(!bar)return;
+  tooltip.innerHTML='DAY '+bar.dataset.day+' · '+bar.dataset.node+'<br><b>'+bar.dataset.up+'%</b> · '+bar.dataset.lat+'<br><span style="color:#737373">'+bar.dataset.state+'</span>';
+  tooltip.classList.add('show');
+  const r=bar.getBoundingClientRect();
+  tooltip.style.left=Math.min(innerWidth-190,Math.max(8,r.left))+'px';
+  tooltip.style.top=Math.max(8,r.top-46)+'px';
+}));
+document.addEventListener('pointerout',event=>{if(event.target.closest&&event.target.closest('.hbar'))tooltip.classList.remove('show')});
+function setAlert(on){
+  const banner=document.getElementById('banner');
+  banner.classList.toggle('alert',on);
+  document.getElementById('bannerText').textContent=on?'模拟故障：3 个服务响应异常，2 个节点离线':'全部 41 个服务运行正常';
+  document.getElementById('bannerToggle').textContent=on?'恢复正常演示':'模拟故障演示';
+  document.getElementById('sumOk').textContent=on?'36':'41';
+  document.getElementById('sumDown').textContent=on?'2':'0';
+  document.getElementById('sumOk').className=on?'red':'green';
+  document.getElementById('sumDown').className=on?'red':'';
+  document.querySelectorAll('.node').forEach((n,i)=>n.classList.toggle('alert',on&&i<2));
+}
+document.getElementById('banner').addEventListener('click',e=>{if(!e.target.closest('.toggle'))setAlert(!document.getElementById('banner').classList.contains('alert'))});
+document.getElementById('bannerToggle').addEventListener('click',e=>{e.stopPropagation();setAlert(!document.getElementById('banner').classList.contains('alert'))});
+const panel=document.getElementById('incidentPanel');
+const incidentList=document.getElementById('incidentList');
+incidentList.addEventListener('wheel',e=>e.stopPropagation(),{passive:true});
+incidentList.addEventListener('touchmove',e=>e.stopPropagation(),{passive:true});
+document.getElementById('incidentToggle').addEventListener('click',()=>{const open=panel.classList.toggle('show');document.getElementById('incidentPlus').textContent=open?'[ − ]':'[ + ]'});
+const eventNames=['Frankfurt · 网络抖动 42s','BandwagonHost · TCP 重传瞬时升高','LowEndCloud HK · 探针重连','Beijing · 路由切换完成','Cloudflare Worker · 冷启动延迟','东京节点 · 丢包短时升高','香港节点 · BGP 会话重建','Rust Agent · 心跳恢复'];
+const records=Array.from({length:40},(_,i)=>{const day=24-Math.floor(i/2);const hh=String(18-(i%12)).padStart(2,'0');const mm=String((i*7)%60).padStart(2,'0');return '<div class="incident-item"><time>2026-11-'+String(Math.max(1,day)).padStart(2,'0')+' '+hh+':'+mm+'</time><b>'+eventNames[i%eventNames.length]+'</b><span>已恢复</span></div>'});
+incidentList.innerHTML=records.join('');
 document.getElementById('themeBtn').addEventListener('click',()=>{const h=document.documentElement,d=h.dataset.theme==='dark';h.dataset.theme=d?'light':'dark';document.getElementById('themeBtn').textContent=d?'☾':'☀'});
-const send=(dy,dx=0,mode=0)=>parent.postMessage({type:'demo-scroll',dy,dx,mode},'*');addEventListener('wheel',e=>{e.preventDefault();send(e.deltaY,e.deltaX,e.deltaMode)},{passive:false});let ty=0,tx=0,tr=false;addEventListener('touchstart',e=>{if(e.touches.length===1){tr=true;ty=e.touches[0].clientY;tx=e.touches[0].clientX}},{passive:true});addEventListener('touchmove',e=>{if(!tr||e.touches.length!==1)return;const t=e.touches[0],dy=ty-t.clientY,dx=tx-t.clientX;if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>2){e.preventDefault();send(dy);ty=t.clientY;tx=t.clientX}},{passive:false});addEventListener('touchend',()=>tr=false,{passive:true});
+render();
+const targetOrigin=location.origin==='null'?'*':location.origin;
+const send=(kind,dy,dx=0,mode=0)=>parent.postMessage({type:'demo-scroll',kind,dy,dx:kind==='touch'?0:dx,mode:kind==='touch'?0:mode},targetOrigin);
+addEventListener('wheel',e=>{e.preventDefault();send('wheel',e.deltaY,e.deltaX,e.deltaMode)},{passive:false});
+let ty=0,tx=0,tr=false;
+addEventListener('touchstart',e=>{if(e.touches.length===1){tr=true;ty=e.touches[0].clientY;tx=e.touches[0].clientX}},{passive:true});
+addEventListener('touchmove',e=>{if(!tr||e.touches.length!==1)return;const t=e.touches[0],dy=ty-t.clientY,dx=tx-t.clientX;if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>2){e.preventDefault();send('touch',dy);ty=t.clientY;tx=t.clientX}},{passive:false});
+addEventListener('touchend',()=>tr=false,{passive:true});
 })();
 </script>
 </body>
