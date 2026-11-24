@@ -90,6 +90,11 @@
   let lastManifestoPercent = '';
   let lastManifestoP = null;
   let lastRulerState = '';
+  let manifestoX = [0, -48, -4];
+  let manifestoOpacities = [.42, .42, .42];
+  let manifestoSkew = 0;
+  let manifestoSkewApplied = 0;
+  let manifestoSkewLast = 0;
   let lastWorkValues = [];
   let lastSplitAlpha = -1;
   let clockTimer = 0;
@@ -387,6 +392,90 @@
         link.style.setProperty('--mag-y', '0px');
       });
     });
+  }
+
+  /* ---------------------------------------------------------
+     Interactive card demos — event-driven, no scroll rAF/BCR
+     --------------------------------------------------------- */
+  function setupDemos() {
+    const lec = document.querySelector('.demo-lec');
+    if (lec) {
+      const plans = [...lec.querySelectorAll('.demo-plan')];
+      const max = { vcpu: 4, memory: 4096, disk: 40, bandwidth: 1000 };
+      const apply = (plan) => {
+        if (!plan) return;
+        plans.forEach((item) => {
+          const active = item === plan;
+          item.classList.toggle('is-active', active);
+          item.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        ['vcpu', 'memory', 'disk', 'bandwidth'].forEach((key) => {
+          const value = Number(plan.dataset[key]) || 0;
+          const out = lec.querySelector('[data-lec-spec="' + key + '"]');
+          const meter = lec.querySelector('[data-lec-meter="' + key + '"]');
+          if (out) out.textContent = String(value);
+          if (meter) meter.style.width = Math.min(100, value / max[key] * 100).toFixed(1) + '%';
+        });
+        const command = lec.querySelector('[data-lec-command]');
+        if (command) command.textContent = plan.dataset.command || '';
+      };
+      plans.forEach((plan) => plan.addEventListener('click', () => apply(plan)));
+      apply(plans.find((plan) => plan.classList.contains('is-active')) || plans[0]);
+    }
+
+    const onekb = document.querySelector('.demo-1kb');
+    if (onekb) {
+      const articles = [...onekb.querySelectorAll('.demo-article')];
+      const excerpt = onekb.querySelector('[data-1kb-excerpt]');
+      const bytes = onekb.querySelector('[data-1kb-bytes]');
+      const dots = [...onekb.querySelectorAll('[data-1kb-dots] i')];
+      const apply = (article) => {
+        if (!article) return;
+        articles.forEach((item) => {
+          const active = item === article;
+          item.classList.toggle('is-active', active);
+          item.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        const amount = Number(article.dataset.bytes) || 0;
+        if (bytes) bytes.textContent = amount + ' B';
+        if (excerpt) excerpt.textContent = article.dataset.excerpt || '';
+        const filled = Math.round(amount / 1024 * dots.length);
+        dots.forEach((dot, index) => dot.classList.toggle('is-filled', index < filled));
+      };
+      articles.forEach((article) => article.addEventListener('click', () => apply(article)));
+      apply(articles.find((article) => article.classList.contains('is-active')) || articles[0]);
+    }
+
+    const blog = document.querySelector('.demo-blog');
+    if (blog) {
+      const tags = [...blog.querySelectorAll('.demo-tag')];
+      const posts = [...blog.querySelectorAll('.demo-blog-post')];
+      const apply = (tag) => {
+        tags.forEach((item) => {
+          const active = item.dataset.tag === tag;
+          item.classList.toggle('is-active', active);
+          item.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        posts.forEach((post) => {
+          post.hidden = tag !== 'all' && !(post.dataset.tags || '').split(/\s+/).includes(tag);
+        });
+      };
+      tags.forEach((tag) => tag.addEventListener('click', () => apply(tag.dataset.tag || 'all')));
+      apply('all');
+    }
+
+    const sla = document.querySelector('.demo-sla');
+    if (sla) {
+      const detail = sla.querySelector('[data-sla-detail]');
+      sla.addEventListener('pointerover', (event) => {
+        const bar = event.target.closest ? event.target.closest('.demo-bar') : null;
+        if (!bar || !detail) return;
+        detail.textContent = bar.dataset.node + ' · 90D ' + bar.dataset.uptime + '% · ' + bar.dataset.latency + 'ms';
+      });
+      sla.addEventListener('pointerleave', () => {
+        if (detail) detail.textContent = '90D TELEMETRY · HOVER A STATUS CELL';
+      });
+    }
   }
 
   /* ---------------------------------------------------------
@@ -1689,6 +1778,49 @@
     }
   }
 
+  function applyManifestoTransforms(writeOpacity) {
+    manifestoLines.forEach((line, index) => {
+      line.style.transform = 'translate3d(' + manifestoX[index].toFixed(3) + 'vw, 0, 0) skewX(' + manifestoSkew.toFixed(3) + 'deg)';
+      if (writeOpacity) line.style.opacity = manifestoOpacities[index].toFixed(3);
+    });
+    manifestoSkewApplied = manifestoSkew;
+  }
+
+  function updateManifestoSkew(now) {
+    if (!desktop.matches || motion.matches) {
+      if (manifestoSkew !== 0) {
+        manifestoSkew = 0;
+        applyManifestoTransforms(false);
+      }
+      manifestoSkewLast = 0;
+      return;
+    }
+    const chapter = layout.byNav.manifesto;
+    if (!chapter) return;
+    const y = window.scrollY;
+    const active = y + layout.innerHeight > chapter.top && y < chapter.top + chapter.height;
+    if (!active) {
+      if (manifestoSkew !== 0) {
+        manifestoSkew = 0;
+        applyManifestoTransforms(false);
+      }
+      manifestoSkewApplied = 0;
+      manifestoSkewLast = 0;
+      return;
+    }
+    const time = typeof now === 'number' ? now : performance.now();
+    const dt = manifestoSkewLast ? Math.min(.05, Math.max(0, (time - manifestoSkewLast) / 1000)) : 1 / 60;
+    manifestoSkewLast = time;
+    const velocity = lenis && typeof lenis.velocity === 'number' ? lenis.velocity : 0;
+    const target = clamp(velocity * .12, -6, 6);
+    const alpha = 1 - Math.exp(-9 * dt);
+    manifestoSkew += (target - manifestoSkew) * alpha;
+    if (Math.abs(target) < .01 && Math.abs(manifestoSkew) < .018) manifestoSkew = 0;
+    if (Math.abs(manifestoSkew - manifestoSkewApplied) > .015) {
+      applyManifestoTransforms(false);
+    }
+  }
+
   function updateManifesto(scrollY) {
     const chapter = layout.byNav.manifesto;
     if (!chapter) return;
@@ -1698,24 +1830,13 @@
       if (lastManifestoP !== null && Math.abs(raw - lastManifestoP) < 1e-5) return;
       lastManifestoP = raw;
 
-      const v1 = seg(raw, 0, .38);
-      const v2 = seg(raw, .38, .74);
-      const v3 = seg(raw, .74, 1);
-      const lineScale = .82 + .18 * v1;
-      const lineX = [
-        -16 * (1 - v1) - 2.4 * v2 - 4.5 * v3,
-        16 * (1 - v1) + 2.4 * v2 + 4.5 * v3,
-        -13 * (1 - v1) - 1.8 * v2 - 3.5 * v3
+      manifestoX = [-46 * raw, -48 + 50 * raw, -4 - 38 * raw];
+      manifestoOpacities = [
+        .42 + .58 * seg(raw, 0, .18),
+        .42 + .58 * seg(raw, .10, .28),
+        .42 + .58 * seg(raw, .20, .38)
       ];
-      const lineOpacity = [
-        .16 + .84 * seg(raw, 0, .18),
-        .16 + .84 * seg(raw, .10, .28),
-        .16 + .84 * seg(raw, .20, .38)
-      ];
-      manifestoLines.forEach((line, index) => {
-        line.style.transform = 'translate3d(' + lineX[index].toFixed(3) + 'vw, 0, 0) scale(' + lineScale.toFixed(4) + ')';
-        line.style.opacity = lineOpacity[index].toFixed(3);
-      });
+      applyManifestoTransforms(true);
 
       manifestoCapabilities.forEach((capability, index) => {
         const start = .36 + index * .12;
@@ -1725,9 +1846,10 @@
         capability.style.opacity = reveal.toFixed(3);
       });
 
+      const contentReveal = seg(raw, .74, 1);
       if (manifestoContent) {
-        manifestoContent.style.transform = 'scale(' + (1 - .06 * v3).toFixed(4) + ')';
-        manifestoContent.style.opacity = (1 - .68 * v3).toFixed(3);
+        manifestoContent.style.transform = 'scale(' + (1 - .06 * contentReveal).toFixed(4) + ')';
+        manifestoContent.style.opacity = (1 - .68 * contentReveal).toFixed(3);
       }
 
       if (manifestoNeedle && layout.manifestoRulerTravel) {
@@ -2095,6 +2217,7 @@
   setupImprints();
   setupMagneticLinks();
   setupArchive();
+  setupDemos();
 
   playHeroSignature();
   update();
@@ -2104,6 +2227,7 @@
       lenis.raf(time);
       if (inertiaActive || inertiaSkew !== 0 || inertiaLag !== 0) updateScrollInertia(time);
       advanceSplit(time);
+      updateManifestoSkew(time);
       requestAnimationFrame(raf);
     }
     requestAnimationFrame(raf);
