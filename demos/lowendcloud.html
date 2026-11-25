@@ -128,7 +128,6 @@ document.getElementById('register').addEventListener('click',()=>toast('免费�
 document.getElementById('heroRegister').addEventListener('click',()=>toast('免费注册入口为演示态'));
 document.getElementById('moon').addEventListener('click',()=>{const c=document.getElementById('console');c.classList.toggle('is-night');document.getElementById('moon').textContent=c.classList.contains('is-night')?'☀':'☾'});
 applyPlan(activePlan);
-const targetOrigin=location.origin==='null'?'*':location.origin;const send=(dy,dx=0,mode=0)=>parent.postMessage({type:'demo-scroll',kind:'wheel',dy,dx,mode},targetOrigin);addEventListener('wheel',e=>{e.preventDefault();send(e.deltaY,e.deltaX,e.deltaMode)},{passive:false});
 })();
 </script>
 </body>

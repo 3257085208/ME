@@ -22,6 +22,9 @@
   const imprintWall = document.getElementById('imprint-wall');
   const imprintGhost = document.getElementById('imprint-ghost');
   const galleryCursor = document.querySelector('.gallery-cursor');
+  const preloader = document.getElementById('preloader');
+  const preloaderCount = document.getElementById('preloaderCount');
+  const preloaderBar = document.getElementById('preloaderBar');
   const navAccent = document.querySelector('.nav-accent');
   const splitBackdrop = document.querySelector('.split-backdrop');
   const splitLight = document.querySelector('.split-backdrop-light');
@@ -37,7 +40,6 @@
     lastTransform: ''
   }));
   const workCards = [...document.querySelectorAll('.work-card')];
-  const workMedia = [...document.querySelectorAll('.work-card-media img')];
   const workVeils = [...document.querySelectorAll('.work-card-veil')];
   const aboutClock = document.getElementById('about-clock');
   const orbitCoords = document.getElementById('orbitCoords');
@@ -143,6 +145,67 @@
     drawSignature(heroAnimations, heroPaths);
   }
 
+  function setupPreloader() {
+    if (!preloader) return false;
+    let seen = false;
+    let last = 0;
+    try {
+      seen = sessionStorage.getItem('qqsg-preloader-seen') === '1';
+      last = Number(sessionStorage.getItem('qqsg-preloader-at') || 0);
+      sessionStorage.setItem('qqsg-preloader-seen', '1');
+      sessionStorage.setItem('qqsg-preloader-at', String(Date.now()));
+    } catch (error) {}
+    const quickRefresh = last > 0 && Date.now() - last < 2500;
+    if (motion.matches || seen || quickRefresh) {
+      preloader.style.display = 'none';
+      preloader.setAttribute('aria-hidden', 'true');
+      return false;
+    }
+
+    document.documentElement.classList.add('preloader-running');
+    preloader.classList.add('is-playing');
+    lenis?.stop();
+    preloader.setAttribute('aria-hidden', 'false');
+    let lifted = false;
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      if (!lifted) {
+        lifted = true;
+        playHeroSignature();
+      }
+      preloader.classList.remove('is-playing');
+      preloader.style.display = 'none';
+      preloader.setAttribute('aria-hidden', 'true');
+      document.documentElement.classList.remove('preloader-running');
+      lenis?.start();
+    };
+    const lift = () => {
+      if (lifted) return;
+      lifted = true;
+      playHeroSignature();
+      preloader.classList.add('is-lifting');
+      window.setTimeout(finish, 730);
+    };
+    window.setTimeout(lift, 740);
+    window.setTimeout(finish, 1800);
+
+    if (preloaderCount) preloaderCount.textContent = '000';
+    if (preloaderBar) preloaderBar.style.transform = 'scaleX(0)';
+    const started = performance.now();
+    const duration = 650;
+    const counter = (now) => {
+      const progress = clamp((now - started) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      if (preloaderCount) preloaderCount.textContent = String(Math.round(eased * 100)).padStart(3, '0');
+      if (preloaderBar) preloaderBar.style.transform = 'scaleX(' + eased.toFixed(4) + ')';
+      if (progress < 1) requestAnimationFrame(counter);
+    };
+    requestAnimationFrame(counter);
+    return true;
+  }
+
   function playAboutSignature() {
     drawSignature(aboutAnimations, aboutPaths);
   }
@@ -245,26 +308,6 @@
     lastRulerState = '';
     lastWorkValues = [];
     lastNavAccent = '';
-
-    document.querySelectorAll('.demo-viewport').forEach((viewport) => {
-      const frame = viewport.querySelector('.demo-frame');
-      if (!frame) return;
-      if (!desktop.matches) {
-        frame.style.width = '100%';
-        frame.style.height = '100%';
-        frame.style.transform = 'none';
-        viewport.style.removeProperty('--demo-scale');
-        return;
-      }
-      const width = viewport.clientWidth;
-      const height = viewport.clientHeight;
-      if (!width || !height) return;
-      const scale = width / 1200;
-      viewport.style.setProperty('--demo-scale', scale.toFixed(5));
-      frame.style.width = '1200px';
-      frame.style.height = (height / scale).toFixed(2) + 'px';
-      frame.style.transform = 'scale(' + scale.toFixed(5) + ')';
-    });
 
     updateNavAccent();
   }
@@ -398,7 +441,7 @@
      Magnetic editorial links — fine pointers only, ±6px
      --------------------------------------------------------- */
   function setupMagneticLinks() {
-    const links = [...document.querySelectorAll('.work-card-links a, .about-links a')];
+    const links = [...document.querySelectorAll('.work-card-actions a, .work-card-actions button, .about-links a')];
     links.forEach((link) => {
       link.addEventListener('pointermove', (event) => {
         if (!finePointer.matches || motion.matches) return;
@@ -418,107 +461,174 @@
   /* ---------------------------------------------------------
      Interactive card demos — event-driven, no scroll rAF/BCR
      --------------------------------------------------------- */
-  function setupDemoFrames() {
-    let wheelTarget = 0;
-    let wheelAt = -1e9;
-    window.addEventListener('message', (event) => {
-      if (event.origin !== location.origin && event.origin !== 'null') return;
-      const data = event.data;
-      if (!data || data.type !== 'demo-scroll' || data.kind !== 'wheel') return;
-      const rawDy = Number(data.dy);
-      const rawDx = Number(data.dx);
-      if (!Number.isFinite(rawDy) || !Number.isFinite(rawDx)) return;
-      const mode = data.mode === 1 ? 16 : data.mode === 2 ? layout.innerHeight : 1;
-      const dy = clamp(rawDy * mode, -2400, 2400);
-      const dx = clamp(rawDx * mode, -2400, 2400);
-      if (Math.abs(dy) < .4 && Math.abs(dx) < .4) return;
+  function setupReplicaModal() {
+    const modal = document.getElementById('replicaModal');
+    const stage = document.getElementById('replicaStage');
+    const loading = document.getElementById('replicaLoading');
+    const domainEl = document.getElementById('replicaDomain');
+    const openSite = document.getElementById('replicaOpenSite');
+    const closeButton = document.getElementById('replicaClose');
+    const tabs = [...document.querySelectorAll('[data-replica-tab]')];
+    const openers = [...document.querySelectorAll('[data-replica-open]')];
+    if (!modal || !stage || !domainEl || !openSite || !closeButton) return;
 
-
-      const max = Math.max(0, layout.maxScroll);
-      const now = performance.now();
-      const liveTarget = lenis && Number.isFinite(lenis.targetScroll) ? lenis.targetScroll : window.scrollY;
-      const base = now - wheelAt < 180 ? wheelTarget : liveTarget;
-      const target = clamp(base + dy, 0, max);
-      wheelAt = now;
-      wheelTarget = target;
-      if (lenis) {
-        lenis.scrollTo(target, { lerp: .078, lock: false });
-      } else {
-        window.scrollTo(0, target);
+    const replicas = {
+      lowendcloud: {
+        domain: 'LOWEND.CLOUD · 1:1 INTERACTIVE REPLICA',
+        src: 'demos/lowendcloud.html?v=20261126a',
+        live: 'https://lowend.cloud',
+        title: 'LowEndCloud 1:1 interactive replica'
+      },
+      '1kbpage': {
+        domain: '1KB.PAGE · 1:1 INTERACTIVE REPLICA',
+        src: 'demos/1kbpage.html?v=20261126a',
+        live: 'https://1kb.page',
+        title: '1Kb.Page 1:1 interactive replica'
+      },
+      blog: {
+        domain: 'NIEKAIXIANG.COM · 1:1 INTERACTIVE REPLICA',
+        src: 'demos/blog.html?v=20261126a',
+        live: 'https://www.niekaixiang.com',
+        title: '聶.NET 1:1 interactive replica'
+      },
+      sla: {
+        domain: 'SLA.NIEKAIXIANG.COM · 1:1 INTERACTIVE REPLICA',
+        src: 'demos/sla.html?v=20261126a',
+        live: 'https://sla.niekaixiang.com',
+        title: 'NIE-SLA 1:1 interactive replica'
       }
-    });
+    };
+    let activeReplica = '';
+    let frame = null;
+    let lastFocus = null;
+    let inertTargets = [];
 
-    const demoCoarse = matchMedia('(max-width: 900px), (hover: none) and (pointer: coarse)');
-    const demoWindows = [...document.querySelectorAll('.demo-window')];
-    let activeDemoWindow = null;
-    let interactiveLockY = 0;
-    let demoTap = null;
-
-    function syncDemoLabels() {
-      demoWindows.forEach((win) => {
-        const state = win.querySelector('.demo-window-state');
-        if (!state) return;
-        const active = win === activeDemoWindow;
-        state.textContent = demoCoarse.matches
-          ? (active ? '完成 ✕' : '轻点交互')
-          : 'INTERACTIVE REPLICA';
-        state.setAttribute('aria-pressed', active ? 'true' : 'false');
+    function syncChrome(id) {
+      const item = replicas[id];
+      if (!item) return;
+      tabs.forEach((tab) => {
+        const active = tab.dataset.replicaTab === id;
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
       });
+      domainEl.textContent = item.domain;
+      openSite.href = item.live;
+      openSite.setAttribute('aria-label', '打开 ' + item.live + ' 原站');
+      modal.setAttribute('aria-label', item.domain);
     }
 
-    function setDemoInteractive(target) {
-      if (!demoCoarse.matches) target = null;
-      demoWindows.forEach((win) => {
-        win.classList.toggle('is-interactive', win === target);
-      });
-      activeDemoWindow = target;
-      interactiveLockY = window.scrollY;
-      syncDemoLabels();
-    }
-
-    demoWindows.forEach((win) => {
-      const state = win.querySelector('.demo-window-state');
-      const viewport = win.querySelector('.demo-viewport');
-      if (state) {
-        state.addEventListener('click', (event) => {
-          if (!demoCoarse.matches) return;
-          event.preventDefault();
-          setDemoInteractive(win === activeDemoWindow ? null : win);
+    function loadReplica(id) {
+      const item = replicas[id];
+      if (!item) return;
+      activeReplica = id;
+      syncChrome(id);
+      if (loading) loading.classList.remove('is-hidden');
+      if (!frame) {
+        frame = document.createElement('iframe');
+        frame.className = 'replica-frame';
+        frame.setAttribute('title', item.title);
+        frame.setAttribute('loading', 'eager');
+        frame.addEventListener('load', () => {
+          if (loading) loading.classList.add('is-hidden');
+          try {
+            const doc = frame.contentDocument;
+            if (doc) {
+              doc.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeReplica();
+              });
+            }
+          } catch (error) {}
         });
+        stage.appendChild(frame);
+      } else {
+        frame.setAttribute('title', item.title);
       }
-      if (!viewport) return;
-      viewport.addEventListener('pointerdown', (event) => {
-        if (!demoCoarse.matches || win === activeDemoWindow) return;
-        demoTap = { x: event.clientX, y: event.clientY, scroll: window.scrollY, id: event.pointerId };
-      }, { passive: true });
-      viewport.addEventListener('pointerup', (event) => {
-        if (!demoTap || event.pointerId !== demoTap.id || !demoCoarse.matches) return;
-        const dx = Math.abs(event.clientX - demoTap.x);
-        const dy = Math.abs(event.clientY - demoTap.y);
-        const scrolled = Math.abs(window.scrollY - demoTap.scroll);
-        if (dx < 8 && dy < 8 && scrolled < 8) setDemoInteractive(win);
-        demoTap = null;
-      }, { passive: true });
-      viewport.addEventListener('pointercancel', () => { demoTap = null; }, { passive: true });
-      viewport.addEventListener('click', () => {
-        if (!demoCoarse.matches || win === activeDemoWindow) return;
-        setDemoInteractive(win);
+      frame.src = item.src;
+    }
+
+    function openReplica(id) {
+      if (!replicas[id]) return;
+      if (!modal.classList.contains('is-open')) {
+        lastFocus = document.activeElement;
+        inertTargets = [document.querySelector('main'), document.querySelector('.site-header'), document.querySelector('.journey')].filter(Boolean);
+        inertTargets.forEach((el) => { el.inert = true; });
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.documentElement.classList.add('replica-open');
+        clearCursor();
+        lenis?.stop();
+        closeButton.focus({ preventScroll: true });
+      }
+      loadReplica(id);
+    }
+
+    function closeReplica() {
+      if (!modal.classList.contains('is-open')) return;
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.documentElement.classList.remove('replica-open');
+      inertTargets.forEach((el) => { el.inert = false; });
+      inertTargets = [];
+      if (frame) {
+        frame.src = 'about:blank';
+        frame.remove();
+        frame = null;
+      }
+      if (loading) loading.classList.remove('is-hidden');
+      activeReplica = '';
+      lenis?.start();
+      if (lastFocus && typeof lastFocus.focus === 'function') {
+        lastFocus.focus({ preventScroll: true });
+      }
+      lastFocus = null;
+      if (pointerX >= 0 && finePointer.matches && !motion.matches) {
+        const nextTarget = document.elementFromPoint(pointerX, pointerY);
+        setCursorMode(nextTarget, pointerX, pointerY);
+        startCursor();
+      }
+    }
+
+    openers.forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        openReplica(button.dataset.replicaOpen);
       });
     });
 
-    window.addEventListener('scroll', () => {
-      if (activeDemoWindow && Math.abs(window.scrollY - interactiveLockY) > 24) {
-        setDemoInteractive(null);
-      }
-    }, { passive: true });
-
-    demoCoarse.addEventListener('change', () => {
-      if (!demoCoarse.matches) setDemoInteractive(null);
-      syncDemoLabels();
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        if (activeReplica === tab.dataset.replicaTab) return;
+        loadReplica(tab.dataset.replicaTab);
+      });
     });
 
-    syncDemoLabels();
+    closeButton.addEventListener('click', closeReplica);
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal || (event.target.closest && event.target.closest('[data-replica-close]'))) closeReplica();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (!modal.classList.contains('is-open')) return;
+      if (event.key === 'Escape') {
+        closeReplica();
+        return;
+      }
+      if (event.key === 'Tab') {
+        const focusable = [...modal.querySelectorAll('button:not([disabled]), a[href]')].filter((el) => el.offsetParent !== null);
+        if (!focusable.length) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    });
   }
+
 
   /* ---------------------------------------------------------
      Selected Archive — filterable ledger + hover preview only
@@ -1988,19 +2098,33 @@
     return y >= layout.heroTop - scrollY && y <= layout.heroBottom - scrollY;
   }
 
+  function clearCursor() {
+    if (!galleryCursor) return;
+    galleryCursor.classList.remove('is-visible', 'is-link', 'is-launch', 'is-orbit', 'is-on-dark', 'is-pressed');
+    const label = galleryCursor.querySelector('.gallery-cursor-label');
+    if (label) label.textContent = '';
+    document.documentElement.classList.remove('cursor-active');
+  }
+
   function setCursorMode(target, x, y) {
     if (!galleryCursor) return;
-    if (!finePointer.matches || motion.matches || cursorInHero(x, y)) {
-      galleryCursor.classList.remove('is-visible', 'is-ring', 'is-plate');
+    if (!finePointer.matches || motion.matches || cursorInHero(x, y) || document.documentElement.classList.contains('replica-open')) {
+      clearCursor();
       return;
     }
-    const plate = target && target.closest ? target.closest('.plate-stack') : null;
-    const ring = target && target.closest
-      ? target.closest('.work-card-links a, .imprint-node, .imprint-links a, .imprint-asn, .about-links a')
+    const plate = target && target.closest ? target.closest('[data-cursor="launch"], .work-plate') : null;
+    const orbit = target && target.closest ? target.closest('[data-cursor="orbit"], .imprint-orbit') : null;
+    const link = !plate && !orbit && target && target.closest
+      ? target.closest('a, button, [data-cursor="link"], .archive-row')
       : null;
-    galleryCursor.classList.toggle('is-plate', Boolean(plate));
-    galleryCursor.classList.toggle('is-ring', !plate && Boolean(ring));
+    const label = galleryCursor.querySelector('.gallery-cursor-label');
+    galleryCursor.classList.toggle('is-launch', Boolean(plate));
+    galleryCursor.classList.toggle('is-orbit', !plate && Boolean(orbit));
+    galleryCursor.classList.toggle('is-link', !plate && !orbit && Boolean(link));
+    galleryCursor.classList.toggle('is-on-dark', Boolean(plate && plate.closest('.work-card--ink')));
     galleryCursor.classList.add('is-visible');
+    document.documentElement.classList.add('cursor-active');
+    if (label) label.textContent = plate ? 'LAUNCH' : (orbit ? 'ORBIT' : '');
   }
 
   function cursorStep(now) {
@@ -2047,24 +2171,30 @@
     const hideCursor = () => {
       pointerX = -1;
       pointerY = -1;
-      galleryCursor.classList.remove('is-visible', 'is-ring', 'is-plate');
+      clearCursor();
     };
     document.documentElement.addEventListener('pointerleave', hideCursor);
     window.addEventListener('blur', hideCursor);
+    window.addEventListener('pointerdown', () => galleryCursor.classList.add('is-pressed'), { passive: true });
+    window.addEventListener('pointerup', () => galleryCursor.classList.remove('is-pressed'), { passive: true });
+    window.addEventListener('pointercancel', () => galleryCursor.classList.remove('is-pressed'), { passive: true });
   }
 
   function refreshCursor(scrollY) {
     if (!galleryCursor) return;
-    if (!finePointer.matches || motion.matches || pointerX < 0) {
-      galleryCursor.classList.remove('is-visible', 'is-ring', 'is-plate');
+    if (!finePointer.matches || motion.matches || pointerX < 0 || document.documentElement.classList.contains('replica-open')) {
+      clearCursor();
       return;
     }
     const y = typeof scrollY === 'number' ? scrollY : window.scrollY;
     if (pointerY < layout.heroBottom - y) {
-      galleryCursor.classList.remove('is-visible', 'is-ring', 'is-plate');
+      clearCursor();
       return;
     }
-    if (!galleryCursor.classList.contains('is-visible')) galleryCursor.classList.add('is-visible');
+    if (!galleryCursor.classList.contains('is-visible')) {
+      galleryCursor.classList.add('is-visible');
+      document.documentElement.classList.add('cursor-active');
+    }
   }
 
   /* ---------------------------------------------------------
@@ -2272,8 +2402,6 @@
       const slot = slots[i];
       const card = workCards[i];
       if (!slot || !card) continue;
-      const entry = smoothstep((layout.innerHeight - (slot.top - scrollY)) / slotTravel);
-      const imageScale = (1.10 - .10 * entry).toFixed(4);
       let transform = '';
       let veil = '0';
       if (i < slots.length - 1 && slots[i + 1]) {
@@ -2282,10 +2410,9 @@
         transform = 'translate3d(0, ' + (-18 * push).toFixed(2) + 'px, 0) scale(' + (1 - .065 * push).toFixed(4) + ')';
         veil = (.38 * push).toFixed(3);
       }
-      const key = imageScale + '|' + transform + '|' + veil;
+      const key = transform + '|' + veil;
       if (lastWorkValues[i] === key) continue;
       lastWorkValues[i] = key;
-      if (workMedia[i]) workMedia[i].style.transform = 'scale(' + imageScale + ')';
       if (card.style.transform !== transform) card.style.transform = transform;
       if (workVeils[i] && workVeils[i].style.opacity !== veil) workVeils[i].style.opacity = veil;
     }
@@ -2580,9 +2707,10 @@
   setupImprints();
   setupMagneticLinks();
   setupArchive();
-  setupDemoFrames();
+  setupReplicaModal();
 
-  playHeroSignature();
+  const preloaderPending = setupPreloader();
+  if (!preloaderPending) playHeroSignature();
   update();
 
   if (lenis) {

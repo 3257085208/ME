@@ -21,7 +21,7 @@ assets/blog.jpg 和 assets/sla.jpg 为公开界面的浏览器截图，数据为
 assets/nodeget.jpg 为 README 展示图的浏览器截图。公开演示 status.qq.sg 查阅时显示后端连接超时，所以展示部分采用作者仓库内现有的截图。
 assets/lowendcloud.jpg 与 assets/1kbpage.jpg 为 2026-11-24 使用本地无头浏览器、统一 1200×800 视口直接访问 https://lowend.cloud 与 https://1kb.page 得到的真实首页 JPG（quality 85）；未出现 Cloudflare 质询页、白屏或错误页。lowendcloud.jpg 显示 LowEnd.Cloud 首页与实时套餐信息，1kbpage.jpg 显示 1 KiB PAGE CHALLENGE 的极简首页与字节预算条。
 
-Works 四张王牌卡右侧的 .demo-* 为基于上述真实首页截图的原生 HTML/CSS 高保真交互复刻，并非伪造截图：LowEndCloud 套餐与命令、1KB 文章/字节预算、聶.NET 标签筛选、NIE-SLA 节点状态均由页面内真实文案与交互状态驱动；assets/*.jpg 仅继续用于 Selected Archive 的桌面 hover 预览。
+Works 四张王牌卡右侧的 .demo-* 为基于上述真实首页截图的原生 HTML/CSS 高保真交互复刻，并非伪造截图：LowEndCloud 套餐与命令、1KB 文章/字节预算、聶.NET 标签筛选、NIE-SLA 节点状态均由页面内真实文案与交互状态驱动；assets/*.jpg 在 20261126a 中同时用于 Works 瑞士画廊展板；主页面不再内嵌 iframe，截图仅作灰度艺术指导图版，真实微应用按需在全屏剧场加载。
 
 About 的短介绍为基于用户资料拟写的首页文案，未加入年龄、地址、学历等个人信息。
 IDC 系统按用户要求不展示。

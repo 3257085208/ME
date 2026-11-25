@@ -82,9 +82,6 @@ function show(id){pages.forEach(p=>p.classList.toggle('active',p.dataset.page===
 document.addEventListener('click',e=>{const v=e.target.closest('[data-view]');if(v){e.preventDefault();show(v.dataset.view);return}const a=e.target.closest('[data-article]');if(a){show(a.dataset.article);return}if(e.target.closest('[data-back]')){show('home');return}if(e.target.closest('#byteButton')){document.getElementById('bytesPop').classList.toggle('show');return}if(!e.target.closest('#bytesPop')&&!e.target.closest('#byteButton'))document.getElementById('bytesPop').classList.remove('show')});
 const theme=document.getElementById('paperTheme');theme.addEventListener('click',()=>{const dark=document.documentElement.dataset.theme==='dark';if(dark)delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme='dark';theme.textContent=dark?'☾ 纸墨':'☀ 纸墨'});
 show('home');
-const targetOrigin=location.origin==='null'?'*':location.origin;
-const send=(dy,dx=0,mode=0)=>parent.postMessage({type:'demo-scroll',kind:'wheel',dy,dx,mode},targetOrigin);
-addEventListener('wheel',e=>{e.preventDefault();send(e.deltaY,e.deltaX,e.deltaMode)},{passive:false});
 })();
 </script>
 </body>

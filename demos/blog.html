@@ -116,9 +116,6 @@ document.getElementById('themeBtn').addEventListener('click',toggleTheme);docume
 function resetAll(){closeDrawer();search.value='';activeTag='';apply();setActive('home')}
 document.getElementById('floatHome').addEventListener('click',resetAll);document.getElementById('floatReset').addEventListener('click',resetAll);
 apply();
-const targetOrigin=location.origin==='null'?'*':location.origin;
-const send=(dy,dx=0,mode=0)=>parent.postMessage({type:'demo-scroll',kind:'wheel',dy,dx,mode},targetOrigin);
-addEventListener('wheel',e=>{e.preventDefault();send(e.deltaY,e.deltaX,e.deltaMode)},{passive:false});
 })();
 </script>
 </body>

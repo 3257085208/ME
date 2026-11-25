@@ -118,7 +118,6 @@ const panel=document.getElementById('incidentPanel');const incidentList=document
 const events=['Frankfurt · 网络抖动 42s','BandwagonHost · TCP 重传瞬时升高','LowEndCloud HK · 探针重连','Beijing · 路由切换完成','Cloudflare Worker · 冷启动延迟','东京节点 · 丢包短时升高','香港节点 · BGP 会话重建','Rust Agent · 心跳恢复'];incidentList.innerHTML=Array.from({length:40},(_,i)=>{const day=24-Math.floor(i/2);const hh=String(18-i%12).padStart(2,'0');const mm=String((i*7)%60).padStart(2,'0');return '<div class="incident-item"><time>2026-11-'+String(Math.max(1,day)).padStart(2,'0')+' '+hh+':'+mm+'</time><b>'+events[i%events.length]+'</b><span>已恢复</span></div>'}).join('');
 document.getElementById('themeBtn').addEventListener('click',()=>{const h=document.documentElement,d=h.dataset.theme==='dark';h.dataset.theme=d?'light':'dark';document.getElementById('themeBtn').textContent=d?'☾':'☀'});
 render();
-const targetOrigin=location.origin==='null'?'*':location.origin;const send=(dy,dx=0,mode=0)=>parent.postMessage({type:'demo-scroll',kind:'wheel',dy,dx,mode},targetOrigin);addEventListener('wheel',e=>{e.preventDefault();send(e.deltaY,e.deltaX,e.deltaMode)},{passive:false});
 })();
 </script>
 </body>

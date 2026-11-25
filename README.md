@@ -8,7 +8,7 @@
 
 - **#home**：作者原创首屏。左侧 65% 黑 / 右侧白，人像与手写签名、WebGL 墨迹交互保持原样。
 - **#manifesto**：桌面端 320svh（粘性行程 220svh）三段式长卷。三行超宽不换行字轨（实心 / 描边 / 酸柠绿重复片段）以纯 GPU 横滚：0→-46vw、-48→+2vw、-4→-42vw；Lenis 速度驱动 ±6° skewX 迎风倾斜并在停滚时阻尼归零。保留 3 栏能力矩阵、00–100 精密标尺、末段内容 scale(.94) 退暗；移动端/reduced 仅显示首组完整文字。
-- **#works**：四张近全幅 sticky 叠层王牌卡（LowEndCloud / 1Kb.Page / 聶.NET / NIE-SLA），纸白与炭黑交替，卡片 top 76px、4 格进度微条、160px 卡距、底部 18svh 呼吸与顶部 68px 渐隐安全背板。右侧改为独立同源静态微应用 iframe：demos/lowendcloud、1kbpage、blog、sla，以 1200px 原站桌面画布按容器等比缩放（仅初始化/resize 计算 --demo-scale），移动端切 100% 宽 + 560px 高响应式；窗口顶栏保留三圆点、域名胶囊与 INTERACTIVE REPLICA，无角标遮挡。微应用内滚轮/纵向触摸统一 postMessage 转发给主站 Lenis；消息带 kind，目标源为自身 origin，主站用缓存的 maxScroll 与 Lenis targetScroll 叠加，不读取滚动期布局。截图 assets 仅供下方 Selected Archive hover 预览。
+- **#works**：四张近全幅 sticky 叠层瑞士画廊卡（LowEndCloud / 1Kb.Page / 聶.NET / NIE-SLA），左侧约 38% 为 Inter 紧字距标题、JetBrains Mono 规格表与双机械按钮，右侧约 62% 为真实截图灰度展板，含四角 + 十字、FIG 编号、1:1 实时标记与 hover 显影。主页面初始 DOM **0 个 iframe**；点击展板或 LAUNCH REPLICA 才在 80 层全屏剧场按需创建单枚 iframe，以 100% 原生尺寸加载 demos/*.html，顶部 01–04 Tab 可切换，ESC / CLOSE / 遮罩边缘均可关闭并卸载 iframe。
 - **#imprints**：52% / 48% 暗场网络版图。左侧黑面为 AS218834 与 APAC 5 / Europe 4 / North America 6 的 15 机房 IATA 胶囊矩阵，底部保留 AS218834 / 080112.xyz / as6.org / NIE-SLA 四个独立网络入口；右侧仍为真实 3,232 点墨点地球，15 个机房全量信标，仅以 HKG / PEK / FRA / LAX / NYC 为骨干飞线。总览或自由拖动只绘制最多 5 个正面枢纽标签并做 36px 最小像素间距去重；选中任意机房时优先绘制酸柠绿靶心与白描边折线标签，其他近邻标签自动退让，无左上角强塞兜底。白墙 English 地名、经纬/说明与 ghost IATA 三字码同步，水印右侧与底部留出安全距离。
 - **#about**：36% / 64% 镜像尾声。左侧黑面底部人像带 ±12px 滚动纵深视差；右侧白面为放大的标题、简介、2×2 档案规格格、现场逐笔书写的签名与 ↺ REPLAY SIGNATURE 微提示，以及三段遥测落款，含仅在本幕运行时更新的 SHANGHAI · HH:MM:SS 实时时钟。
 
@@ -105,3 +105,14 @@ manifesto / works 为不透明炭黑舞台；imprints / about 透明浮在分割
 - 白墙地名、经纬、说明与 ghost 三字码联动；ghost 右侧与底部留出安全距离，不再裁切。
 - 移动端 15 个机房胶囊为双列、最小 34px 高、字号 ≥10px；地理快捷仅保留 AS218834 / 亚太 / 欧洲 / 北美 4 枚。
 - update() 在自然滚离旧锚点后静默 replaceState 清除过期 #hash。
+
+
+## 瑞士画廊与全屏剧场（20261126a）
+
+- 字体升级为 Inter + JetBrains Mono；除 #home 首屏外，旧 Cormorant Garamond / Space Grotesk 已从加载链与 token 中移除。编号、规格、状态、按钮统一等宽 + tabular-nums。
+- Works 主页面不再常驻 iframe，也不再做 1200px 画布缩放、移动端 pointer-events 解锁或 postMessage wheel 透传。四张展板只使用 assets 下真实截图，默认 grayscale(100%) contrast(1.06) brightness(.94)，hover 缓慢显影并 scale(1.025)。
+- .replica-modal 全屏剧场：48px 深炭控制条 / 01–04 项目 Tab / 域名胶囊 / OPEN SITE / CLOSE [ESC]；iframe 按需创建，容器百分比铺满，关闭时 src 置 about:blank 并从 DOM 移除。
+- Lenis 在剧场打开时 stop、关闭时 start；主页面/页头/journey 在剧场内 inert，焦点回到触发按钮。
+- 首次且非 reduced-motion 才显示 0.85 秒开幕幕布：000→100、酸柠进度轨、90ms 停顿、720ms 上拉，并在上拉瞬间触发首屏签名；sessionStorage 记录，刷新或 reduced-motion 直接跳过，1.8s 硬超时兜底。
+- 机械光标仅在精细桌面指针显示，#home 内完全隐藏：9px 默认点、78px LAUNCH 实心盘（明卡深底 / 暗卡酸柠底）、70px ORBIT 细环、38px 链接细环，按压 scale(.98)。
+- 历史章节中关于“常驻 iframe / 1200px 缩放 / 轻点解锁 / wheel 透传”的描述为当时版本记录，已由本节替代。
