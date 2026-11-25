@@ -10,7 +10,7 @@
 - **#manifesto**：桌面端 320svh（粘性行程 220svh）三段式长卷。三行超宽不换行字轨（实心 / 描边 / 酸柠绿重复片段）以纯 GPU 横滚：0→-46vw、-48→+2vw、-4→-42vw；Lenis 速度驱动 ±6° skewX 迎风倾斜并在停滚时阻尼归零。保留 3 栏能力矩阵、00–100 精密标尺、末段内容 scale(.94) 退暗；移动端/reduced 仅显示首组完整文字。
 - **#works**：四张近全幅 sticky 叠层瑞士画廊卡（LowEndCloud / 1Kb.Page / 聶.NET / NIE-SLA），左侧约 38% 为 Inter 紧字距标题、JetBrains Mono 规格表与双机械按钮，右侧约 62% 为真实截图灰度展板，含四角 + 十字、FIG 编号、1:1 实时标记与 hover 显影。主页面初始 DOM **0 个 iframe**；点击展板或 LAUNCH REPLICA 才在 80 层全屏剧场按需创建单枚 iframe，以 100% 原生尺寸加载 demos/*.html，顶部 01–04 Tab 可切换，ESC / CLOSE / 遮罩边缘均可关闭并卸载 iframe。
 - **#imprints**：52% / 48% 暗场网络版图。左侧黑面为 AS218834 与 APAC 5 / Europe 4 / North America 6 的 15 机房 IATA 胶囊矩阵，底部保留 AS218834 / 080112.xyz / as6.org / NIE-SLA 四个独立网络入口；右侧仍为真实 3,232 点墨点地球，15 个机房全量信标，仅以 HKG / PEK / FRA / LAX / NYC 为骨干飞线。总览或自由拖动只绘制最多 5 个正面枢纽标签并做 36px 最小像素间距去重；选中任意机房时优先绘制酸柠绿靶心与白描边折线标签，其他近邻标签自动退让，无左上角强塞兜底。白墙 English 地名、经纬/说明与 ghost IATA 三字码同步，水印右侧与底部留出安全距离。
-- **#about**：36% / 64% 镜像尾声。左侧黑面底部人像带 ±12px 滚动纵深视差；右侧白面为放大的标题、简介、2×2 档案规格格、现场逐笔书写的签名与 ↺ REPLAY SIGNATURE 微提示，以及三段遥测落款，含仅在本幕运行时更新的 SHANGHAI · HH:MM:SS 实时时钟。
+- **#about**：36% / 64% 瑞士钟表 Colophon。左侧黑白人像带 ±12px 滚动纵深视差；右侧为 Inter 700 “Kaixiang Nie.”、JetBrains Mono 2×2 规格格、可重播手写签名、直角机械外链与 SHANGHAI · UTC+8 · HH:MM:SS + 1Hz 酸柠脉动点，时钟由视口 observer 启停。
 
 ## 微应用源码采集
 
@@ -116,3 +116,12 @@ manifesto / works 为不透明炭黑舞台；imprints / about 透明浮在分割
 - 首次且非 reduced-motion 才显示 0.85 秒开幕幕布：000→100、酸柠进度轨、90ms 停顿、720ms 上拉，并在上拉瞬间触发首屏签名；sessionStorage 记录，刷新或 reduced-motion 直接跳过，1.8s 硬超时兜底。
 - 机械光标仅在精细桌面指针显示，#home 内完全隐藏：9px 默认点、78px LAUNCH 实心盘（明卡深底 / 暗卡酸柠底）、70px ORBIT 细环、38px 链接细环，按压 scale(.98)。
 - 历史章节中关于“常驻 iframe / 1200px 缩放 / 轻点解锁 / wheel 透传”的描述为当时版本记录，已由本节替代。
+
+
+## 瑞士终幕（20261126b）
+
+- Works 展板改为 object-fit: contain，四张 1200×800 截图完整呈现，不再裁掉左右边缘；浅卡内衬 #ebe9e1、深卡 #141414；卡高改为 calc(100svh - 130px)，缓存 workSlots 同步 130px，journey 仅在离开 #home 后下移至 bottom:20px，Home 像素保持不变。移动端隐藏 1:1 状态徽章，仅保留 FIG 与底部 launch 提示。
+- #manifesto 保持 320svh sticky 行程，改为 4 列制图网格 + 四角十字、左对齐三行 Inter 700 建筑字、逐行 0.16→1 聚焦与 2–20px 微沉降；01/02/03 等宽微序号；SYSTEMS 仅在聚焦段变酸柠绿；能力带改 3 列 1px 铭牌与顺序状态点；右侧 21 道游标卡尺刻度（00/25/50/75/100）与酸柠针随 p 移动；旧重复跑马灯 DOM 全部删除，移动端为无动画垂直排版。
+- #imprints 改为 36% / 64%：左侧 AS218834 + APAC 05 / EU 04 / NA 06 三段机械切换与无框 52px 城市行（移动端 46px）（三字码 / 中文 / 纬度），右侧黑曜石地球获得 64% 画布；Tab 切换同步 astrolabe.setView，node 悬停/点击锁定路由；全部 15 城保留。底栏移动端只留 AS218834 总览。
+- #about 统一 36 / 64：Inter 700 “Kaixiang Nie.”、JetBrains Mono 2×2 规格表、直角机械外链、深墨手写签名与 ↺ REPLAY SIGNATURE；上海时钟升级 SHANGHAI · UTC+8 · HH:MM:SS + 1Hz 酸柠脉动点，增补 IntersectionObserver 启停，移动端同样正确走时。
+- 版本升级为 20261126b；Home 与阶段 1 全屏剧场、Preloader、机械光标、Inter/JetBrains Mono token 全部保留。

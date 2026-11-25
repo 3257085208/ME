@@ -93,8 +93,8 @@
   let lastManifestoPercent = '';
   let lastManifestoP = null;
   let lastRulerState = '';
-  let manifestoX = [0, -48, -4];
-  let manifestoOpacities = [.42, .42, .42];
+  let manifestoY = [24, 24, 24];
+  let manifestoOpacities = [.16, .16, .16];
   let manifestoSkew = 0;
   let manifestoSkewApplied = 0;
   let manifestoSkewLast = 0;
@@ -265,7 +265,7 @@
 
     const worksChapter = layout.byNav.works;
     if (worksChapter && workCards.length) {
-      const cardHeight = layout.innerHeight - 114;
+      const cardHeight = layout.innerHeight - 130;
       const worksTop = worksChapter.top;
       layout.workSlots = workCards.map((card, index) => ({
         top: worksTop + 76 + index * (cardHeight + 160),
@@ -475,25 +475,25 @@
     const replicas = {
       lowendcloud: {
         domain: 'LOWEND.CLOUD · 1:1 INTERACTIVE REPLICA',
-        src: 'demos/lowendcloud.html?v=20261126a',
+        src: 'demos/lowendcloud.html?v=20261126b',
         live: 'https://lowend.cloud',
         title: 'LowEndCloud 1:1 interactive replica'
       },
       '1kbpage': {
         domain: '1KB.PAGE · 1:1 INTERACTIVE REPLICA',
-        src: 'demos/1kbpage.html?v=20261126a',
+        src: 'demos/1kbpage.html?v=20261126b',
         live: 'https://1kb.page',
         title: '1Kb.Page 1:1 interactive replica'
       },
       blog: {
         domain: 'NIEKAIXIANG.COM · 1:1 INTERACTIVE REPLICA',
-        src: 'demos/blog.html?v=20261126a',
+        src: 'demos/blog.html?v=20261126b',
         live: 'https://www.niekaixiang.com',
         title: '聶.NET 1:1 interactive replica'
       },
       sla: {
         domain: 'SLA.NIEKAIXIANG.COM · 1:1 INTERACTIVE REPLICA',
-        src: 'demos/sla.html?v=20261126a',
+        src: 'demos/sla.html?v=20261126b',
         live: 'https://sla.niekaixiang.com',
         title: 'NIE-SLA 1:1 interactive replica'
       }
@@ -748,31 +748,39 @@
 
     let currentEntry = entries[0];
     let swapTimer = 0;
-    let activeGroup = '';
+    let activeGroup = 'apac';
     const groupData = {
       apac: { name: 'Asia-Pacific', ghost: 'AP', note: '05 LOCATIONS — ASIA-PACIFIC · BGP IPv4 / IPv6', lat: 18, lon: 112 },
       eu: { name: 'Europe', ghost: 'EU', note: '04 LOCATIONS — EUROPE · BGP IPv4 / IPv6', lat: 50, lon: 11 },
       na: { name: 'North America', ghost: 'NA', note: '06 LOCATIONS — NORTH AMERICA · BGP IPv4 / IPv6', lat: 42, lon: -100 }
     };
+    const groupTabs = [...imprints.querySelectorAll('[data-continent-tab]')];
+    const groupSections = [...imprints.querySelectorAll('.imprint-group')];
+    const cityButtons = [...imprints.querySelectorAll('[data-city-node]')];
 
-    const cityButtons = [...imprints.querySelectorAll('[data-city-node], [data-city-group]')];
     const syncLocked = (node) => {
       entries.forEach((entry) => {
         entry.classList.toggle('is-locked', Boolean(node) && entry.dataset.node === node);
       });
+      groupTabs.forEach((tab) => {
+        const active = tab.dataset.continentTab === activeGroup;
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
       cityButtons.forEach((button) => {
-        const active = button.dataset.cityGroup
-          ? (!node && button.dataset.cityGroup === activeGroup)
-          : (Boolean(node) && button.dataset.cityNode === node);
+        const active = Boolean(node) && button.dataset.cityNode === node;
         button.classList.toggle('is-active', active);
         button.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
     };
 
-    syncLocked('core');
-    window.addEventListener('nkx:astrolabe-lock', (event) => {
-      syncLocked(event.detail ? event.detail.node : '');
-    });
+    const syncGroupSections = () => {
+      groupSections.forEach((group) => {
+        const active = group.dataset.continent === activeGroup;
+        group.hidden = !active;
+        group.classList.toggle('is-active', active);
+      });
+    };
 
     const applyEntry = (entry, decode = false) => {
       if (ghost) ghost.textContent = entry.dataset.wallNum || '';
@@ -781,11 +789,29 @@
       else nameEl.textContent = entry.dataset.wallName || '';
     };
 
+    const showGroup = (key, drive = false) => {
+      const group = groupData[key];
+      if (!group) return;
+      activeGroup = key;
+      currentEntry = null;
+      syncGroupSections();
+      syncLocked('');
+      if (!drive) return;
+      astrolabe?.setView(group.lat, group.lon);
+      if (ghost) ghost.textContent = group.ghost;
+      if (noteEl) noteEl.textContent = group.note;
+      if (nameEl) nameEl.textContent = group.name;
+    };
+
     const showEntry = (entry, force = false) => {
       if (!entry) return;
       if (!force && entry === currentEntry) return;
       currentEntry = entry;
-      activeGroup = '';
+      const group = entry.closest ? entry.closest('.imprint-group') : null;
+      if (group && group.dataset.continent) {
+        activeGroup = group.dataset.continent;
+        syncGroupSections();
+      }
       syncLocked(entry.dataset.node);
       astrolabe?.setEntry(entry);
       if (motion.matches) {
@@ -800,6 +826,16 @@
       }, 180);
     };
 
+    syncGroupSections();
+    syncLocked('core');
+    window.addEventListener('nkx:astrolabe-lock', (event) => {
+      syncLocked(event.detail ? event.detail.node : '');
+    });
+
+    groupTabs.forEach((tab) => {
+      tab.addEventListener('click', () => showGroup(tab.dataset.continentTab, true));
+    });
+
     entries.forEach((entry) => {
       entry.addEventListener('mouseenter', () => showEntry(entry, entry.dataset.node === 'core'));
       entry.addEventListener('focus', () => showEntry(entry, entry.dataset.node === 'core'));
@@ -808,17 +844,6 @@
 
     cityButtons.forEach((button) => {
       button.addEventListener('click', () => {
-        if (button.dataset.cityGroup) {
-          const group = groupData[button.dataset.cityGroup];
-          if (!group) return;
-          activeGroup = button.dataset.cityGroup;
-          syncLocked('');
-          astrolabe?.setView(group.lat, group.lon);
-          if (ghost) ghost.textContent = group.ghost;
-          if (noteEl) noteEl.textContent = group.note;
-          if (nameEl) nameEl.textContent = group.name;
-          return;
-        }
         const entry = entries.find((item) => item.dataset.node === button.dataset.cityNode);
         if (entry) showEntry(entry, true);
       });
@@ -1027,7 +1052,7 @@
       labelWidths: [],
       degreeWidths: [],
       labelFont: '9px -apple-system, "SF Pro Text", sans-serif',
-      degreeFont: '9px "Cormorant Garamond", Georgia, serif',
+      degreeFont: '9px "JetBrains Mono", ui-monospace, monospace',
       dragging: false,
       dragMoved: false,
       pointerId: null,
@@ -1158,7 +1183,7 @@
       state.labelWidths = [CORE.label, ...CITIES.map((city) => city.label)]
         .map((text) => ctx.measureText(text).width);
 
-      const degreeFont = Math.max(8, Math.min(9.5, R * .042)) + 'px "Cormorant Garamond", Georgia, serif';
+      const degreeFont = Math.max(8, Math.min(9.5, R * .042)) + 'px "JetBrains Mono", ui-monospace, monospace';
       ctx.font = degreeFont;
       state.degreeFont = degreeFont;
       state.degreeWidths = DEGREE_LABELS.map((label) => ctx.measureText(label).width);
@@ -1168,7 +1193,7 @@
       const rect = canvas.getBoundingClientRect();
       const w = Math.max(1, rect.width);
       const h = Math.max(1, rect.height);
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const dpr = Math.min(window.devicePixelRatio || 1, desktop.matches ? 1.25 : 1.5);
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -2266,9 +2291,23 @@
     }
   }
 
+  if (aboutSection && 'IntersectionObserver' in window) {
+    const clockObserver = new IntersectionObserver((entries) => {
+      const visible = entries.some((entry) => entry.isIntersecting);
+      if (visible) {
+        tickClock();
+        if (!clockTimer) clockTimer = window.setInterval(tickClock, 1000);
+      } else if (clockTimer) {
+        clearInterval(clockTimer);
+        clockTimer = 0;
+      }
+    }, { threshold: .04 });
+    clockObserver.observe(aboutSection);
+  }
+
   function applyManifestoTransforms(writeOpacity) {
     manifestoLines.forEach((line, index) => {
-      line.style.transform = 'translate3d(' + manifestoX[index].toFixed(3) + 'vw, 0, 0) skewX(' + manifestoSkew.toFixed(3) + 'deg)';
+      line.style.transform = 'translate3d(0, ' + manifestoY[index].toFixed(2) + 'px, 0) skewX(' + manifestoSkew.toFixed(3) + 'deg)';
       if (writeOpacity) line.style.opacity = manifestoOpacities[index].toFixed(3);
     });
     manifestoSkewApplied = manifestoSkew;
@@ -2300,7 +2339,7 @@
     const dt = manifestoSkewLast ? Math.min(.05, Math.max(0, (time - manifestoSkewLast) / 1000)) : 1 / 60;
     manifestoSkewLast = time;
     const velocity = lenis && typeof lenis.velocity === 'number' ? lenis.velocity : 0;
-    const target = clamp(velocity * .12, -6, 6);
+    const target = clamp(velocity * .06, -3, 3);
     const alpha = 1 - Math.exp(-9 * dt);
     manifestoSkew += (target - manifestoSkew) * alpha;
     if (Math.abs(target) < .01 && Math.abs(manifestoSkew) < .018) manifestoSkew = 0;
@@ -2318,37 +2357,31 @@
       if (lastManifestoP !== null && Math.abs(raw - lastManifestoP) < 1e-5) return;
       lastManifestoP = raw;
 
-      manifestoX = [-46 * raw, -48 + 50 * raw, -4 - 38 * raw];
-      manifestoOpacities = [
-        .42 + .58 * seg(raw, 0, .18),
-        .42 + .58 * seg(raw, .10, .28),
-        .42 + .58 * seg(raw, .20, .38)
-      ];
+      const starts = [0, .21, .44];
+      const ends = [.18, .40, .64];
+      manifestoY = starts.map((startValue, index) => {
+        const focus = seg(raw, startValue, ends[index]);
+        return 18 * (1 - focus) + 2;
+      });
+      manifestoOpacities = starts.map((startValue, index) => .16 + .84 * seg(raw, startValue, ends[index]));
+      manifestoLines.forEach((line, index) => {
+        const focus = seg(raw, starts[index], ends[index]);
+        line.classList.toggle('is-focus', focus > .48);
+      });
       applyManifestoTransforms(true);
 
       manifestoCapabilities.forEach((capability, index) => {
-        const start = .36 + index * .12;
-        const end = start + .14;
-        const reveal = seg(raw, start, end);
-        capability.style.transform = 'translate3d(0, ' + (22 * (1 - reveal)).toFixed(2) + 'px, 0)';
-        capability.style.opacity = reveal.toFixed(3);
+        capability.classList.toggle('is-lit', raw >= .46 + index * .1);
       });
-
-      const contentReveal = seg(raw, .74, 1);
-      if (manifestoContent) {
-        manifestoContent.style.transform = 'scale(' + (1 - .06 * contentReveal).toFixed(4) + ')';
-        manifestoContent.style.opacity = (1 - .68 * contentReveal).toFixed(3);
-      }
 
       if (manifestoNeedle && layout.manifestoRulerTravel) {
         manifestoNeedle.style.transform = 'translate3d(0, ' + (raw * layout.manifestoRulerTravel).toFixed(2) + 'px, 0)';
       }
 
-      const currentTick = Math.min(4, Math.max(0, Math.round(raw * 4)));
+      const lastIndex = manifestoRulerTicks.length - 1;
+      const currentTick = Math.min(lastIndex, Math.max(0, Math.round(raw * lastIndex)));
       const rulerState = manifestoRulerTicks.map((tick, index) => {
-        const passed = index < currentTick ? 1 : 0;
-        const current = index === currentTick ? 1 : 0;
-        return passed + '' + current;
+        return (index < currentTick ? '1' : '0') + (index === currentTick ? '1' : '0');
       }).join('');
       if (rulerState !== lastRulerState) {
         lastRulerState = rulerState;
