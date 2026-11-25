@@ -2216,6 +2216,8 @@
       clearCursor();
       return;
     }
+    if (currentNav !== 'imprints') galleryCursor.classList.remove('is-orbit');
+    if (currentNav !== 'works') galleryCursor.classList.remove('is-launch');
     if (!galleryCursor.classList.contains('is-visible')) {
       galleryCursor.classList.add('is-visible');
       document.documentElement.classList.add('cursor-active');

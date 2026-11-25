@@ -5862,13 +5862,10 @@ html.replica-open {
 
 .imprint-node:hover .imprint-code,
 .imprint-node:hover .imprint-city,
-.imprint-node:hover .imprint-coord,
 .imprint-node:focus-visible .imprint-code,
 .imprint-node:focus-visible .imprint-city,
-.imprint-node:focus-visible .imprint-coord,
 .imprint-node.is-locked .imprint-code,
-.imprint-node.is-locked .imprint-city,
-.imprint-node.is-locked .imprint-coord {
+.imprint-node.is-locked .imprint-city {
   transform: translate3d(6px, 0, 0);
 }
 
@@ -6188,7 +6185,7 @@ html.replica-open {
 }
 
 .about-links a .arrow {
-  color: var(--swiss-acid);
+  color: var(--swiss-ink);
   transition: transform .3s var(--page-ease);
 }
 
