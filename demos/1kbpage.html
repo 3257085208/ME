@@ -8,7 +8,7 @@
 :root{--paper:#f5f1e9;--ink:#554f49;--soft:#8a8178;--line:#c8c0b6;--accent:#76594c}
 html[data-theme="dark"]{--paper:#282725;--ink:#eee;--soft:#aaa;--line:#514d47;--accent:#d8b28f;color-scheme:dark}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--paper);color:var(--ink)}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--paper);color:var(--ink);touch-action:pan-y;overscroll-behavior-y:auto}
 body{font:18px/1.55 Georgia,"Times New Roman","Songti SC",serif;display:flex;flex-direction:column;min-height:100vh}
 a{color:var(--accent)}
 button{font:inherit;color:inherit}
@@ -110,12 +110,8 @@ document.addEventListener('click',e=>{
 document.addEventListener('click',e=>{if(!e.target.closest('.bytes-pop')&&!e.target.closest('#byteButton'))document.getElementById('bytesPop').classList.remove('show')});
 show((location.hash||'#home').slice(1)===''?'home':(location.hash||'#home').slice(1));
 const themeButton=document.getElementById('paperTheme');themeButton.addEventListener('click',()=>{const dark=document.documentElement.dataset.theme==='dark';if(dark)delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme='dark';themeButton.textContent=dark?'☾':'☀'});
-const targetOrigin=location.origin==='null'?'*':location.origin;const send=(kind,dy,dx=0,mode=0)=>parent.postMessage({type:'demo-scroll',kind,dy,dx:kind==='touch'?0:dx,mode:kind==='touch'?0:mode},targetOrigin);
-addEventListener('wheel',e=>{e.preventDefault();send('wheel',e.deltaY,e.deltaX,e.deltaMode)},{passive:false});
-let ty=0,tx=0,tracking=false;
-addEventListener('touchstart',e=>{if(e.touches.length===1){tracking=true;ty=e.touches[0].clientY;tx=e.touches[0].clientX}},{passive:true});
-addEventListener('touchmove',e=>{if(!tracking||e.touches.length!==1)return;const t=e.touches[0],dy=ty-t.clientY,dx=tx-t.clientX;if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>2){e.preventDefault();send('touch',dy);ty=t.clientY;tx=t.clientX}},{passive:false});
-addEventListener('touchend',()=>{tracking=false},{passive:true});
+const targetOrigin=location.origin==='null'?'*':location.origin;const send=(dy,dx=0,mode=0)=>parent.postMessage({type:'demo-scroll',kind:'wheel',dy,dx,mode},targetOrigin);
+addEventListener('wheel',e=>{e.preventDefault();send(e.deltaY,e.deltaX,e.deltaMode)},{passive:false});
 })();
 </script>
 </body>

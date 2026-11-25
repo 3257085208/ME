@@ -4096,3 +4096,93 @@ body {
     transform: none;
   }
 }
+
+/* =========================================================
+   Mobile demo unlock: native scroll by default, tap to interact
+   ========================================================= */
+.work-card-media .demo-window-state {
+  appearance: none;
+  margin: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  pointer-events: none;
+  cursor: default;
+  font-family: var(--font-display);
+  font-size: 7.5px;
+  letter-spacing: .08em;
+  line-height: 1;
+}
+
+.work-card-media .demo-tap-hint {
+  display: none;
+}
+
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  .work-card-media .demo-viewport {
+    touch-action: pan-y;
+  }
+
+  .work-card-media .demo-frame {
+    pointer-events: none;
+    touch-action: pan-y;
+  }
+
+  .work-card-media .demo-window.is-interactive .demo-frame {
+    pointer-events: auto;
+  }
+
+  .work-card-media .demo-window-state {
+    justify-self: end;
+    pointer-events: auto;
+    cursor: pointer;
+    min-height: 24px;
+    padding: 5px 7px;
+    border: 1px solid rgba(71, 154, 107, .38);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .38);
+    color: #3d8059;
+    font-size: 10px;
+    letter-spacing: .02em;
+    line-height: 1;
+    text-transform: none;
+    transition: color .2s ease, border-color .2s ease, background .2s ease;
+  }
+
+  .work-card--ink .work-card-media .demo-window-state {
+    background: rgba(242, 241, 234, .06);
+  }
+
+  .work-card-media .demo-window.is-interactive .demo-window-state {
+    border-color: #c8ff00;
+    background: rgba(200, 255, 0, .1);
+    color: #c8ff00;
+  }
+
+  .work-card-media .demo-tap-hint {
+    position: absolute;
+    z-index: 3;
+    right: 12px;
+    bottom: 12px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 0 9px;
+    border: 1px solid rgba(242, 241, 234, .3);
+    border-radius: 999px;
+    background: rgba(14, 14, 13, .62);
+    color: rgba(242, 241, 234, .9);
+    font-family: var(--font-display);
+    font-size: 10px;
+    letter-spacing: .04em;
+    line-height: 1;
+    pointer-events: none;
+    backdrop-filter: blur(6px);
+    transition: opacity .2s ease, visibility .2s ease;
+  }
+
+  .work-card-media .demo-window.is-interactive .demo-tap-hint {
+    opacity: 0;
+    visibility: hidden;
+  }
+}

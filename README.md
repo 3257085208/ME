@@ -77,3 +77,11 @@ manifesto / works 为不透明炭黑舞台；imprints / about 透明浮在分割
 - LowEndCloud/SLA 移动端媒体块各合并为 1 块；LowEnd 套餐单列、公告可关闭、导航/登录/注册有反馈；SLA 移动端单列展示前 3 张完整卡，字号 ≥10px。
 - 1KB.Page 默认锁定暖纸色，手动 ☾/☀ 切换；RSS 指向真实 https://1kb.page/feed.xml 并展示只读预览。
 - Blog 5 篇文章、顶栏导航/联系入口全部可达、筛选单篇不再被 flex 拉伸；移除废弃角标 CSS。
+
+
+## 移动原生滚动修复（20261125d）
+
+- 四个 demos 完全移除 touchstart / touchmove / touchend 模拟滚动；html/body 统一 touch-action: pan-y 与 overscroll-behavior-y: auto，只保留 wheel 透传。
+- 手机端 Lenis 条件收紧为 finePointer 与 desktop 同时匹配；未命中时走原生 scroll 监听，不再空转 lenis.raf。
+- 900px 以下或 coarse pointer：iframe 默认 pointer-events: none，viewport 可自然滚动；点击 viewport（位移 <8px）或顶栏状态按钮进入 is-interactive，iframe 才接收交互。顶栏显示 轻点交互 / 完成 ✕，并提供低干扰点按提示；页面有效滚动 >24px 自动退出交互。
+- 桌面 >900px 且 fine pointer：iframe 始终 pointer-events: auto，状态保持 INTERACTIVE REPLICA，滚轮透传与直接点击不变。

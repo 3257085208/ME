@@ -58,7 +58,7 @@
     return t * t * (3 - 2 * t);
   };
   const seg = (value, start, end) => smoothstep((value - start) / Math.max(1e-6, end - start));
-  const lenis = window.Lenis && !motion.matches ? new window.Lenis({
+  const lenis = window.Lenis && !motion.matches && finePointer.matches && desktop.matches ? new window.Lenis({
     lerp: .078,
     smoothWheel: true,
     syncTouch: false,
@@ -423,8 +423,7 @@
     window.addEventListener('message', (event) => {
       if (event.origin !== location.origin && event.origin !== 'null') return;
       const data = event.data;
-      if (!data || data.type !== 'demo-scroll') return;
-      const kind = data.kind === 'touch' ? 'touch' : 'wheel';
+      if (!data || data.type !== 'demo-scroll' || data.kind !== 'wheel') return;
       const rawDy = Number(data.dy);
       const rawDx = Number(data.dx);
       if (!Number.isFinite(rawDy) || !Number.isFinite(rawDx)) return;
@@ -433,15 +432,6 @@
       const dx = clamp(rawDx * mode, -2400, 2400);
       if (Math.abs(dy) < .4 && Math.abs(dx) < .4) return;
 
-      if (kind === 'touch') {
-        const target = clamp(window.scrollY + dy, 0, layout.maxScroll);
-        if (lenis) {
-          lenis.scrollTo(target, { immediate: true });
-        } else {
-          window.scrollBy(0, dy);
-        }
-        return;
-      }
 
       const max = Math.max(0, layout.maxScroll);
       const now = performance.now();
@@ -456,6 +446,77 @@
         window.scrollTo(0, target);
       }
     });
+
+    const demoCoarse = matchMedia('(max-width: 900px), (hover: none) and (pointer: coarse)');
+    const demoWindows = [...document.querySelectorAll('.demo-window')];
+    let activeDemoWindow = null;
+    let interactiveLockY = 0;
+    let demoTap = null;
+
+    function syncDemoLabels() {
+      demoWindows.forEach((win) => {
+        const state = win.querySelector('.demo-window-state');
+        if (!state) return;
+        const active = win === activeDemoWindow;
+        state.textContent = demoCoarse.matches
+          ? (active ? '完成 ✕' : '轻点交互')
+          : 'INTERACTIVE REPLICA';
+        state.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    }
+
+    function setDemoInteractive(target) {
+      if (!demoCoarse.matches) target = null;
+      demoWindows.forEach((win) => {
+        win.classList.toggle('is-interactive', win === target);
+      });
+      activeDemoWindow = target;
+      interactiveLockY = window.scrollY;
+      syncDemoLabels();
+    }
+
+    demoWindows.forEach((win) => {
+      const state = win.querySelector('.demo-window-state');
+      const viewport = win.querySelector('.demo-viewport');
+      if (state) {
+        state.addEventListener('click', (event) => {
+          if (!demoCoarse.matches) return;
+          event.preventDefault();
+          setDemoInteractive(win === activeDemoWindow ? null : win);
+        });
+      }
+      if (!viewport) return;
+      viewport.addEventListener('pointerdown', (event) => {
+        if (!demoCoarse.matches || win === activeDemoWindow) return;
+        demoTap = { x: event.clientX, y: event.clientY, scroll: window.scrollY, id: event.pointerId };
+      }, { passive: true });
+      viewport.addEventListener('pointerup', (event) => {
+        if (!demoTap || event.pointerId !== demoTap.id || !demoCoarse.matches) return;
+        const dx = Math.abs(event.clientX - demoTap.x);
+        const dy = Math.abs(event.clientY - demoTap.y);
+        const scrolled = Math.abs(window.scrollY - demoTap.scroll);
+        if (dx < 8 && dy < 8 && scrolled < 8) setDemoInteractive(win);
+        demoTap = null;
+      }, { passive: true });
+      viewport.addEventListener('pointercancel', () => { demoTap = null; }, { passive: true });
+      viewport.addEventListener('click', () => {
+        if (!demoCoarse.matches || win === activeDemoWindow) return;
+        setDemoInteractive(win);
+      });
+    });
+
+    window.addEventListener('scroll', () => {
+      if (activeDemoWindow && Math.abs(window.scrollY - interactiveLockY) > 24) {
+        setDemoInteractive(null);
+      }
+    }, { passive: true });
+
+    demoCoarse.addEventListener('change', () => {
+      if (!demoCoarse.matches) setDemoInteractive(null);
+      syncDemoLabels();
+    });
+
+    syncDemoLabels();
   }
 
   /* ---------------------------------------------------------
