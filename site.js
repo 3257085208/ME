@@ -1173,7 +1173,7 @@
 
     function buffGlowSprites(dpr) {
       function makeGlow(inner, mid) {
-        const size = Math.max(32, Math.round(64 * Math.min(dpr, 1.5)));
+        const size = Math.max(32, Math.round(64 * Math.min(dpr, 2)));
         const source = document.createElement('canvas');
         source.width = size;
         source.height = size;
@@ -1200,7 +1200,7 @@
       for (let b = 0; b < radii.length; b += 1) {
         const radius = radii[b];
         const alpha = alphas[b];
-        const dim = Math.max(6, Math.ceil((radius * 2 + 2.6) * dpr));
+        const dim = Math.max(4, Math.ceil((radius * 2 + 1.2) * dpr));
         const source = document.createElement('canvas');
         source.width = dim;
         source.height = dim;
@@ -1208,8 +1208,8 @@
         const center = dim * .5;
         const gradient = sctx.createRadialGradient(center, center, 0, center, center, dim * .5);
         gradient.addColorStop(0, 'rgba(248, 249, 250, ' + alpha.toFixed(3) + ')');
-        gradient.addColorStop(.42, 'rgba(242, 241, 234, ' + alpha.toFixed(3) + ')');
-        gradient.addColorStop(.76, 'rgba(242, 241, 234, ' + (alpha * .62).toFixed(3) + ')');
+        gradient.addColorStop(.68, 'rgba(242, 241, 234, ' + alpha.toFixed(3) + ')');
+        gradient.addColorStop(.86, 'rgba(242, 241, 234, ' + (alpha * .45).toFixed(3) + ')');
         gradient.addColorStop(1, 'rgba(242, 241, 234, 0)');
         sctx.fillStyle = gradient;
         sctx.fillRect(0, 0, dim, dim);
@@ -1235,9 +1235,9 @@
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
-      const w = Math.max(1, rect.width);
-      const h = Math.max(1, rect.height);
-      const dpr = Math.min(window.devicePixelRatio || 1, desktop.matches ? 1.25 : 1.5);
+      const w = Math.max(1, Math.round(rect.width));
+      const h = Math.max(1, Math.round(rect.height));
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
