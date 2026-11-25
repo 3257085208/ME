@@ -796,6 +796,35 @@
       { lat: 45.32, lon: -73.87, label: 'BHS · BEAUHARNOIS', code: 'BHS' }
     ];
     const BACKBONE = new Set([0, 2, 5, 9, 13]);
+    const FACING_LUT = new Float32Array(256);
+    for (let i = 0; i < 256; i += 1) FACING_LUT[i] = Math.pow(i / 255, .72);
+    const GRID_LINES = [];
+    for (const latitude of [-35, 0, 35]) {
+      const line = [];
+      const la = latitude * RAD;
+      for (let lon = -180; lon <= 180; lon += 2.5) {
+        const lo = lon * RAD;
+        line.push({
+          x: Math.cos(la) * Math.sin(lo),
+          y: Math.sin(la),
+          z: Math.cos(la) * Math.cos(lo)
+        });
+      }
+      GRID_LINES.push(line);
+    }
+    for (const meridian of [-40, 45]) {
+      const line = [];
+      const lo = meridian * RAD;
+      for (let lat = -86; lat <= 86; lat += 2.5) {
+        const la = lat * RAD;
+        line.push({
+          x: Math.cos(la) * Math.sin(lo),
+          y: Math.sin(la),
+          z: Math.cos(la) * Math.cos(lo)
+        });
+      }
+      GRID_LINES.push(line);
+    }
     const DEGREE_LABELS = ['000°', '090°', '180°', '270°'];
     const CITY_FONT = '9px -apple-system, "SF Pro Text", sans-serif';
 
@@ -832,9 +861,10 @@
 
     const FRONT_ALPHA = [];
     const FRONT_RADIUS = [];
-    for (let b = 0; b < 7; b += 1) {
-      FRONT_ALPHA.push(.55 + .40 * (b / 6));
-      FRONT_RADIUS.push(1.25 + .90 * (b / 6));
+    for (let b = 0; b < 10; b += 1) {
+      const t = b / 9;
+      FRONT_ALPHA.push(.12 + .76 * t);
+      FRONT_RADIUS.push(.55 + .90 * t);
     }
 
     const routeMeta = cityVecs.map((node) => {
@@ -872,6 +902,11 @@
       lastTime: 0,
       ready: false,
       gradient: null,
+      bodyGradient: null,
+      rimGradient: null,
+      contactGradient: null,
+      glowGreen: null,
+      glowBone: null,
       width: 0,
       height: 0,
       radius: 0,
@@ -957,22 +992,48 @@
       return Math.min(w * .42, h * .45, (Math.min(w, h) * .5 - 22) / 1.09);
     }
 
+    function buffGlowSprites(dpr) {
+      function makeGlow(inner, mid) {
+        const size = Math.max(32, Math.round(64 * Math.min(dpr, 1.5)));
+        const source = document.createElement('canvas');
+        source.width = size;
+        source.height = size;
+        const sctx = source.getContext('2d');
+        const c = size * .5;
+        const g = sctx.createRadialGradient(c, c, 0, c, c, c);
+        g.addColorStop(0, inner);
+        g.addColorStop(.22, mid);
+        g.addColorStop(.56, mid.replace(/[\d.]+\)$/, '.18)'));
+        g.addColorStop(1, 'rgba(242, 241, 234, 0)');
+        sctx.fillStyle = g;
+        sctx.fillRect(0, 0, size, size);
+        return source;
+      }
+      state.glowGreen = makeGlow('rgba(244, 255, 191, 1)', 'rgba(200, 255, 0, .92)');
+      state.glowBone = makeGlow('rgba(255, 255, 255, .7)', 'rgba(242, 241, 234, .55)');
+    }
+
     function buildDotSprites(dpr) {
       const sprites = [];
       const sizes = [];
-      for (let b = 0; b < 8; b += 1) {
-        const radius = b === 0 ? .7 : FRONT_RADIUS[b - 1];
-        const alpha = b === 0 ? .075 : FRONT_ALPHA[b - 1];
-        const size = radius * 2 + 1.5;
-        const dim = Math.max(2, Math.round(size * dpr));
+      const radii = [.55, ...FRONT_RADIUS];
+      const alphas = [.045, ...FRONT_ALPHA];
+      for (let b = 0; b < radii.length; b += 1) {
+        const radius = radii[b];
+        const alpha = alphas[b];
+        const dim = Math.max(6, Math.ceil((radius * 2 + 2.6) * dpr));
         const source = document.createElement('canvas');
         source.width = dim;
         source.height = dim;
         const sctx = source.getContext('2d');
-        sctx.fillStyle = 'rgba(' + INK + ', ' + alpha.toFixed(3) + ')';
-        sctx.beginPath();
-        sctx.arc(dim * .5, dim * .5, dim * (radius / size), 0, TAU);
-        sctx.fill();
+        const center = dim * .5;
+        const gradient = sctx.createRadialGradient(center, center, 0, center, center, dim * .5);
+        gradient.addColorStop(0, 'rgba(248, 249, 250, ' + alpha.toFixed(3) + ')');
+        gradient.addColorStop(.42, 'rgba(242, 241, 234, ' + alpha.toFixed(3) + ')');
+        gradient.addColorStop(.76, 'rgba(242, 241, 234, ' + (alpha * .62).toFixed(3) + ')');
+        gradient.addColorStop(1, 'rgba(242, 241, 234, 0)');
+        sctx.fillStyle = gradient;
+        sctx.fillRect(0, 0, dim, dim);
         sprites.push(source);
         sizes.push(dim);
       }
@@ -1013,12 +1074,25 @@
       state.radius = R;
       state.dpr = dpr;
       state.useArcDots = dpr < 1.25;
-      const gradient = ctx.createRadialGradient(cx - R * .32, cy - R * .32, R * .05, cx, cy, R);
-      gradient.addColorStop(0, 'rgba(' + INK + ', 0)');
-      gradient.addColorStop(.55, 'rgba(' + INK + ', .015)');
-      gradient.addColorStop(1, 'rgba(' + INK + ', .05)');
-      state.gradient = gradient;
+      const bodyGradient = ctx.createRadialGradient(cx - R * .38, cy - R * .42, R * .05, cx, cy, R * 1.02);
+      bodyGradient.addColorStop(0, '#25282e');
+      bodyGradient.addColorStop(.48, '#141619');
+      bodyGradient.addColorStop(1, '#0b0c0e');
+      state.bodyGradient = bodyGradient;
+      const rimGradient = ctx.createRadialGradient(cx, cy, R * .72, cx, cy, R);
+      rimGradient.addColorStop(0, 'rgba(242, 241, 234, 0)');
+      rimGradient.addColorStop(.82, 'rgba(242, 241, 234, .018)');
+      rimGradient.addColorStop(.96, 'rgba(242, 241, 234, .12)');
+      rimGradient.addColorStop(1, 'rgba(242, 241, 234, .2)');
+      state.rimGradient = rimGradient;
+      const contactGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, R * .9);
+      contactGradient.addColorStop(0, 'rgba(8, 9, 10, .22)');
+      contactGradient.addColorStop(.55, 'rgba(8, 9, 10, .11)');
+      contactGradient.addColorStop(1, 'rgba(8, 9, 10, 0)');
+      state.contactGradient = contactGradient;
+      state.useArcDots = false;
       buildDotSprites(dpr);
+      buffGlowSprites(dpr);
       cacheTextMetrics(R);
       state.ready = true;
       draw();
@@ -1047,28 +1121,61 @@
       updateOrbitHud(activeIndex);
       emitOrbitLock();
 
-      // ---------- immersed sphere shadow + equator reference ----------
-      if (state.gradient) {
-        ctx.fillStyle = state.gradient;
+      // ---------- floating obsidian sphere: contact shadow, carbon body, Fresnel rim ----------
+      if (state.contactGradient) {
+        ctx.save();
+        ctx.translate(cx, cy + R * .96);
+        ctx.scale(1, .26);
+        ctx.fillStyle = state.contactGradient;
+        ctx.beginPath();
+        ctx.arc(0, 0, R * .9, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+      }
+      if (state.bodyGradient) {
+        ctx.fillStyle = state.bodyGradient;
         ctx.beginPath();
         ctx.arc(cx, cy, R, 0, TAU);
         ctx.fill();
       }
-      ctx.strokeStyle = ink(.07);
-      ctx.lineWidth = .6;
-      ctx.beginPath();
-      for (let s = 0; s <= 90; s += 1) {
-        const lon = (s / 90) * TAU;
-        const ex = Math.sin(lon);
-        const ez = Math.cos(lon);
-        const x1 = ex * cyaw + ez * syaw;
-        const z1 = -ex * syaw + ez * cyaw;
-        const y1 = -z1 * sp;
-        const px = cx + x1 * R;
-        const py = cy - y1 * R;
-        if (s === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
+      if (state.rimGradient) {
+        ctx.fillStyle = state.rimGradient;
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0, TAU);
+        ctx.fill();
       }
+
+      // Front-only graticule, equator included.
+      ctx.strokeStyle = 'rgba(242, 241, 234, .065)';
+      ctx.lineWidth = .55;
+      ctx.beginPath();
+      for (const line of GRID_LINES) {
+        let pen = false;
+        for (const point of line) {
+          const ux = point.x;
+          const uy = point.y;
+          const uz = point.z;
+          const x1 = ux * cyaw + uz * syaw;
+          const z1 = -ux * syaw + uz * cyaw;
+          const y1 = uy * cp - z1 * sp;
+          const z2 = uy * sp + z1 * cp;
+          if (z2 <= .015) {
+            pen = false;
+            continue;
+          }
+          const px = cx + x1 * R;
+          const py = cy - y1 * R;
+          if (!pen) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+          pen = true;
+        }
+      }
+      ctx.stroke();
+
+      ctx.strokeStyle = 'rgba(242, 241, 234, .32)';
+      ctx.lineWidth = .9;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, TAU);
       ctx.stroke();
 
       // ---------- pre-rendered stipple sprites: 3,232 drawImage calls, no arcs ----------
@@ -1091,9 +1198,10 @@
         if (z2 <= 0) {
           bin = 0;
         } else {
-          const lit = x1 * LIGHT.x + y1 * LIGHT.y + z2 * LIGHT.z;
-          const tone = Math.max(0, Math.min(1, .5 - .5 * lit + (1 - z2) * .20));
-          bin = 1 + Math.min(6, Math.floor(tone * 7));
+          const lit = Math.max(0, Math.min(1, .5 + .5 * (x1 * LIGHT.x + y1 * LIGHT.y + z2 * LIGHT.z)));
+          const facing = FACING_LUT[Math.min(255, Math.max(0, Math.round(z2 * 255)))];
+          const strength = facing * (.72 + .28 * lit);
+          bin = 1 + Math.min(9, Math.floor(strength * 9.999));
         }
         dotScreen[dotCount * 2] = sx;
         dotScreen[dotCount * 2 + 1] = sy;
@@ -1101,6 +1209,7 @@
         dotCount += 1;
       }
       ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.imageSmoothingEnabled = false;
       if (state.useArcDots) {
         const arcBuckets = [
           new Path2D(), new Path2D(), new Path2D(), new Path2D(),
@@ -1128,14 +1237,8 @@
           ctx.drawImage(sprites[bin], dx, dy);
         }
       }
+      ctx.imageSmoothingEnabled = true;
       ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-
-      // clean satellite outline
-      ctx.strokeStyle = ink(.22);
-      ctx.lineWidth = .85;
-      ctx.beginPath();
-      ctx.arc(cx, cy, R, 0, TAU);
-      ctx.stroke();
 
       // ---------- city beacons + BGP geodesic routes ----------
       function projectUnit(v, out) {
@@ -1154,6 +1257,7 @@
       const activeRoute = state.locked && activeIndex >= 0 ? activeIndex : -1;
 
       for (let i = 0; i < cityVecs.length; i += 1) {
+        if (i !== activeRoute && !BACKBONE.has(i)) continue;
         const node = cityVecs[i];
         const meta = routeMeta[i];
         const dot = Math.max(-1, Math.min(1, coreVec.x * node.x + coreVec.y * node.y + coreVec.z * node.z));
@@ -1178,36 +1282,71 @@
         }
       }
 
-      function strokeRoute(index, active) {
-        const samples = routeMeta[index].samples;
-        ctx.strokeStyle = ink(active ? .82 : .16);
-        ctx.lineWidth = active ? 1.6 : .7;
-        ctx.setLineDash(active ? [] : [3, 4]);
-        ctx.beginPath();
-        samples.forEach((p, s) => {
-          if (s === 0) ctx.moveTo(p.x, p.y);
-          else ctx.lineTo(p.x, p.y);
-        });
-        ctx.stroke();
-        ctx.setLineDash([]);
+      function routePointVisible(p) {
+        if (p.z >= 0) return true;
+        return Math.hypot(p.x - cx, p.y - cy) >= R;
       }
 
+      function appendRoute(index, path) {
+        const samples = routeMeta[index].samples;
+        let pen = false;
+        let previous = null;
+        for (let s = 0; s < samples.length; s += 1) {
+          const p = samples[s];
+          if (!routePointVisible(p)) {
+            pen = false;
+            previous = null;
+            continue;
+          }
+          if (previous) {
+            const mx = (previous.x + p.x) * .5;
+            const my = (previous.y + p.y) * .5;
+            const mz = (previous.z + p.z) * .5;
+            if (mz < 0 && Math.hypot(mx - cx, my - cy) < R) {
+              path.moveTo(p.x, p.y);
+              pen = true;
+              previous = p;
+              continue;
+            }
+          }
+          if (!pen) path.moveTo(p.x, p.y);
+          else path.lineTo(p.x, p.y);
+          pen = true;
+          previous = p;
+        }
+      }
+
+      const bonePath = new Path2D();
       for (let i = 0; i < routeMeta.length; i += 1) {
         if (i === activeRoute || !BACKBONE.has(i)) continue;
-        strokeRoute(i, false);
+        appendRoute(i, bonePath);
       }
-      if (activeRoute >= 0) strokeRoute(activeRoute, true);
+      ctx.strokeStyle = 'rgba(242, 241, 234, .16)';
+      ctx.lineWidth = .65;
+      ctx.setLineDash([3, 4]);
+      ctx.stroke(bonePath);
+      ctx.setLineDash([]);
+      if (activeRoute >= 0) {
+        const activePath = new Path2D();
+        appendRoute(activeRoute, activePath);
+        ctx.strokeStyle = 'rgba(200, 255, 0, .18)';
+        ctx.lineWidth = 3.5;
+        ctx.stroke(activePath);
+        ctx.strokeStyle = 'rgba(200, 255, 0, .78)';
+        ctx.lineWidth = 1.25;
+        ctx.stroke(activePath);
+      }
 
-      if (!reduced) {
+      if (!reduced && state.glowGreen && state.glowBone) {
         for (let i = 0; i < routeMeta.length; i += 1) {
           if (i !== activeRoute && !BACKBONE.has(i)) continue;
           const meta = routeMeta[i];
           const active = i === activeRoute;
           const speed = active ? .85 : .14;
           const head = (t * speed + i * .17 + .12) % 1;
-          const tail = 14;
-          for (let j = 0; j < tail; j += 1) {
-            const u = head - j * .011;
+          const tail = active ? 18 : 3;
+          for (let j = tail; j >= 0; j -= 1) {
+            const u = head - j * (active ? .009 : .006);
             if (u < 0) continue;
             const f = u * 40;
             const si = Math.min(40, Math.floor(f));
@@ -1216,24 +1355,30 @@
             const b = meta.samples[Math.min(40, si + 1)];
             const px = a.x + (b.x - a.x) * frac;
             const py = a.y + (b.y - a.y) * frac;
-            const fade = 1 - j / tail;
-            const radius = active ? .35 + 1.75 * fade : .28 + .72 * fade;
-            if (active && j < 3) {
-              ctx.fillStyle = 'rgba(200, 255, 0, ' + (.92 - j * .14).toFixed(2) + ')';
-              ctx.strokeStyle = 'rgba(14, 14, 13, .92)';
-              ctx.lineWidth = 1;
-              ctx.beginPath();
-              ctx.arc(px, py, j === 0 ? 2.8 : j === 1 ? 2.2 : 1.7, 0, TAU);
-              ctx.fill();
-              ctx.stroke();
+            const pz = a.z + (b.z - a.z) * frac;
+            if (pz < 0 && Math.hypot(px - cx, py - cy) < R) continue;
+            const fade = Math.pow(1 - j / Math.max(1, tail), 1.55);
+            if (active) {
+              if (j === 0) {
+                ctx.globalAlpha = 1;
+                ctx.drawImage(state.glowGreen, px - 6, py - 6, 12, 12);
+                ctx.fillStyle = '#f4ffbf';
+                ctx.beginPath();
+                ctx.arc(px, py, 1.8, 0, TAU);
+                ctx.fill();
+              } else {
+                const size = 1.2 + 4.2 * fade;
+                ctx.globalAlpha = .62 * fade;
+                ctx.drawImage(state.glowGreen, px - size * .5, py - size * .5, size, size);
+              }
             } else {
-              ctx.fillStyle = ink(active ? .08 + .82 * fade : .03 + .14 * fade);
-              ctx.beginPath();
-              ctx.arc(px, py, radius, 0, TAU);
-              ctx.fill();
+              const size = .9 + 1.2 * fade;
+              ctx.globalAlpha = .12 + .16 * fade;
+              ctx.drawImage(state.glowBone, px - size * .5, py - size * .5, size, size);
             }
           }
         }
+        ctx.globalAlpha = 1;
       }
 
       // ---------- minimal Swiss bezel: 1.09R, 120 ticks, tangent cardinals ----------
@@ -1297,37 +1442,45 @@
       beaconEntries.forEach((entry) => {
         const front = entry.z > 0;
         const active = entry.active && state.locked;
-        const beaconAlpha = front ? (active ? .92 : .5) : .12;
-        const beaconRadius = entry.core ? (front ? 3.1 : 2.2) : (front ? 3 : 1.5);
         if (active) {
-          ctx.strokeStyle = 'rgba(14, 14, 13, .78)';
-          ctx.lineWidth = 1.35;
+          const pulse = (Math.sin(t * 2.15) + 1) * .5;
+          if (state.glowGreen) {
+            ctx.globalAlpha = .24 + .1 * pulse;
+            ctx.drawImage(state.glowGreen, entry.x - 9, entry.y - 9, 18, 18);
+            ctx.globalAlpha = 1;
+          }
+          ctx.strokeStyle = 'rgba(200, 255, 0, .18)';
+          ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.arc(entry.x, entry.y, 7.5, 0, TAU);
+          ctx.arc(entry.x, entry.y, 8.6 + pulse * 2.2, 0, TAU);
           ctx.stroke();
-          ctx.strokeStyle = '#c8ff00';
-          ctx.lineWidth = .9;
+          ctx.strokeStyle = 'rgba(200, 255, 0, .65)';
+          ctx.lineWidth = .85;
           ctx.beginPath();
-          ctx.arc(entry.x, entry.y, 9.2, 0, TAU);
+          ctx.arc(entry.x, entry.y, 5.6 + pulse * .7, 0, TAU);
           ctx.stroke();
           ctx.fillStyle = '#c8ff00';
           ctx.beginPath();
-          ctx.arc(entry.x, entry.y, beaconRadius, 0, TAU);
+          ctx.arc(entry.x, entry.y, 2.6, 0, TAU);
           ctx.fill();
-          ctx.strokeStyle = 'rgba(14, 14, 13, .92)';
-          ctx.lineWidth = 1.1;
+          ctx.fillStyle = '#f7ffd1';
           ctx.beginPath();
-          ctx.arc(entry.x, entry.y, beaconRadius, 0, TAU);
+          ctx.arc(entry.x, entry.y, 1.05, 0, TAU);
+          ctx.fill();
+        } else if (front) {
+          ctx.strokeStyle = 'rgba(242, 241, 234, .22)';
+          ctx.lineWidth = .65;
+          ctx.beginPath();
+          ctx.arc(entry.x, entry.y, 4.2, 0, TAU);
           ctx.stroke();
+          ctx.fillStyle = 'rgba(242, 241, 234, .75)';
+          ctx.beginPath();
+          ctx.arc(entry.x, entry.y, 1.8, 0, TAU);
+          ctx.fill();
         } else {
-          ctx.strokeStyle = ink(beaconAlpha);
-          ctx.lineWidth = .75;
+          ctx.fillStyle = 'rgba(242, 241, 234, .08)';
           ctx.beginPath();
-          ctx.arc(entry.x, entry.y, 5.2, 0, TAU);
-          ctx.stroke();
-          ctx.fillStyle = ink(beaconAlpha);
-          ctx.beginPath();
-          ctx.arc(entry.x, entry.y, beaconRadius, 0, TAU);
+          ctx.arc(entry.x, entry.y, 1.2, 0, TAU);
           ctx.fill();
         }
       });
@@ -1337,6 +1490,10 @@
       }
 
       const boxes = occupiedBoxes.slice();
+      cityPoints.forEach((point, i) => {
+        if (point.z > 0) boxes.push({ l: point.x - 9, r: point.x + 9, t: point.y - 9, b: point.y + 9 });
+      });
+      if (coreScreen.z > 0) boxes.push({ l: coreScreen.x - 9, r: coreScreen.x + 9, t: coreScreen.y - 9, b: coreScreen.y + 9 });
       const placedAnchors = [];
       const focusIndex = state.locked && activeIndex >= 0 ? activeIndex : -1;
       const coreHubs = [0, 2, 5, 9, 13];
@@ -1391,8 +1548,6 @@
         const ux = dist > 4 ? dx / dist : 1;
         const uy = dist > 4 ? dy / dist : 0;
         const textW = entry.width;
-        const padX = entry.active ? 5 : 0;
-        const boxH = entry.active ? 14 : labelH;
         const elbowX = entry.x + ux * 13;
         const elbowY = Math.max(9, Math.min(h - 9, entry.y + uy * 13));
         const preferred = ux >= 0 ? 1 : -1;
@@ -1401,14 +1556,19 @@
           for (let shoulder = 8; shoulder <= 260 && !placed; shoulder += 10) {
             const rawX = elbowX + sign * shoulder;
             const textX = sign > 0 ? rawX + 3 : rawX - 3;
+            const textCenterX = textX + (sign > 0 ? textW * .5 : -textW * .5);
+            const insideSphere = Math.hypot(textCenterX - cx, elbowY - cy) < R - 1;
+            const capsule = entry.active || insideSphere;
+            const padX = capsule ? 5 : 0;
+            const boxH = capsule ? 14 : labelH;
             const box = sign > 0
               ? { l: textX - padX, r: textX + textW + padX, t: elbowY - boxH * .5, b: elbowY + boxH * .5 }
               : { l: textX - textW - padX, r: textX + padX, t: elbowY - boxH * .5, b: elbowY + boxH * .5 };
             if (box.l < 3 || box.r > w - 3 || box.t < 3 || box.b > h - 3) continue;
             if (boxes.some((other) => overlaps(box, other))) continue;
-            const lineEndX = entry.active ? (sign > 0 ? box.l : box.r) : textX;
-            ctx.strokeStyle = entry.active ? 'rgba(14, 14, 13, .78)' : ink(front ? .22 : .1);
-            ctx.lineWidth = entry.active ? 1 : .55;
+            const lineEndX = capsule ? (sign > 0 ? box.l : box.r) : textX;
+            ctx.strokeStyle = entry.active ? 'rgba(200, 255, 0, .68)' : (capsule ? 'rgba(242, 241, 234, .42)' : ink(front ? .22 : .1));
+            ctx.lineWidth = entry.active ? 1 : (capsule ? .7 : .55);
             ctx.beginPath();
             ctx.moveTo(entry.x, entry.y);
             ctx.lineTo(elbowX, elbowY);
@@ -1417,10 +1577,13 @@
             ctx.textAlign = sign > 0 ? 'left' : 'right';
             ctx.textBaseline = 'middle';
             ctx.font = state.labelFont;
-            if (entry.active) {
+            if (capsule) {
               capsulePath(box.l, box.t, box.r - box.l, boxH, 3);
               ctx.fillStyle = '#0e0e0d';
               ctx.fill();
+              ctx.strokeStyle = 'rgba(200, 255, 0, .45)';
+              ctx.lineWidth = 1;
+              ctx.stroke();
               ctx.fillStyle = '#c8ff00';
               ctx.fillText(entry.text, textX, elbowY);
             } else {
