@@ -48,6 +48,7 @@
   let astrolabe = null;
   let scheduled = false;
   let scrollAnimation = 0;
+  let anchorScrollUntil = 0;
   let currentNav = '';
 
   const clamp = (value, min = 0, max = 1) => Math.min(max, Math.max(min, value));
@@ -637,14 +638,22 @@
 
     let currentEntry = entries[0];
     let swapTimer = 0;
+    let activeGroup = '';
+    const groupData = {
+      apac: { name: 'Asia-Pacific', ghost: 'AP', note: '05 LOCATIONS — ASIA-PACIFIC · BGP IPv4 / IPv6', lat: 18, lon: 112 },
+      eu: { name: 'Europe', ghost: 'EU', note: '04 LOCATIONS — EUROPE · BGP IPv4 / IPv6', lat: 50, lon: 11 },
+      na: { name: 'North America', ghost: 'NA', note: '06 LOCATIONS — NORTH AMERICA · BGP IPv4 / IPv6', lat: 42, lon: -100 }
+    };
 
-    const cityButtons = [...imprints.querySelectorAll('[data-city-node]')];
+    const cityButtons = [...imprints.querySelectorAll('[data-city-node], [data-city-group]')];
     const syncLocked = (node) => {
       entries.forEach((entry) => {
         entry.classList.toggle('is-locked', Boolean(node) && entry.dataset.node === node);
       });
       cityButtons.forEach((button) => {
-        const active = Boolean(node) && button.dataset.cityNode === node;
+        const active = button.dataset.cityGroup
+          ? (!node && button.dataset.cityGroup === activeGroup)
+          : (Boolean(node) && button.dataset.cityNode === node);
         button.classList.toggle('is-active', active);
         button.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
@@ -662,9 +671,11 @@
       else nameEl.textContent = entry.dataset.wallName || '';
     };
 
-    const showEntry = (entry) => {
-      if (!entry || entry === currentEntry) return;
+    const showEntry = (entry, force = false) => {
+      if (!entry) return;
+      if (!force && entry === currentEntry) return;
       currentEntry = entry;
+      activeGroup = '';
       syncLocked(entry.dataset.node);
       astrolabe?.setEntry(entry);
       if (motion.matches) {
@@ -680,14 +691,26 @@
     };
 
     entries.forEach((entry) => {
-      entry.addEventListener('mouseenter', () => showEntry(entry));
-      entry.addEventListener('focus', () => showEntry(entry));
+      entry.addEventListener('mouseenter', () => showEntry(entry, entry.dataset.node === 'core'));
+      entry.addEventListener('focus', () => showEntry(entry, entry.dataset.node === 'core'));
+      entry.addEventListener('click', () => showEntry(entry, true));
     });
 
     cityButtons.forEach((button) => {
       button.addEventListener('click', () => {
+        if (button.dataset.cityGroup) {
+          const group = groupData[button.dataset.cityGroup];
+          if (!group) return;
+          activeGroup = button.dataset.cityGroup;
+          syncLocked('');
+          astrolabe?.setView(group.lat, group.lon);
+          if (ghost) ghost.textContent = group.ghost;
+          if (noteEl) noteEl.textContent = group.note;
+          if (nameEl) nameEl.textContent = group.name;
+          return;
+        }
         const entry = entries.find((item) => item.dataset.node === button.dataset.cityNode);
-        if (entry) showEntry(entry);
+        if (entry) showEntry(entry, true);
       });
     });
 
@@ -732,10 +755,10 @@
     const section = document.getElementById('imprints');
     const wall = document.getElementById('imprint-wall');
     const canvas = document.getElementById('imprintAstrolabe');
-    if (!section || !wall || !canvas) return { setEntry() {}, refresh() {}, releaseLock() {} };
+    if (!section || !wall || !canvas) return { setEntry() {}, refresh() {}, releaseLock() {}, setView() {} };
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) return { setEntry() {}, refresh() {}, releaseLock() {} };
+    if (!ctx) return { setEntry() {}, refresh() {}, releaseLock() {}, setView() {} };
 
     const TAU = Math.PI * 2;
     const RAD = Math.PI / 180;
@@ -753,17 +776,26 @@
       return { x: v.x / len, y: v.y / len, z: v.z / len };
     })();
 
-    const CORE = { lat: 39.90, lon: 116.40, label: 'CN · CORE' };
+    const CORE = { lat: 39.90, lon: 116.40, label: 'AS218834' };
     const CORE_VIEW = { lat: 24, lon: 120 };
     const CITIES = [
-      { lat: 31.20, lon: 121.50, label: 'CN · 01' },
-      { lat: 35.70, lon: 139.70, label: 'JP · 02' },
-      { lat: 50.11, lon: 8.68, label: 'DE · 03' },
-      { lat: 34.05, lon: -118.24, label: 'US · 04' },
-      { lat: 1.35, lon: 103.82, label: 'SG · 05' },
-      { lat: 22.32, lon: 114.17, label: 'HK · 06' },
-      { lat: 51.51, lon: -0.13, label: 'UK · 07' }
+      { lat: 39.90, lon: 116.40, label: 'PEK · BEIJING', code: 'PEK' },
+      { lat: 31.23, lon: 121.47, label: 'SHA · SHANGHAI', code: 'SHA' },
+      { lat: 22.32, lon: 114.17, label: 'HKG · HONG KONG', code: 'HKG' },
+      { lat: 35.68, lon: 139.65, label: 'TYO · TOKYO', code: 'TYO' },
+      { lat: 1.35, lon: 103.82, label: 'SIN · SINGAPORE', code: 'SIN' },
+      { lat: 50.11, lon: 8.68, label: 'FRA · FRANKFURT', code: 'FRA' },
+      { lat: 50.69, lon: 3.17, label: 'RBX · ROUBAIX', code: 'RBX' },
+      { lat: 50.99, lon: 2.13, label: 'GRA · GRAVELINES', code: 'GRA' },
+      { lat: 45.07, lon: 7.69, label: 'TRN · TURIN', code: 'TRN' },
+      { lat: 34.05, lon: -118.24, label: 'LAX · LOS ANGELES', code: 'LAX' },
+      { lat: 37.55, lon: -121.99, label: 'FMT · FREMONT', code: 'FMT' },
+      { lat: 45.59, lon: -121.18, label: 'PDX · PORTLAND', code: 'PDX' },
+      { lat: 33.45, lon: -112.07, label: 'PHX · PHOENIX', code: 'PHX' },
+      { lat: 40.71, lon: -74.01, label: 'NYC · NEW YORK', code: 'NYC' },
+      { lat: 45.32, lon: -73.87, label: 'BHS · BOISBRIAND', code: 'BHS' }
     ];
+    const BACKBONE = new Set([0, 2, 5, 9, 13]);
     const DEGREE_LABELS = ['000°', '090°', '180°', '270°'];
     const CITY_FONT = '9px -apple-system, "SF Pro Text", sans-serif';
 
@@ -1161,12 +1193,14 @@
       }
 
       for (let i = 0; i < routeMeta.length; i += 1) {
-        if (i !== activeRoute) strokeRoute(i, false);
+        if (i === activeRoute || !BACKBONE.has(i)) continue;
+        strokeRoute(i, false);
       }
       if (activeRoute >= 0) strokeRoute(activeRoute, true);
 
       if (!reduced) {
         for (let i = 0; i < routeMeta.length; i += 1) {
+          if (i !== activeRoute && !BACKBONE.has(i)) continue;
           const meta = routeMeta[i];
           const active = i === activeRoute;
           const speed = active ? .85 : .14;
@@ -1252,33 +1286,25 @@
         ctx.restore();
       });
 
-      // ---------- beacons, lock reticle, short leader labels ----------
-      const labelEntries = [
-        { x: coreScreen.x, y: coreScreen.y, z: coreScreen.z, text: CORE.label, width: state.labelWidths[0], core: true, active: activeIndex < 0 }
+      // ---------- beacons + selected-only labels (max 5, 36px de-duped) ----------
+      const beaconEntries = [
+        { x: coreScreen.x, y: coreScreen.y, z: coreScreen.z, core: true, active: activeIndex < 0 && state.locked }
       ];
       cityPoints.forEach((point, i) => {
-        labelEntries.push({
-          x: point.x,
-          y: point.y,
-          z: point.z,
-          text: CITIES[i].label,
-          width: state.labelWidths[i + 1],
-          core: false,
-          active: activeIndex === i
-        });
+        beaconEntries.push({ x: point.x, y: point.y, z: point.z, core: false, active: activeIndex === i });
       });
 
-      labelEntries.forEach((entry) => {
+      beaconEntries.forEach((entry) => {
         const front = entry.z > 0;
         const active = entry.active && state.locked;
-        const beaconAlpha = front ? (active ? .9 : .58) : .16;
-        const beaconRadius = entry.core ? (front ? 3.2 : 2.4) : (front ? 2.4 : 1.8);
-        ctx.strokeStyle = ink(beaconAlpha);
-        ctx.lineWidth = active ? 1 : .8;
+        const beaconAlpha = front ? (active ? .92 : .5) : .12;
+        const beaconRadius = entry.core ? (front ? 3.1 : 2.2) : (front ? 2.1 : 1.5);
+        ctx.strokeStyle = active ? 'rgba(200, 255, 0, .9)' : ink(beaconAlpha);
+        ctx.lineWidth = active ? 1.15 : .75;
         ctx.beginPath();
-        ctx.arc(entry.x, entry.y, active ? 7.5 : 5.4, 0, TAU);
+        ctx.arc(entry.x, entry.y, active ? 7.5 : 5.2, 0, TAU);
         ctx.stroke();
-        ctx.fillStyle = ink(beaconAlpha);
+        ctx.fillStyle = active ? '#c8ff00' : ink(beaconAlpha);
         ctx.beginPath();
         ctx.arc(entry.x, entry.y, beaconRadius, 0, TAU);
         ctx.fill();
@@ -1289,21 +1315,43 @@
       }
 
       const boxes = occupiedBoxes.slice();
-      const labelOrder = labelEntries
-        .map((entry, idx) => ({ entry, idx }))
-        .sort((a, b) => {
-          const rank = (item) => (state.locked && item.entry.active ? 0 : item.entry.core ? 1 : item.entry.z > 0 ? 2 : 3);
-          return rank(a) - rank(b) || a.idx - b.idx;
+      const placedAnchors = [];
+      const focusIndex = state.locked && activeIndex >= 0 ? activeIndex : -1;
+      const coreHubs = [0, 2, 5, 9, 13];
+      const candidateIndices = focusIndex >= 0
+        ? [focusIndex, ...coreHubs.filter((index) => index !== focusIndex).slice(0, 4)]
+        : coreHubs.slice(0, 5);
+      const labelEntries = [];
+      candidateIndices.forEach((index) => {
+        const point = cityPoints[index];
+        if (!point) return;
+        const active = state.locked && index === focusIndex;
+        if (point.z <= 0 && !active) return;
+        labelEntries.push({
+          x: point.x,
+          y: point.y,
+          z: point.z,
+          text: CITIES[index].label,
+          width: state.labelWidths[index + 1],
+          index,
+          core: false,
+          active
         });
+      });
+
+      const labelOrder = labelEntries.sort((a, b) => {
+        return (b.active ? 1 : 0) - (a.active ? 1 : 0) || b.z - a.z || a.index - b.index;
+      });
       ctx.font = state.labelFont;
       const labelH = 10;
-      labelOrder.forEach(({ entry, idx }) => {
+      labelOrder.forEach((entry) => {
+        if (!entry.active && placedAnchors.some((anchor) => Math.hypot(entry.x - anchor.x, entry.y - anchor.y) < 36)) return;
         const front = entry.z > 0;
         const dx = entry.x - cx;
         const dy = entry.y - cy;
         const dist = Math.hypot(dx, dy);
-        const ux = dist > 4 ? dx / dist : Math.cos((idx / 6) * TAU);
-        const uy = dist > 4 ? dy / dist : Math.sin((idx / 6) * TAU);
+        const ux = dist > 4 ? dx / dist : 1;
+        const uy = dist > 4 ? dy / dist : 0;
         const textW = entry.width;
         const elbowX = entry.x + ux * 13;
         const elbowY = Math.max(9, Math.min(h - 9, entry.y + uy * 13));
@@ -1318,27 +1366,25 @@
               : { l: textX - textW, r: textX, t: elbowY - labelH * .5, b: elbowY + labelH * .5 };
             if (box.l < 3 || box.r > w - 3 || box.t < 3 || box.b > h - 3) continue;
             if (boxes.some((other) => overlaps(box, other))) continue;
-            ctx.strokeStyle = ink(front ? .24 : .1);
-            ctx.lineWidth = .55;
+            ctx.strokeStyle = entry.active ? 'rgba(200, 255, 0, .78)' : ink(front ? .22 : .1);
+            ctx.lineWidth = entry.active ? 1.05 : .55;
             ctx.beginPath();
             ctx.moveTo(entry.x, entry.y);
             ctx.lineTo(elbowX, elbowY);
             ctx.lineTo(textX, elbowY);
             ctx.stroke();
-            ctx.fillStyle = ink(front ? (state.locked && entry.active ? .82 : .62) : .22);
             ctx.textAlign = sign > 0 ? 'left' : 'right';
             ctx.textBaseline = 'middle';
+            ctx.font = state.labelFont;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = 'rgba(242, 241, 234, 0.88)';
+            ctx.strokeText(entry.text, textX, elbowY);
+            ctx.fillStyle = entry.active ? '#c8ff00' : ink(front ? .62 : .2);
             ctx.fillText(entry.text, textX, elbowY);
             boxes.push(box);
+            placedAnchors.push({ x: entry.x, y: entry.y });
             placed = true;
           }
-        }
-        if (!placed) {
-          const textY = 12 + (idx % 6) * 11;
-          ctx.fillStyle = ink(front ? .48 : .2);
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(entry.text, 6, textY);
         }
       });
 
@@ -1493,6 +1539,23 @@
       }
     }
 
+    function setView(lat, lon) {
+      state.active = 'core';
+      state.locked = false;
+      state.mode = 'locked';
+      state.targetYaw = state.yaw + shortestDelta(-lon * RAD);
+      state.targetPitch = clampPitch(lat * RAD);
+      state.spinYaw = 0;
+      state.spinPitch = 0;
+      if (motion.matches) {
+        state.yaw = state.targetYaw;
+        state.pitch = state.targetPitch;
+        draw();
+      } else {
+        start();
+      }
+    }
+
     function onPointerDown(event) {
       if (motion.matches || event.button !== 0) return;
       if (!finePointer.matches && event.pointerType !== 'touch') return;
@@ -1640,6 +1703,9 @@
     return {
       setEntry(entry) {
         setEntry(entry);
+      },
+      setView(lat, lon) {
+        setView(lat, lon);
       },
       refresh() {
         if (motion.matches) {
@@ -2066,6 +2132,10 @@
       updateNavAccent();
     }
 
+    if (location.hash && !scrollAnimation && performance.now() > anchorScrollUntil && current && location.hash.slice(1) !== current.nav) {
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+
     const index = current ? Math.max(0, layout.chapters.indexOf(current)) : 0;
     const label = current ? current.label : 'Introduction';
     if (journeyLabel && lastJourneyLabel !== label) {
@@ -2115,6 +2185,7 @@
 
   function animateScrollTo(targetY, duration = 900) {
     cancelAnimatedScroll();
+    anchorScrollUntil = performance.now() + duration + 220;
     if (motion.matches) {
       window.scrollTo(0, targetY);
       return;

@@ -35,3 +35,8 @@ IDC 系统按用户要求不展示。
 - NIE-SLA：本地 NIE-SLA/frontend/themes/nodeget-nie-sla 与线上 sla.niekaixiang.com 的 NodeGet / NIE tokens（IBM Plex Sans / JetBrains Mono、绿色语义、8px 圆角、卡片阴影）；节点命名已做干净化处理，遥测数据为真实结构的静态样例。
 
 四个页面均内联 CSS/JS，不依赖外部后端、统计脚本或远程字体；滚轮/纵向触摸通过 postMessage 转发给主站 Lenis。
+
+
+## Network Footprint 数据
+
+#imprints 的 15 机房坐标与 IATA 命名来自本轮提供的真实网络节点清单：PEK / SHA / HKG / TYO / SIN / FRA / RBX / GRA / TRN / LAX / FMT / PDX / PHX / NYC / BHS；未展示 IP，未添加厂商广告。AS218834 与 NIE-SLA 外链保留。
