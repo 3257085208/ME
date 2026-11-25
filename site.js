@@ -42,7 +42,7 @@
   const aboutClock = document.getElementById('about-clock');
   const orbitCoords = document.getElementById('orbitCoords');
   const orbitDragHint = document.getElementById('orbitDragHint');
-  const inertiaElements = [...document.querySelectorAll('.act-imprints .imprint-list, .act-about .about-copy')];
+  const inertiaElements = [...document.querySelectorAll('.act-imprints .imprint-groups, .act-about .about-copy')];
   let heroAnimations = [];
   let aboutAnimations = [];
   let astrolabe = null;
@@ -790,10 +790,10 @@
       { lat: 45.07, lon: 7.69, label: 'TRN · TURIN', code: 'TRN' },
       { lat: 34.05, lon: -118.24, label: 'LAX · LOS ANGELES', code: 'LAX' },
       { lat: 37.55, lon: -121.99, label: 'FMT · FREMONT', code: 'FMT' },
-      { lat: 45.59, lon: -121.18, label: 'PDX · PORTLAND', code: 'PDX' },
+      { lat: 45.59, lon: -121.18, label: 'PDX · OREGON', code: 'PDX' },
       { lat: 33.45, lon: -112.07, label: 'PHX · PHOENIX', code: 'PHX' },
       { lat: 40.71, lon: -74.01, label: 'NYC · NEW YORK', code: 'NYC' },
-      { lat: 45.32, lon: -73.87, label: 'BHS · BOISBRIAND', code: 'BHS' }
+      { lat: 45.32, lon: -73.87, label: 'BHS · BEAUHARNOIS', code: 'BHS' }
     ];
     const BACKBONE = new Set([0, 2, 5, 9, 13]);
     const DEGREE_LABELS = ['000°', '090°', '180°', '270°'];
@@ -1298,16 +1298,38 @@
         const front = entry.z > 0;
         const active = entry.active && state.locked;
         const beaconAlpha = front ? (active ? .92 : .5) : .12;
-        const beaconRadius = entry.core ? (front ? 3.1 : 2.2) : (front ? 2.1 : 1.5);
-        ctx.strokeStyle = active ? 'rgba(200, 255, 0, .9)' : ink(beaconAlpha);
-        ctx.lineWidth = active ? 1.15 : .75;
-        ctx.beginPath();
-        ctx.arc(entry.x, entry.y, active ? 7.5 : 5.2, 0, TAU);
-        ctx.stroke();
-        ctx.fillStyle = active ? '#c8ff00' : ink(beaconAlpha);
-        ctx.beginPath();
-        ctx.arc(entry.x, entry.y, beaconRadius, 0, TAU);
-        ctx.fill();
+        const beaconRadius = entry.core ? (front ? 3.1 : 2.2) : (front ? 3 : 1.5);
+        if (active) {
+          ctx.strokeStyle = 'rgba(14, 14, 13, .78)';
+          ctx.lineWidth = 1.35;
+          ctx.beginPath();
+          ctx.arc(entry.x, entry.y, 7.5, 0, TAU);
+          ctx.stroke();
+          ctx.strokeStyle = '#c8ff00';
+          ctx.lineWidth = .9;
+          ctx.beginPath();
+          ctx.arc(entry.x, entry.y, 9.2, 0, TAU);
+          ctx.stroke();
+          ctx.fillStyle = '#c8ff00';
+          ctx.beginPath();
+          ctx.arc(entry.x, entry.y, beaconRadius, 0, TAU);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(14, 14, 13, .92)';
+          ctx.lineWidth = 1.1;
+          ctx.beginPath();
+          ctx.arc(entry.x, entry.y, beaconRadius, 0, TAU);
+          ctx.stroke();
+        } else {
+          ctx.strokeStyle = ink(beaconAlpha);
+          ctx.lineWidth = .75;
+          ctx.beginPath();
+          ctx.arc(entry.x, entry.y, 5.2, 0, TAU);
+          ctx.stroke();
+          ctx.fillStyle = ink(beaconAlpha);
+          ctx.beginPath();
+          ctx.arc(entry.x, entry.y, beaconRadius, 0, TAU);
+          ctx.fill();
+        }
       });
 
       function overlaps(a, b) {
@@ -1344,6 +1366,22 @@
       });
       ctx.font = state.labelFont;
       const labelH = 10;
+
+      function capsulePath(x, y, cw, ch, radius) {
+        const r = Math.min(radius, ch * .5, cw * .5);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + cw - r, y);
+        ctx.quadraticCurveTo(x + cw, y, x + cw, y + r);
+        ctx.lineTo(x + cw, y + ch - r);
+        ctx.quadraticCurveTo(x + cw, y + ch, x + cw - r, y + ch);
+        ctx.lineTo(x + r, y + ch);
+        ctx.quadraticCurveTo(x, y + ch, x, y + ch - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+
       labelOrder.forEach((entry) => {
         if (!entry.active && placedAnchors.some((anchor) => Math.hypot(entry.x - anchor.x, entry.y - anchor.y) < 36)) return;
         const front = entry.z > 0;
@@ -1353,6 +1391,8 @@
         const ux = dist > 4 ? dx / dist : 1;
         const uy = dist > 4 ? dy / dist : 0;
         const textW = entry.width;
+        const padX = entry.active ? 5 : 0;
+        const boxH = entry.active ? 14 : labelH;
         const elbowX = entry.x + ux * 13;
         const elbowY = Math.max(9, Math.min(h - 9, entry.y + uy * 13));
         const preferred = ux >= 0 ? 1 : -1;
@@ -1362,25 +1402,34 @@
             const rawX = elbowX + sign * shoulder;
             const textX = sign > 0 ? rawX + 3 : rawX - 3;
             const box = sign > 0
-              ? { l: textX, r: textX + textW, t: elbowY - labelH * .5, b: elbowY + labelH * .5 }
-              : { l: textX - textW, r: textX, t: elbowY - labelH * .5, b: elbowY + labelH * .5 };
+              ? { l: textX - padX, r: textX + textW + padX, t: elbowY - boxH * .5, b: elbowY + boxH * .5 }
+              : { l: textX - textW - padX, r: textX + padX, t: elbowY - boxH * .5, b: elbowY + boxH * .5 };
             if (box.l < 3 || box.r > w - 3 || box.t < 3 || box.b > h - 3) continue;
             if (boxes.some((other) => overlaps(box, other))) continue;
-            ctx.strokeStyle = entry.active ? 'rgba(200, 255, 0, .78)' : ink(front ? .22 : .1);
-            ctx.lineWidth = entry.active ? 1.05 : .55;
+            const lineEndX = entry.active ? (sign > 0 ? box.l : box.r) : textX;
+            ctx.strokeStyle = entry.active ? 'rgba(14, 14, 13, .78)' : ink(front ? .22 : .1);
+            ctx.lineWidth = entry.active ? 1 : .55;
             ctx.beginPath();
             ctx.moveTo(entry.x, entry.y);
             ctx.lineTo(elbowX, elbowY);
-            ctx.lineTo(textX, elbowY);
+            ctx.lineTo(lineEndX, elbowY);
             ctx.stroke();
             ctx.textAlign = sign > 0 ? 'left' : 'right';
             ctx.textBaseline = 'middle';
             ctx.font = state.labelFont;
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = 'rgba(242, 241, 234, 0.88)';
-            ctx.strokeText(entry.text, textX, elbowY);
-            ctx.fillStyle = entry.active ? '#c8ff00' : ink(front ? .62 : .2);
-            ctx.fillText(entry.text, textX, elbowY);
+            if (entry.active) {
+              capsulePath(box.l, box.t, box.r - box.l, boxH, 3);
+              ctx.fillStyle = '#0e0e0d';
+              ctx.fill();
+              ctx.fillStyle = '#c8ff00';
+              ctx.fillText(entry.text, textX, elbowY);
+            } else {
+              ctx.lineWidth = 3;
+              ctx.strokeStyle = 'rgba(242, 241, 234, 0.88)';
+              ctx.strokeText(entry.text, textX, elbowY);
+              ctx.fillStyle = ink(front ? .62 : .2);
+              ctx.fillText(entry.text, textX, elbowY);
+            }
             boxes.push(box);
             placedAnchors.push({ x: entry.x, y: entry.y });
             placed = true;
@@ -1559,7 +1608,7 @@
     function onPointerDown(event) {
       if (motion.matches || event.button !== 0) return;
       if (!finePointer.matches && event.pointerType !== 'touch') return;
-      if (event.target.closest && event.target.closest('.imprint-cities, .imprint-row, .imprint-asn, .orbit-hud')) return;
+      if (event.target.closest && event.target.closest('.imprint-cities, .imprint-node, .imprint-links, .imprint-asn, .orbit-hud')) return;
       state.dragging = true;
       state.dragMoved = false;
       state.pointerId = event.pointerId;
@@ -1780,7 +1829,7 @@
     }
     const plate = target && target.closest ? target.closest('.plate-stack') : null;
     const ring = target && target.closest
-      ? target.closest('.work-card-links a, .imprint-row, .imprint-asn, .about-links a')
+      ? target.closest('.work-card-links a, .imprint-node, .imprint-links a, .imprint-asn, .about-links a')
       : null;
     galleryCursor.classList.toggle('is-plate', Boolean(plate));
     galleryCursor.classList.toggle('is-ring', !plate && Boolean(ring));
