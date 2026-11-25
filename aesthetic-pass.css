@@ -4153,9 +4153,15 @@ body {
     background: rgba(242, 241, 234, .06);
   }
 
-  .work-card-media .demo-window.is-interactive .demo-window-state {
+  .work-card--paper .work-card-media .demo-window.is-interactive .demo-window-state {
+    border-color: #0e0e0d;
+    background: #0e0e0d;
+    color: #c8ff00;
+  }
+
+  .work-card--ink .work-card-media .demo-window.is-interactive .demo-window-state {
     border-color: #c8ff00;
-    background: rgba(200, 255, 0, .1);
+    background: rgba(200, 255, 0, .12);
     color: #c8ff00;
   }
 
