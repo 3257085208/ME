@@ -3,192 +3,122 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NIE-SLA — 服务状态</title>
+<title>NIE-SLA</title>
 <style>
-:root{--bg:#fafafa;--surface:#fff;--soft:#f5f5f5;--muted:#737373;--line:#e5e5e5;--line2:#d4d4d4;--text:#111;--softtext:#525252;--green:#16a34a;--green-dark:#15803d;--green-soft:#f0fdf4;--red:#dc2626;--red-soft:#fef2f2;--blue:#2563eb;--amber:#d97706;--mono:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,monospace;--sans:"IBM Plex Sans","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif}
-html[data-theme="dark"]{--bg:#171717;--surface:#202020;--soft:#262626;--muted:#a3a3a3;--line:#333;--line2:#444;--text:#f5f5f5;--softtext:#d4d4d4;--green:#4ade80;--green-dark:#22c55e;--green-soft:#14291d;--red:#f87171;--red-soft:#2a1616;--blue:#60a5fa;--amber:#fbbf24}
-*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden;touch-action:pan-y;overscroll-behavior-y:auto}body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.5;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}body:before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(115,115,115,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(115,115,115,.045) 1px,transparent 1px);background-size:22px 22px}.app{position:relative;height:100%;display:flex;flex-direction:column;width:min(1180px,calc(100% - 56px));margin:auto;padding:14px 0 12px}.top{display:flex;align-items:center;gap:14px;min-height:52px;border-bottom:1px solid var(--line);padding-bottom:10px}.brand{display:flex;align-items:center;gap:9px}.mark{width:24px;height:24px;border-radius:6px;background:var(--green);display:grid;place-items:center;color:#fff;font-size:11px;font-weight:700}.brand strong{font-size:18px;letter-spacing:-.04em;color:var(--green-dark);font-weight:700}.brand span{font-size:9px;color:var(--muted);letter-spacing:.12em;border-left:1px solid var(--line);padding-left:10px;margin-left:3px}.cf{margin-left:auto;display:flex;align-items:center;gap:6px;font:500 9px var(--mono);color:var(--muted);letter-spacing:.04em}.cf-cloud{width:25px;height:18px;position:relative}.cf-cloud:before,.cf-cloud:after{content:"";position:absolute;background:#f38020;border-radius:50%}.cf-cloud:before{width:18px;height:18px;left:2px;top:2px}.cf-cloud:after{width:13px;height:13px;right:0;top:6px;box-shadow:-7px 1px 0 #f38020}.theme{border:1px solid var(--line);background:var(--surface);border-radius:6px;width:30px;height:30px;display:grid;place-items:center;color:var(--muted);cursor:pointer;margin-left:10px;font-size:13px}.banner{margin-top:12px;display:flex;align-items:center;gap:11px;border:1px solid #bbf7d0;background:var(--green-soft);border-radius:8px;padding:10px 13px;color:var(--green-dark);font-size:12px;font-weight:600;cursor:pointer;transition:.25s ease}.banner .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(22,163,74,.12);flex:none}.banner .sub{margin-left:auto;color:var(--muted);font-size:9px;font-weight:500;white-space:nowrap}.banner .toggle{border:1px solid rgba(22,163,74,.3);border-radius:4px;background:transparent;color:var(--green-dark);font:500 9px var(--sans);padding:3px 6px;cursor:pointer}.banner.alert{border-color:#fecaca;background:var(--red-soft);color:var(--red)}.banner.alert .dot{background:var(--red);box-shadow:0 0 0 4px rgba(220,38,38,.12)}.banner.alert .toggle{border-color:rgba(220,38,38,.3);color:var(--red)}.summary{display:grid;grid-template-columns:1.8fr repeat(4,1fr);gap:6px;margin-top:8px}.sum{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 9px;min-width:0}.sum span{display:block;color:var(--muted);font-size:8px;letter-spacing:.08em;text-transform:uppercase}.sum b{display:block;font:600 13px/1.2 var(--mono);margin-top:2px;white-space:nowrap}.sum b.green{color:var(--green-dark)}.sum b.red{color:var(--red)}.toolbar{display:flex;align-items:center;gap:8px;margin-top:9px}.search{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 10px;flex:1;max-width:300px;min-height:32px;color:var(--muted)}.search svg{width:13px;height:13px;flex:none}.search input{border:0;outline:0;background:none;color:var(--text);width:100%;font:500 11px/1.4 var(--sans)}.group-tabs{display:flex;align-items:center;gap:4px;margin-left:auto;flex-wrap:nowrap;overflow:hidden}.group-label{color:var(--muted);font-size:9px;margin-right:2px;white-space:nowrap}.gtab{border:1px solid var(--line);background:var(--surface);color:var(--softtext);border-radius:4px;padding:5px 7px;font:500 9px/1 var(--sans);white-space:nowrap;cursor:pointer}.gtab.active{border-color:var(--green);background:var(--green-soft);color:var(--green-dark)}.incident-toggle{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 9px;color:var(--softtext);font:500 10px/1 var(--sans);white-space:nowrap;cursor:pointer;margin-top:9px;display:flex;align-items:center;gap:7px;width:100%;text-align:left}.incident-toggle b{color:var(--red);font-weight:600}.incident-toggle .plus{margin-left:auto;color:var(--muted);font:600 12px var(--mono)}.incident-panel{position:absolute;z-index:12;top:272px;right:0;width:420px;border:1px solid var(--line2);background:var(--surface);box-shadow:0 12px 30px rgba(0,0,0,.12);border-radius:7px;padding:9px;display:none}.incident-panel.show{display:block}.incident-panel h3{margin:0 0 4px;font-size:11px;color:var(--text)}.incident-list{display:grid;grid-template-columns:1fr 1fr;gap:0 10px;max-height:174px;overflow:hidden}.incident-panel p{margin:0;color:var(--muted);font-size:9px;line-height:1.45}.incident-item{display:flex;gap:8px;padding:5px 0;border-top:1px solid var(--line);font-size:9px;color:var(--softtext)}.incident-item time{font-family:var(--mono);color:var(--muted);white-space:nowrap}.incident-item b{font-weight:600}.incident-item span{margin-left:auto;color:var(--green-dark);white-space:nowrap}.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;flex:1;min-height:0}.node{position:relative;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 11px;box-shadow:0 1px 2px rgba(0,0,0,.025);display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;transition:.2s}.node:hover{border-color:var(--line2);box-shadow:0 1px 4px rgba(0,0,0,.05)}.node[hidden]{display:none}.node-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.node-name{font-size:12px;font-weight:600;line-height:1.25;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.node-state{display:flex;align-items:center;gap:4px;color:var(--green-dark);font-size:9px;white-space:nowrap}.node-state:before{content:"";width:5px;height:5px;border-radius:50%;background:var(--green)}.node.alert .node-state{color:var(--red)}.node.alert .node-state:before{background:var(--red)}.node-tags{display:flex;gap:3px;flex-wrap:wrap;margin-top:5px;min-height:16px}.ntag{font:500 8px/1.3 var(--mono);border:1px solid var(--line);border-radius:3px;background:var(--soft);color:var(--muted);padding:2px 5px;white-space:nowrap}.ntag.blue{color:var(--blue);border-color:#bfdbfe;background:#eff6ff}.ntag.green{color:var(--green-dark);border-color:#bbf7d0;background:var(--green-soft)}.node-meta{display:flex;align-items:center;gap:10px;margin-top:4px;color:var(--muted);font:400 8px/1.3 var(--mono);white-space:nowrap}.node-meta b{color:var(--text);font-weight:500}.node-bars{display:grid;grid-template-columns:repeat(30,minmax(0,1fr));gap:2px;height:8px;margin-top:7px}.hbar{border-radius:2px;background:#65a30d;opacity:.78;min-width:0;cursor:crosshair;transition:.15s}.hbar.warn{background:var(--amber);opacity:.7}.hbar.down{background:var(--red);opacity:.65}.hbar:hover{opacity:1;background:var(--green);transform:scaleY(1.7)}.traffic{display:flex;align-items:center;gap:7px;margin-top:auto;padding-top:7px;color:var(--muted);font-size:8px;white-space:nowrap}.traffic .track{flex:1;height:4px;border-radius:4px;background:var(--soft);overflow:hidden}.traffic .track i{display:block;height:100%;background:var(--blue);border-radius:4px}.traffic b{color:var(--blue);font-weight:500}.empty{display:none;padding:30px;text-align:center;color:var(--muted);font-size:12px}.footer{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);margin-top:7px;padding-top:6px;color:var(--muted);font-size:8px}.tooltip{position:fixed;z-index:50;border:1px solid var(--line2);background:var(--surface);box-shadow:0 8px 24px rgba(0,0,0,.13);border-radius:5px;padding:5px 7px;font:500 11px/1.4 var(--mono);color:var(--text);pointer-events:none;opacity:0;transform:translateY(3px);transition:.12s}.tooltip.show{opacity:1;transform:none}.tooltip b{color:var(--green-dark)}
-
-
-
-/* Desktop readability and compact six-card telemetry */
-.brand span,.cf,.banner .sub,.banner .toggle,.sum span,.group-label,.gtab,.incident-toggle,.incident-panel p,.incident-item,.node-state,.ntag,.node-meta,.traffic,.footer{font-size:11px}
-.node-name{font-size:13px}
-.search input{font-size:12px}
-.grid{grid-template-rows:repeat(3,minmax(0,1fr));align-content:start}
-.node-bars{flex:1;height:auto;min-height:24px;align-items:end}.hbar{height:100%}
-.traffic{margin-top:5px;padding-top:4px}
-.incident-list{max-height:220px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
-.incident-panel{max-height:240px;overflow:hidden}.incident-panel.show{display:flex;flex-direction:column}.incident-panel .incident-list{min-height:0;flex:1}
-.group-status{font:500 11px/1 var(--mono);color:var(--muted);white-space:nowrap;margin-left:6px}
-.group-status b{color:var(--green-dark);font-weight:600}
-/*
-  Unified mobile layout: 1 block only.
-  Single-column, first four complete cards, all labels >=10px.
-*/
+:root{--bg:#fff;--text:#111;--soft:#525252;--muted:#737373;--line:#e5e5e5;--line2:#d4d4d4;--green:#16a34a;--green-dark:#15803d;--green-soft:#f0fdf4;--red:#dc2626;--red-soft:#fef2f2;--blue:#2563eb;--amber:#d97706;--code:"JetBrains Mono","SFMono-Regular",Menlo,Consolas,monospace;--sans:"IBM Plex Sans","Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;--shadow:0 1px 2px rgba(0,0,0,.035),0 8px 24px rgba(0,0,0,.035)}
+html[data-theme="dark"]{--bg:#171717;--text:#f5f5f5;--soft:#d4d4d4;--muted:#a3a3a3;--line:#333;--line2:#444;--green:#4ade80;--green-dark:#22c55e;--green-soft:#14291d;--red:#f87171;--red-soft:#2a1616;--blue:#60a5fa}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;touch-action:pan-y;overscroll-behavior-y:auto}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+.page{width:min(1120px,calc(100% - 56px));height:100%;margin:auto;padding:13px 0 10px;display:flex;flex-direction:column;gap:7px}
+.top{display:flex;align-items:center;height:38px;flex:none}
+.brand{font-size:18px;font-weight:800;color:var(--green-dark);letter-spacing:-.04em}
+.cf{margin-left:auto;display:flex;align-items:center;gap:7px;color:var(--muted);font:600 10px var(--code);letter-spacing:.05em}
+.cf-cloud{width:24px;height:17px;position:relative}.cf-cloud:before,.cf-cloud:after{content:'';position:absolute;background:#f38020;border-radius:50%}.cf-cloud:before{width:17px;height:17px;left:2px;top:1px}.cf-cloud:after{width:12px;height:12px;right:0;top:5px;box-shadow:-7px 1px 0 #f38020}
+.theme{border:1px solid var(--line);background:var(--bg);color:var(--muted);width:27px;height:27px;border-radius:6px;display:grid;place-items:center;margin-left:8px;font-size:12px;cursor:pointer}
+.banner{flex:none;min-height:43px;border-radius:8px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;cursor:pointer;transition:background .25s}
+.banner:before{content:'';width:7px;height:7px;border-radius:50%;background:#fff;opacity:.9}
+.banner.alert{background:var(--red)}
+.summary{flex:none;text-align:center;color:var(--muted);font-size:11px;line-height:1.5;padding:1px 0}
+.summary span{margin:0 8px}.summary b{color:var(--soft);font-weight:600}
+.searchrow{display:flex;gap:8px;flex:none}
+.search{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:7px;background:var(--bg);min-height:32px;padding:6px 9px;flex:1;color:var(--muted)}
+.search svg{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;stroke-width:2}.search input{border:0;outline:0;background:none;width:100%;font:500 11px/1.4 var(--sans);color:var(--text)}.search input::placeholder{color:var(--muted)}
+.groups{display:flex;align-items:stretch;border:1px solid var(--line);border-radius:7px;overflow:hidden;flex:none;min-height:31px;background:var(--bg)}
+.group-label{display:flex;align-items:center;padding:0 10px;color:var(--muted);font-size:10px;border-right:1px solid var(--line);white-space:nowrap}
+.gtab{border:0;border-right:1px solid var(--line);background:transparent;color:var(--soft);padding:0 12px;font:500 10px/1 var(--sans);cursor:pointer;white-space:nowrap}
+.gtab:last-child{border-right:0}.gtab.active{background:var(--green-soft);color:var(--green-dark);font-weight:600}
+.incident-card{position:relative;flex:none;border:1px solid var(--line);border-radius:7px;background:var(--bg)}
+.incident-head{width:100%;display:flex;align-items:center;gap:8px;padding:8px 11px;font:600 11px/1.2 var(--sans);color:var(--text);cursor:pointer;text-align:left;min-height:34px}
+.incident-head b{color:var(--red);font-weight:600}.incident-head .plus{margin-left:auto;color:var(--muted);font:600 12px var(--code)}
+.incident-panel{display:none;position:absolute;z-index:15;left:-1px;right:-1px;top:100%;border:1px solid var(--line2);border-top:0;border-radius:0 0 7px 7px;background:var(--bg);box-shadow:0 14px 28px rgba(0,0,0,.1);padding:8px 11px 9px;max-height:210px;overflow:hidden}
+.incident-panel.show{display:block}
+.incident-panel h4{margin:0 0 3px;font-size:11px;color:var(--text)}.incident-panel p{margin:0;color:var(--muted);font-size:10px}
+.incident-list{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;max-height:158px;overflow-y:auto;overscroll-behavior:contain;margin-top:4px}
+.incident-item{display:flex;gap:6px;border-top:1px solid var(--line);padding:4px 0;font-size:10px;color:var(--soft)}
+.incident-item time{font-family:var(--code);font-size:9px;color:var(--muted);white-space:nowrap}.incident-item b{font-weight:500}.incident-item span{margin-left:auto;color:var(--green-dark);white-space:nowrap;font-size:9px}
+.group-card{flex:1;min-height:0;border:1px solid var(--line);border-radius:8px;background:var(--bg);box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+.group-head{display:flex;align-items:center;gap:8px;flex:none;min-height:36px;padding:0 11px;border-bottom:1px solid var(--line);font-size:12px;font-weight:600;color:var(--text)}
+.collapse{border:0;background:none;color:var(--soft);font:600 14px var(--code);cursor:pointer;padding:0 2px}
+.group-head .dot{margin-left:auto;width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(22,163,74,.1)}
+.group-body{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.group-body.collapsed{display:none}
+.node{display:grid;grid-template-columns:1.15fr .85fr;gap:4px 14px;padding:9px 12px 8px;border-bottom:1px solid var(--line);flex:1;min-height:0;align-content:center}
+.node:last-child{border-bottom:0}
+.node[hidden]{display:none!important}
+.node:hover{background:rgba(22,163,74,.018)}
+.node-main{min-width:0;align-self:start}
+.node-name{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:13px;font-weight:600;line-height:1.25;color:var(--text)}
+.node-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.badge{border:1px solid var(--line);border-radius:3px;background:var(--bg);color:var(--muted);padding:1px 5px;font:500 10px/1.4 var(--code);white-space:nowrap}.badge.green{color:var(--green-dark);border-color:#bbf7d0;background:var(--green-soft)}
+.node-meta{margin-top:5px;color:var(--muted);font-size:10px;line-height:1.4;display:flex;gap:10px;flex-wrap:wrap;white-space:nowrap}
+.node-status{text-align:right;align-self:start;color:var(--green-dark);font-size:11px;line-height:1.5;white-space:nowrap}.node-status b{font-size:13px;font-weight:600;margin-right:9px}.node-status span{margin-left:8px;color:var(--muted);font-size:10px}.node.is-alert .node-status{color:var(--red)}
+.node-strip{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:10px;align-items:center;margin-top:2px}
+.health{display:grid;grid-template-columns:repeat(30,minmax(0,1fr));gap:2px;height:18px}
+.health i{border-radius:3px;background:linear-gradient(to bottom,#65a30d,#86bc25);min-width:0;cursor:crosshair;transition:.15s}.health i.warn{background:linear-gradient(to bottom,#d97706,#f0b34a)}.health i:hover{transform:scaleY(1.08);filter:brightness(1.12)}
+.traffic{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:10px;white-space:nowrap}.traffic .track{flex:1;height:5px;background:var(--line);border-radius:5px;overflow:hidden}.traffic .track i{display:block;height:100%;background:var(--blue);border-radius:5px}.traffic b{color:var(--blue);font-weight:500}
+.empty{display:none;padding:26px;text-align:center;color:var(--muted);font-size:12px}
+.tooltip{position:fixed;z-index:50;padding:5px 7px;border:1px solid var(--line2);border-radius:5px;background:var(--bg);box-shadow:0 8px 22px rgba(0,0,0,.12);color:var(--text);font:500 10px/1.4 var(--code);pointer-events:none;opacity:0;transform:translateY(3px);transition:.12s}.tooltip.show{opacity:1;transform:none}.tooltip b{color:var(--green-dark)}
 @media(max-width:900px){
-  .app{width:calc(100% - 24px);padding:8px 0 6px}
-  .top{min-height:42px;padding-bottom:6px;gap:7px}
-  .mark{width:21px;height:21px;font-size:10px}
-  .brand strong{font-size:15px}
-  .brand span{font-size:10px;padding-left:6px}
-  .cf{font-size:10px}
-  .cf span{display:none}
-  .cf-cloud{width:21px;height:15px}
-  .cf-cloud:before{width:15px;height:15px}
-  .cf-cloud:after{width:11px;height:11px;top:5px}
-  .theme{width:26px;height:26px;font-size:11px;margin-left:2px}
-  .banner{margin-top:7px;padding:7px 9px;font-size:10px;gap:6px}
-  .banner .sub{display:none}
-  .banner .toggle{font-size:10px;padding:2px 4px}
-  .summary{display:none}
-  .toolbar{margin-top:6px;gap:5px}
-  .search{max-width:none;min-height:30px;padding:5px 8px}
-  .search input{font-size:10px}
-  .group-tabs,.group-status{display:none}
-  .incident-toggle{margin-top:5px;padding:5px 7px;font-size:10px}
-  .grid{display:flex;flex-direction:column;gap:5px;margin-top:5px;overflow:hidden;flex:1;min-height:0}
-  .node{flex:none;padding:6px 8px;border-radius:6px;overflow:hidden}
-  .node:nth-child(n+4){display:none!important}
-  .node-name{font-size:10px;white-space:normal;overflow:visible;text-overflow:clip}
-  .node-state{font-size:10px}
-  .node-tags{margin-top:3px;min-height:0;gap:2px}
-  .ntag{font-size:10px;padding:1px 3px}
-  .node-tags .ntag:nth-child(n+3){display:none}
-  .node-meta{font-size:10px;margin-top:2px;gap:6px;flex-wrap:wrap}
-  .node-bars{flex:none;height:6px;min-height:6px;margin-top:4px;gap:1px}
-  .traffic{font-size:10px;padding-top:4px;margin-top:4px}
-  .footer{margin-top:4px;padding-top:4px;font-size:10px}
-  .incident-panel{top:176px;right:0;width:100%;max-height:240px}
-  .incident-panel p{font-size:10px}
-  .incident-list{max-height:190px}
-  .incident-item{font-size:10px;padding:3px 0}
-  .empty{font-size:10px;padding:12px}
+ .page{width:calc(100% - 22px);padding:7px 0 6px;gap:5px}.top{height:30px}.brand{font-size:15px}.cf{font-size:10px;gap:5px}.cf-cloud{width:20px;height:14px}.cf-cloud:before{width:14px;height:14px}.cf-cloud:after{width:10px;height:10px;top:4px;box-shadow:-6px 1px 0 #f38020}.theme{width:24px;height:24px;font-size:11px;margin-left:4px}
+ .banner{min-height:34px;border-radius:6px;font-size:11px;gap:5px}.summary{font-size:10px;line-height:1.45;padding:1px 0}.summary span{margin:0 3px;display:inline-block}
+ .searchrow{gap:4px}.search{min-height:28px;padding:4px 6px}.search input{font-size:10px}.groups{display:grid;grid-template-columns:repeat(4,1fr);min-height:0;border-radius:5px}.group-label{display:none}.gtab{padding:6px 2px;font-size:10px;border-bottom:1px solid var(--line)}.gtab:nth-child(4),.gtab:nth-child(7){border-right:0}
+ .incident-head{min-height:27px;padding:5px 7px;font-size:10px}.incident-panel{max-height:190px;padding:6px 8px}.incident-list{grid-template-columns:1fr;max-height:150px}.incident-item{font-size:10px;padding:3px 0}.incident-item time,.incident-item span{font-size:9px}
+ .group-card{border-radius:6px;min-height:0}.group-head{min-height:28px;padding:0 7px;font-size:10px}.group-body{min-height:0}.node{flex:none;padding:6px 7px;grid-template-columns:1fr auto;gap:2px 6px;min-height:0}.node-name{font-size:11px;gap:4px}.node-badges{margin-top:2px;gap:2px}.badge{font-size:10px;padding:0 3px}.node-badges .badge:nth-child(n+3){display:none}.node-meta{margin-top:2px;gap:5px;font-size:10px;white-space:normal}.node-status{font-size:10px}.node-status b{font-size:11px;margin-right:3px}.node-status span{font-size:9px;margin-left:2px}.node-strip{grid-template-columns:minmax(0,1fr) 92px;gap:5px;margin-top:3px}.health{height:14px;gap:1px}.traffic{font-size:9px;gap:3px}.traffic .track{height:4px}
+ .node:nth-child(n+5){display:none!important}
+ .tooltip{font-size:10px}
+}
+@media(max-width:900px){
+ .node:nth-child(n+5){display:none!important}
+ .node{padding:5px 7px}
+ .node-meta span:nth-child(n+3){display:none}
+ .node-badges .badge:nth-child(n+2){display:none}
+ .node-status{font-size:10px}
+ .node-status span{font-size:10px}
+ .traffic{font-size:10px}
+ .traffic b{font-size:10px}
+ .incident-item time,.incident-item span{font-size:10px}
+ .incident-panel h4{font-size:10px}
+ .incident-panel p{font-size:10px}
+ .summary{font-size:10px}
 }
 </style>
 </head>
 <body>
-<div class="app">
-<header class="top"><div class="brand"><div class="mark">N</div><strong>NIE-SLA</strong><span>STATUS · RUST AGENT</span></div><div class="cf"><i class="cf-cloud"></i><span>CLOUDFLARE · WORKERS</span></div><button class="theme" id="themeBtn" aria-label="切换外观">☾</button></header>
-<div class="banner" id="banner" role="status"><span class="dot"></span><span id="bannerText">全部 41 个服务运行正常</span><span class="sub">LAST CHECK · 18s AGO · 99.97%</span><button class="toggle" id="bannerToggle">模拟故障演示</button></div>
-<section class="summary" aria-label="汇总"><div class="sum"><span>41 SERVICES</span><b class="green">ALL SYSTEMS OPERATIONAL</b></div><div class="sum"><span>正常</span><b class="green" id="sumOk">41</b></div><div class="sum"><span>离线</span><b id="sumDown">0</b></div><div class="sum"><span>AVG LATENCY</span><b>28 ms</b></div><div class="sum"><span>UPDATED</span><b id="sumTime">18s ago</b></div></section>
-<div class="toolbar"><label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input id="search" type="search" placeholder="搜索节点、商家、地区…" aria-label="搜索节点"></label><div class="group-tabs" role="group" aria-label="分组方式"><span class="group-label">分组方式</span><button class="gtab active" data-group="all">全部</button><button class="gtab" data-group="vps">VPS</button><button class="gtab" data-group="web">Web</button><button class="gtab" data-group="provider">商家</button><button class="gtab" data-group="country">国家/地区</button><button class="gtab" data-group="price">价格档</button><button class="gtab" data-group="type">机器类型</button></div><span class="group-status" id="groupStatus">全部节点 · <b>6</b></span></div>
-<button class="incident-toggle" id="incidentToggle"><span>故障记录 · <b>40 条记录</b></span><span class="plus" id="incidentPlus">[ + ]</span></button>
-<div class="incident-panel" id="incidentPanel"><h3>故障记录 · 最近 40 条</h3><p>真实历史事件的本地静态样例；按时间倒序。</p><div id="incidentList" class="incident-list"></div></div>
-<main class="grid" id="grid">
-<article class="node" data-search="聶.NET 铂金8529CL 中国 北京 Beijing CN2 GIA 电信 联通 移动 250" data-provider="NIE" data-country="CN" data-price="250" data-kind="vps" data-machine="kvm" data-latency="282" data-uptime="97.96" data-id="1">
-<div class="node-head"><div><div class="node-name">聶.NET 铂金8529CL</div><div class="node-tags"><span class="ntag green">NQ</span><span class="ntag blue">电信 / 联通 / 移动路由</span><span class="ntag">CN2 GIA</span><span class="ntag">中国 · Beijing</span></div></div><div class="node-state">运行正常</div></div>
-<div class="node-meta"><span><b>282</b> ms</span><span><b>97.96%</b> 在线率</span><span>¥250.00/月</span></div><div class="node-bars" aria-label="30日状态"></div><div class="traffic"><span>TRAFFIC</span><span class="track"><i style="width:68%"></i></span><b>68%</b><span>剩余</span></div></article>
-<article class="node" data-search="BandwagonHost MegaBoxPro 美国 洛杉矶 Los Angeles NQ CN2 GIA 49" data-provider="BandwagonHost" data-country="US" data-price="49" data-kind="vps" data-machine="kvm" data-latency="168" data-uptime="99.99" data-id="2">
-<div class="node-head"><div><div class="node-name">BandwagonHost MegaBoxPro</div><div class="node-tags"><span class="ntag green">NQ</span><span class="ntag blue">CN2 GIA</span><span class="ntag">IPv6</span><span class="ntag">美国 · Los Angeles</span></div></div><div class="node-state">运行正常</div></div>
-<div class="node-meta"><span><b>168</b> ms</span><span><b>99.99%</b> 在线率</span><span>¥49.99/月</span></div><div class="node-bars" aria-label="30日状态"></div><div class="traffic"><span>TRAFFIC</span><span class="track"><i style="width:42%"></i></span><b>42%</b><span>剩余</span></div></article>
-<article class="node" data-search="LowEndCloud Frankfurt 法兰克福 德国 DE BGP IPv6 Rust Agent 8" data-provider="LowEndCloud" data-country="DE" data-price="8" data-kind="vps" data-machine="kvm" data-latency="33" data-uptime="99.94" data-id="3">
-<div class="node-head"><div><div class="node-name">LowEndCloud Frankfurt</div><div class="node-tags"><span class="ntag">BGP</span><span class="ntag">IPv6</span><span class="ntag green">Rust Agent</span><span class="ntag">德国 · Frankfurt</span></div></div><div class="node-state">运行正常</div></div>
-<div class="node-meta"><span><b>33</b> ms</span><span><b>99.94%</b> 在线率</span><span>¥8.89/月</span></div><div class="node-bars" aria-label="30日状态"></div><div class="traffic"><span>TRAFFIC</span><span class="track"><i style="width:31%"></i></span><b>31%</b><span>剩余</span></div></article>
-<article class="node" data-search="LowEndCloud Hong Kong 中国 香港 中国香港 HK BGP IPv6 Rust Agent 5" data-provider="LowEndCloud" data-country="HK" data-price="5" data-kind="vps" data-machine="kvm" data-latency="11" data-uptime="99.98" data-id="4">
-<div class="node-head"><div><div class="node-name">LowEndCloud Hong Kong</div><div class="node-tags"><span class="ntag">BGP</span><span class="ntag">IPv6</span><span class="ntag green">Rust Agent</span><span class="ntag">中国香港 · HK</span></div></div><div class="node-state">运行正常</div></div>
-<div class="node-meta"><span><b>11</b> ms</span><span><b>99.98%</b> 在线率</span><span>¥5.00/月</span></div><div class="node-bars" aria-label="30日状态"></div><div class="traffic"><span>TRAFFIC</span><span class="track"><i style="width:56%"></i></span><b>56%</b><span>剩余</span></div></article>
-<article class="node" data-search="LowEndCloud Tokyo 东京 日本 JP BGP IPv6 Rust Agent 7" data-provider="LowEndCloud" data-country="JP" data-price="7" data-kind="vps" data-machine="kvm" data-latency="18" data-uptime="99.97" data-id="5">
-<div class="node-head"><div><div class="node-name">LowEndCloud Tokyo</div><div class="node-tags"><span class="ntag">BGP</span><span class="ntag">IPv6</span><span class="ntag green">Rust Agent</span><span class="ntag">日本 · Tokyo</span></div></div><div class="node-state">运行正常</div></div>
-<div class="node-meta"><span><b>18</b> ms</span><span><b>99.97%</b> 在线率</span><span>¥7.00/月</span></div><div class="node-bars" aria-label="30日状态"></div><div class="traffic"><span>TRAFFIC</span><span class="track"><i style="width:44%"></i></span><b>44%</b><span>剩余</span></div></article>
-<article class="node" data-search="1Kb.Page Edge 全球 Global Web Edge Worker 0" data-provider="1Kb.Page" data-country="Global" data-price="0" data-kind="web" data-machine="edge" data-latency="42" data-uptime="99.99" data-id="6">
-<div class="node-head"><div><div class="node-name">1Kb.Page Edge</div><div class="node-tags"><span class="ntag green">WEB</span><span class="ntag blue">Edge Worker</span><span class="ntag">Global · Anycast</span></div></div><div class="node-state">运行正常</div></div>
-<div class="node-meta"><span><b>42</b> ms</span><span><b>99.99%</b> 在线率</span><span>免费额度</span></div><div class="node-bars" aria-label="30日状态"></div><div class="traffic"><span>CACHE</span><span class="track"><i style="width:86%"></i></span><b>86%</b><span>命中</span></div></article>
-<div class="empty" id="empty">没有匹配的节点</div>
-</main>
-<footer class="footer"><span>NIE-SLA · 41 SERVICES · CLOUDFLARE WORKERS + RUST AGENT</span><span>© 2026 NIE-SLA · 演示数据</span></footer>
+<div class="page">
+<header class="top"><div class="brand">NIE-SLA</div><div class="cf"><i class="cf-cloud"></i><span>CLOUDFLARE</span></div><button class="theme" id="themeBtn" aria-label="切换外观">☾</button></header>
+<div class="banner" id="banner" role="status">全部 41 个服务运行正常</div>
+<div class="summary" id="summary"><span><b>41</b> 个服务</span><span><b>39</b> 个正常</span><span><b>2</b> 个离线</span><span><b>0</b> 个延迟</span><span><b>0</b> 个待检查</span><span>平均延迟 <b>80 ms</b></span><span>更新于 <b>10/03 05:30</b></span></div>
+<div class="searchrow"><label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg><input id="search" type="search" placeholder="搜索服务、IP、域名或分组..." aria-label="搜索服务"></label></div>
+<div class="groups" role="group" aria-label="分组方式"><span class="group-label">分组方式</span><button class="gtab active" data-group="vps">VPS</button><button class="gtab" data-group="web">Web</button><button class="gtab" data-group="provider">商家</button><button class="gtab" data-group="country">国家/地区</button><button class="gtab" data-group="price">价格档</button><button class="gtab" data-group="machine">机器类型</button></div>
+<section class="incident-card"><button class="incident-head" id="incidentToggle"><span>故障记录</span><b>40 条记录</b><span class="plus" id="incidentPlus">[ + ]</span></button><div class="incident-panel" id="incidentPanel"><h4>故障记录 · 最近 40 条</h4><p>历史事件的本地静态样例，按时间倒序。</p><div class="incident-list" id="incidentList"></div></div></section>
+<section class="group-card"><div class="group-head"><button class="collapse" id="groupToggle" aria-label="折叠分组">[−]</button><span id="groupTitle">VPS / 38 个 VPS 节点</span><i class="dot" aria-hidden="true"></i></div><div class="group-body" id="groupBody">
+<article class="node" data-kind="vps" data-provider="NIE" data-country="CN" data-price="250" data-machine="site" data-search="聶.NET 铂金8529CL 中国 北京 Beijing NQ 电信 联通 移动 163 CMI 250" data-latency="282" data-uptime="97.96"><div class="node-main"><div class="node-name">聶.NET 铂金8529CL</div><div class="node-badges"><span class="badge green">NQ</span><span class="badge">电信: 163</span><span class="badge">联通: 未识别</span><span class="badge">移动: CMI</span></div><div class="node-meta"><span>建站机</span><span>中国 · Beijing</span><span>运行时长 13d 1h</span><span>¥250.00/月</span></div></div><div class="node-status"><b>运行正常</b><span>282 ms</span><span>97.96%</span></div><div class="node-strip"><div class="health" aria-label="30日健康状态"></div><div class="traffic"><span>流量剩余 · 双向合计</span><span class="track"><i style="width:99.3%"></i></span><b>99.3%</b></div></div></article>
+<article class="node" data-kind="vps" data-provider="LowEndCloud" data-country="HK" data-price="5" data-machine="line" data-search="LowEndCloud Hong Kong 香港 HK BGP IPv6 Rust Agent 5" data-latency="11" data-uptime="99.98"><div class="node-main"><div class="node-name">LowEndCloud Hong Kong</div><div class="node-badges"><span class="badge">BGP</span><span class="badge">IPv6</span><span class="badge green">Rust Agent</span></div><div class="node-meta"><span>线路机</span><span>中国香港 · HK</span><span>运行时长 8d 4h</span><span>¥5.00/月</span></div></div><div class="node-status"><b>运行正常</b><span>11 ms</span><span>99.98%</span></div><div class="node-strip"><div class="health" aria-label="30日健康状态"></div><div class="traffic"><span>流量剩余 · 双向合计</span><span class="track"><i style="width:56%"></i></span><b>56%</b></div></div></article>
+<article class="node" data-kind="vps" data-provider="BandwagonHost" data-country="US" data-price="49" data-machine="line" data-search="BandwagonHost MegaBoxPro 美国 洛杉矶 Los Angeles NQ CN2 GIA 49" data-latency="168" data-uptime="99.99"><div class="node-main"><div class="node-name">BandwagonHost MegaBoxPro</div><div class="node-badges"><span class="badge green">NQ</span><span class="badge">CN2 GIA</span><span class="badge">IPv6</span></div><div class="node-meta"><span>线路机</span><span>美国 · Los Angeles</span><span>运行时长 28d</span><span>¥49.99/月</span></div></div><div class="node-status"><b>运行正常</b><span>168 ms</span><span>99.99%</span></div><div class="node-strip"><div class="health" aria-label="30日健康状态"></div><div class="traffic"><span>流量剩余 · 双向合计</span><span class="track"><i style="width:88%"></i></span><b>88%</b></div></div></article>
+<article class="node" data-kind="vps" data-provider="LowEndCloud" data-country="DE" data-price="8" data-machine="line" data-search="LowEndCloud Frankfurt 法兰克福 德国 DE BGP IPv6 Rust Agent 8" data-latency="33" data-uptime="99.94"><div class="node-main"><div class="node-name">LowEndCloud Frankfurt</div><div class="node-badges"><span class="badge">BGP</span><span class="badge">IPv6</span><span class="badge green">Rust Agent</span></div><div class="node-meta"><span>线路机</span><span>德国 · Frankfurt</span><span>运行时长 12d</span><span>¥8.89/月</span></div></div><div class="node-status"><b>运行正常</b><span>33 ms</span><span>99.94%</span></div><div class="node-strip"><div class="health" aria-label="30日健康状态"></div><div class="traffic"><span>流量剩余 · 双向合计</span><span class="track"><i style="width:31%"></i></span><b>31%</b></div></div></article>
+<article class="node" data-kind="web" data-provider="1Kb.Page" data-country="Global" data-price="0" data-machine="edge" data-search="1Kb.Page Edge 全球 Global Web Worker 0" data-latency="42" data-uptime="99.99"><div class="node-main"><div class="node-name">1Kb.Page Edge</div><div class="node-badges"><span class="badge green">WEB</span><span class="badge">Edge Worker</span><span class="badge">Global</span></div><div class="node-meta"><span>Edge</span><span>Global · Anycast</span><span>运行时长 39d</span><span>免费额度</span></div></div><div class="node-status"><b>运行正常</b><span>42 ms</span><span>99.99%</span></div><div class="node-strip"><div class="health" aria-label="30日健康状态"></div><div class="traffic"><span>流量剩余 · 双向合计</span><span class="track"><i style="width:86%"></i></span><b>86%</b></div></div></article>
+<div class="empty" id="empty">没有匹配的服务</div>
+</div></section>
 <div class="tooltip" id="tooltip"></div>
 </div>
 <script>
 (()=>{
-const nodes=[...document.querySelectorAll('.node')];
-const grid=document.getElementById('grid');
-const empty=document.getElementById('empty');
-const search=document.getElementById('search');
-const groupStatus=document.getElementById('groupStatus');
-const tooltip=document.getElementById('tooltip');
-let mode='all';
-const nodeName=n=>n.querySelector('.node-name').textContent;
-const groupMeta={
- all:()=>'全部节点 · <b>'+nodes.length+'</b>',
- vps:()=>'VPS · <b>'+nodes.filter(n=>n.dataset.kind==='vps').length+'</b>',
- web:()=>'Web / Edge · <b>'+nodes.filter(n=>n.dataset.kind==='web').length+'</b>',
- provider:()=>'商家 · <b>'+new Set(nodes.map(n=>n.dataset.provider)).size+'</b> 个',
- country:()=>'国家/地区 · <b>'+new Set(nodes.map(n=>n.dataset.country)).size+'</b> 个',
- price:()=>'价格档 · <b>免费 → ¥250</b>',
- type:()=>'机器类型 · <b>KVM 5 / Edge 1</b>'
-};
-nodes.forEach(node=>{
-  const baseLat=Number(node.dataset.latency)||20;
-  const baseUp=Number(node.dataset.uptime)||99.9;
-  const seed=Number(node.dataset.id)||1;
-  const bars=node.querySelector('.node-bars');
-  const spread=baseLat>=100?15:baseLat>=20?5:3;
-  bars.innerHTML=Array.from({length:30},(_,i)=>{
-    const lat=Math.max(1,Math.round(baseLat+Math.sin((i+seed)*1.73)*spread));
-    const day=30-i;
-    return '<i class="hbar" data-day="'+day+'" data-node="'+nodeName(node)+'" data-state="正常" data-lat="'+lat+'ms" data-up="'+baseUp.toFixed(2)+'" aria-label="Day '+day+' · '+baseUp.toFixed(2)+'% · '+lat+'ms"></i>';
-  }).join('');
-});
-function render(){
-  const q=search.value.trim().toLowerCase();
-  let visible=nodes.filter(node=>{
-    const kindOk=mode!=='vps'&&mode!=='web'||node.dataset.kind===mode;
-    const queryOk=!q||(node.dataset.search||'').toLowerCase().includes(q);
-    return kindOk&&queryOk;
-  });
-  const order=[...nodes];
-  if(mode==='provider')order.sort((a,b)=>a.dataset.provider.localeCompare(b.dataset.provider));
-  if(mode==='country')order.sort((a,b)=>a.dataset.country.localeCompare(b.dataset.country));
-  if(mode==='price')order.sort((a,b)=>Number(a.dataset.price)-Number(b.dataset.price));
-  if(mode==='type')order.sort((a,b)=>(a.dataset.machine==='edge'?-1:1)-(b.dataset.machine==='edge'?-1:1));
-  nodes.forEach(n=>n.hidden=true);
-  const orderedVisible=order.filter(n=>visible.includes(n));
-  orderedVisible.forEach(n=>{n.hidden=false;grid.insertBefore(n,empty)});
-  order.forEach(n=>{if(!visible.includes(n))grid.insertBefore(n,empty)});
-  empty.style.display=visible.length?'none':'block';
-  if(groupStatus)groupStatus.innerHTML=groupMeta[mode]();
-}
-document.querySelectorAll('.gtab').forEach(tab=>tab.addEventListener('click',()=>{
-  document.querySelectorAll('.gtab').forEach(x=>x.classList.toggle('active',x===tab));
-  mode=tab.dataset.group||'all';
-  render();
-}));
-search.addEventListener('input',render);
-nodes.forEach(node=>node.addEventListener('pointerover',event=>{
-  const bar=event.target.closest('.hbar');if(!bar)return;
-  tooltip.innerHTML='DAY '+bar.dataset.day+' · '+bar.dataset.node+'<br><b>'+bar.dataset.up+'%</b> · '+bar.dataset.lat+'<br><span style="color:#737373">'+bar.dataset.state+'</span>';
-  tooltip.classList.add('show');
-  const r=bar.getBoundingClientRect();
-  tooltip.style.left=Math.min(innerWidth-190,Math.max(8,r.left))+'px';
-  tooltip.style.top=Math.max(8,r.top-46)+'px';
-}));
-document.addEventListener('pointerout',event=>{if(event.target.closest&&event.target.closest('.hbar'))tooltip.classList.remove('show')});
-function setAlert(on){
-  const banner=document.getElementById('banner');
-  banner.classList.toggle('alert',on);
-  document.getElementById('bannerText').textContent=on?'模拟故障：3 个服务响应异常，2 个节点离线':'全部 41 个服务运行正常';
-  document.getElementById('bannerToggle').textContent=on?'恢复正常演示':'模拟故障演示';
-  document.getElementById('sumOk').textContent=on?'36':'41';
-  document.getElementById('sumDown').textContent=on?'2':'0';
-  document.getElementById('sumOk').className=on?'red':'green';
-  document.getElementById('sumDown').className=on?'red':'';
-  document.querySelectorAll('.node').forEach((n,i)=>n.classList.toggle('alert',on&&i<2));
-}
-document.getElementById('banner').addEventListener('click',e=>{if(!e.target.closest('.toggle'))setAlert(!document.getElementById('banner').classList.contains('alert'))});
-document.getElementById('bannerToggle').addEventListener('click',e=>{e.stopPropagation();setAlert(!document.getElementById('banner').classList.contains('alert'))});
-const panel=document.getElementById('incidentPanel');
-const incidentList=document.getElementById('incidentList');
-incidentList.addEventListener('wheel',e=>e.stopPropagation(),{passive:true});
-document.getElementById('incidentToggle').addEventListener('click',()=>{const open=panel.classList.toggle('show');document.getElementById('incidentPlus').textContent=open?'[ − ]':'[ + ]'});
-const eventNames=['Frankfurt · 网络抖动 42s','BandwagonHost · TCP 重传瞬时升高','LowEndCloud HK · 探针重连','Beijing · 路由切换完成','Cloudflare Worker · 冷启动延迟','东京节点 · 丢包短时升高','香港节点 · BGP 会话重建','Rust Agent · 心跳恢复'];
-const records=Array.from({length:40},(_,i)=>{const day=24-Math.floor(i/2);const hh=String(18-(i%12)).padStart(2,'0');const mm=String((i*7)%60).padStart(2,'0');return '<div class="incident-item"><time>2026-11-'+String(Math.max(1,day)).padStart(2,'0')+' '+hh+':'+mm+'</time><b>'+eventNames[i%eventNames.length]+'</b><span>已恢复</span></div>'});
-incidentList.innerHTML=records.join('');
+const nodes=[...document.querySelectorAll('.node')],tooltip=document.getElementById('tooltip'),banner=document.getElementById('banner'),summary=document.getElementById('summary'),search=document.getElementById('search'),groupTitle=document.getElementById('groupTitle'),groupBody=document.getElementById('groupBody'),empty=document.getElementById('empty');
+let mode='vps';
+nodes.forEach((node,ni)=>{const lat=Number(node.dataset.latency)||30,up=node.dataset.uptime;const spread=lat>=100?15:lat>=20?5:3;node.querySelector('.health').innerHTML=Array.from({length:30},(_,i)=>{const l=Math.max(1,Math.round(lat+Math.sin((i+ni)*1.71)*spread));const warn=node.dataset.uptime<98&&i%7===0;return '<i class="'+(warn?'warn':'')+'" data-day="'+(30-i)+'" data-lat="'+l+'ms" data-up="'+up+'"></i>'}).join('')});
+nodes.forEach(node=>node.addEventListener('pointerover',e=>{const b=e.target.closest('.health i');if(!b)return;tooltip.innerHTML='DAY '+b.dataset.day+' · <b>'+b.dataset.up+'%</b><br>'+b.dataset.lat;tooltip.classList.add('show');const r=b.getBoundingClientRect();tooltip.style.left=Math.min(innerWidth-150,Math.max(8,r.left))+'px';tooltip.style.top=Math.max(8,r.top-39)+'px'}));
+document.addEventListener('pointerout',e=>{if(e.target.closest&&e.target.closest('.health i'))tooltip.classList.remove('show')});
+function setAlert(on){banner.classList.toggle('alert',on);banner.textContent=on?'2 个服务离线':'全部 41 个服务运行正常';summary.innerHTML=on?'<span><b>41</b> 个服务</span><span><b>39</b> 个正常</span><span><b>2</b> 个离线</span><span><b>0</b> 个延迟</span><span><b>0</b> 个待检查</span><span>平均延迟 <b>92 ms</b></span><span>更新于 <b>10/03 05:31</b></span>':'<span><b>41</b> 个服务</span><span><b>39</b> 个正常</span><span><b>2</b> 个离线</span><span><b>0</b> 个延迟</span><span><b>0</b> 个待检查</span><span>平均延迟 <b>80 ms</b></span><span>更新于 <b>10/03 05:30</b></span>';nodes.forEach((n,i)=>{const alert=on&&i<2;n.classList.toggle('is-alert',alert);n.querySelector('.node-status b').textContent=alert?'离线':'运行正常'})}
+banner.addEventListener('click',()=>setAlert(!banner.classList.contains('alert')));
+function sort(mode,list){const a=[...list];if(mode==='provider')a.sort((x,y)=>x.dataset.provider.localeCompare(y.dataset.provider));if(mode==='country')a.sort((x,y)=>x.dataset.country.localeCompare(y.dataset.country));if(mode==='price')a.sort((x,y)=>+x.dataset.price-+y.dataset.price);if(mode==='machine')a.sort((x,y)=>x.dataset.machine.localeCompare(y.dataset.machine));return a}
+function render(){const q=search.value.trim().toLowerCase();let list=nodes.filter(n=>{const kindOK=mode==='web'?n.dataset.kind==='web':n.dataset.kind==='vps';return kindOK&&(!q||n.dataset.search.toLowerCase().includes(q))});list=sort(mode,list);nodes.forEach(n=>n.hidden=true);nodes.forEach(n=>groupBody.insertBefore(n,empty));list.forEach(n=>{n.hidden=false;groupBody.insertBefore(n,empty)});empty.style.display=list.length?'none':'block';const count=list.length;const titleMap={vps:'VPS / 38 个 VPS 节点',web:'Web / Edge / 1 个 Web 节点',provider:'商家 / 3 个分组',country:'国家/地区 / 4 个地区',price:'价格档 / 按月付 · 低 → 高',machine:'机器类型 / 建站机 · 线路机'};groupTitle.textContent=titleMap[mode]||('分组 / '+count+' 个节点')}
+document.querySelectorAll('.gtab').forEach(t=>t.addEventListener('click',()=>{document.querySelectorAll('.gtab').forEach(x=>x.classList.toggle('active',x===t));mode=t.dataset.group;render()}));search.addEventListener('input',render);
+document.getElementById('groupToggle').addEventListener('click',e=>{const c=groupBody.classList.toggle('collapsed');e.target.textContent=c?'[+]':'[−]'});
+const panel=document.getElementById('incidentPanel');const incidentList=document.getElementById('incidentList');incidentList.addEventListener('wheel',e=>e.stopPropagation(),{passive:true});document.getElementById('incidentToggle').addEventListener('click',()=>{const open=panel.classList.toggle('show');document.getElementById('incidentPlus').textContent=open?'[ − ]':'[ + ]'});
+const events=['Frankfurt · 网络抖动 42s','BandwagonHost · TCP 重传瞬时升高','LowEndCloud HK · 探针重连','Beijing · 路由切换完成','Cloudflare Worker · 冷启动延迟','东京节点 · 丢包短时升高','香港节点 · BGP 会话重建','Rust Agent · 心跳恢复'];incidentList.innerHTML=Array.from({length:40},(_,i)=>{const day=24-Math.floor(i/2);const hh=String(18-i%12).padStart(2,'0');const mm=String((i*7)%60).padStart(2,'0');return '<div class="incident-item"><time>2026-11-'+String(Math.max(1,day)).padStart(2,'0')+' '+hh+':'+mm+'</time><b>'+events[i%events.length]+'</b><span>已恢复</span></div>'}).join('');
 document.getElementById('themeBtn').addEventListener('click',()=>{const h=document.documentElement,d=h.dataset.theme==='dark';h.dataset.theme=d?'light':'dark';document.getElementById('themeBtn').textContent=d?'☾':'☀'});
 render();
-const targetOrigin=location.origin==='null'?'*':location.origin;
-const send=(dy,dx=0,mode=0)=>parent.postMessage({type:'demo-scroll',kind:'wheel',dy,dx,mode},targetOrigin);
-addEventListener('wheel',e=>{e.preventDefault();send(e.deltaY,e.deltaX,e.deltaMode)},{passive:false});
+const targetOrigin=location.origin==='null'?'*':location.origin;const send=(dy,dx=0,mode=0)=>parent.postMessage({type:'demo-scroll',kind:'wheel',dy,dx,mode},targetOrigin);addEventListener('wheel',e=>{e.preventDefault();send(e.deltaY,e.deltaX,e.deltaMode)},{passive:false});
 })();
 </script>
 </body>

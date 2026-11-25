@@ -85,3 +85,13 @@ manifesto / works 为不透明炭黑舞台；imprints / about 透明浮在分割
 - 手机端 Lenis 条件收紧为 finePointer 与 desktop 同时匹配；未命中时走原生 scroll 监听，不再空转 lenis.raf。
 - 900px 以下或 coarse pointer：iframe 默认 pointer-events: none，viewport 可自然滚动；点击 viewport（位移 <8px）或顶栏状态按钮进入 is-interactive，iframe 才接收交互。顶栏显示 轻点交互 / 完成 ✕，并提供低干扰点按提示；页面有效滚动 >24px 自动退出交互。
 - 桌面 >900px 且 fine pointer：iframe 始终 pointer-events: auto，状态保持 INTERACTIVE REPLICA，滚轮透传与直接点击不变。
+
+
+## 截图级视觉重构（20261125f）
+
+- 四个 demos 依据 assets 下四张真实截图重新构图，不再沿用上一版自拟版式。
+- Blog：移除列表竖线与页脚线、筛选药丸和摘要；补回绿色近期发布、五枚 SVG 社交圆标、日期/标题/置顶/标签三级文章行与三枚悬浮圆钮。
+- LowEndCloud：白底公告、上下双行 Logo、纯黑居中双行主标题、居中双 CTA 和实时摘要、左拓扑白卡 + 右 deploy-preview；套餐售罄、2×2 规格、胶囊与底部命令条。
+- 1KB.Page：删除挑战大标题与说明，保留近期双链接；页脚回到紧凑 transfer 长条 + 点阵余量；纸墨切换收进右下低干扰文字按钮。
+- NIE-SLA：纯白背景、纯字标头、整宽状态横幅与居中汇总行、拼接式分组条、整宽故障卡，以及单列 VPS 大白卡内 4 行节点；移动端保留 3 行完整节点。
+- 保留 1200px iframe 等比装裱、桌面 wheel 透传、移动原生滚动与轻点解锁。
