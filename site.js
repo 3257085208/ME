@@ -639,22 +639,54 @@
     const rows = [...archive.querySelectorAll('.archive-row')];
     const filters = [...archive.querySelectorAll('.archive-filter')];
     const preview = document.getElementById('archivePreview');
-    const previewImg = document.getElementById('archivePreviewImg');
     const fine = matchMedia('(hover: hover) and (pointer: fine)');
+    const sources = [...new Set(rows.map((row) => row.dataset.preview).filter(Boolean))];
+    const previewImages = new Map();
+    let previewMounted = false;
     let previewFrame = 0;
     let previewVisible = false;
     let activeRow = null;
-    let targetX = -999;
-    let targetY = -999;
-    let currentX = -999;
-    let currentY = -999;
+    let shownScrollY = 0;
+    let targetX = 0;
+    let targetY = 0;
+    let currentX = 0;
+    let currentY = 0;
+
+    function mountPreviewImages() {
+      if (previewMounted || !preview) return;
+      previewMounted = true;
+      sources.forEach((src) => {
+        const img = document.createElement('img');
+        img.decoding = 'async';
+        img.alt = '';
+        img.dataset.previewSrc = src;
+        img.src = src;
+        preview.appendChild(img);
+        previewImages.set(src, img);
+        if (typeof img.decode === 'function') img.decode().catch(() => {});
+      });
+    }
+
+    if ('IntersectionObserver' in window && preview) {
+      const archiveObserver = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        mountPreviewImages();
+        archiveObserver.disconnect();
+      }, { rootMargin: '600px 0px' });
+      archiveObserver.observe(archive);
+    } else {
+      mountPreviewImages();
+    }
 
     function hidePreview() {
       previewVisible = false;
       activeRow = null;
       if (previewFrame) cancelAnimationFrame(previewFrame);
       previewFrame = 0;
-      if (preview) preview.classList.remove('is-visible');
+      if (preview) {
+        preview.classList.remove('is-visible');
+        preview.setAttribute('aria-hidden', 'true');
+      }
     }
 
     function pointFor(event) {
@@ -668,7 +700,7 @@
 
     function previewStep() {
       previewFrame = 0;
-      if (!previewVisible || !preview || !previewImg) return;
+      if (!previewVisible || !preview) return;
       currentX += (targetX - currentX) * .22;
       currentY += (targetY - currentY) * .22;
       preview.style.transform = 'translate3d(' + currentX.toFixed(2) + 'px, ' + currentY.toFixed(2) + 'px, 0)';
@@ -676,24 +708,25 @@
     }
 
     function showPreview(row, event) {
-      if (!preview || !previewImg || !fine.matches || motion.matches || !row.dataset.preview) return;
+      if (!preview || !fine.matches || motion.matches || !row.dataset.preview) return;
+      mountPreviewImages();
       const src = row.dataset.preview;
-      if (previewImg.getAttribute('src') !== src) {
-        previewImg.src = src;
-        const name = row.querySelector('.archive-project');
-        previewImg.alt = name ? name.textContent + ' 界面预览' : '';
-      }
+      previewImages.forEach((img, key) => {
+        img.classList.toggle('is-active', key === src);
+      });
       const point = pointFor(event);
       activeRow = row;
+      shownScrollY = window.scrollY;
       if (!previewVisible) {
         currentX = point.x;
         currentY = point.y;
-        preview.style.transform = 'translate3d(' + currentX + 'px, ' + currentY + 'px, 0)';
+        preview.style.transform = 'translate3d(' + currentX.toFixed(2) + 'px, ' + currentY.toFixed(2) + 'px, 0)';
       }
       targetX = point.x;
       targetY = point.y;
       previewVisible = true;
       preview.classList.add('is-visible');
+      preview.setAttribute('aria-hidden', 'false');
       if (!previewFrame) previewFrame = requestAnimationFrame(previewStep);
     }
 
@@ -715,6 +748,13 @@
       button.addEventListener('click', () => applyFilter(button.dataset.filter || 'all'));
     });
 
+    rows.forEach((row) => {
+      row.addEventListener('pointerenter', (event) => {
+        if (!fine.matches || motion.matches || row.hidden) return;
+        showPreview(row, event);
+      }, { passive: true });
+    });
+
     archive.addEventListener('pointermove', (event) => {
       if (!fine.matches || motion.matches) return;
       const row = event.target.closest ? event.target.closest('.archive-row') : null;
@@ -729,8 +769,12 @@
     }, { passive: true });
 
     archive.addEventListener('pointerleave', hidePreview);
-    window.addEventListener('scroll', hidePreview, { passive: true });
+    window.addEventListener('scroll', () => {
+      if (!previewVisible) return;
+      if (Math.abs(window.scrollY - shownScrollY) > 20) hidePreview();
+    }, { passive: true });
   }
+
 
   /* ---------------------------------------------------------
      Imprints — coordinate wall + depth parallax
