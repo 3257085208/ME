@@ -1556,9 +1556,13 @@
           for (let shoulder = 8; shoulder <= 260 && !placed; shoulder += 10) {
             const rawX = elbowX + sign * shoulder;
             const textX = sign > 0 ? rawX + 3 : rawX - 3;
-            const textCenterX = textX + (sign > 0 ? textW * .5 : -textW * .5);
-            const insideSphere = Math.hypot(textCenterX - cx, elbowY - cy) < R - 1;
-            const capsule = entry.active || insideSphere;
+            const rawLeft = sign > 0 ? textX : textX - textW;
+            const rawRight = sign > 0 ? textX + textW : textX;
+            const textCenterX = (rawLeft + rawRight) * .5;
+            const touchesSphere = Math.hypot(rawLeft - cx, elbowY - cy) < R + 4
+              || Math.hypot(rawRight - cx, elbowY - cy) < R + 4
+              || Math.hypot(textCenterX - cx, elbowY - cy) < R + 4;
+            const capsule = entry.active || touchesSphere;
             const padX = capsule ? 5 : 0;
             const boxH = capsule ? 14 : labelH;
             const box = sign > 0
@@ -1579,12 +1583,12 @@
             ctx.font = state.labelFont;
             if (capsule) {
               capsulePath(box.l, box.t, box.r - box.l, boxH, 3);
-              ctx.fillStyle = '#0e0e0d';
+              ctx.fillStyle = entry.active ? '#0e0e0d' : 'rgba(14, 14, 13, .82)';
               ctx.fill();
-              ctx.strokeStyle = 'rgba(200, 255, 0, .45)';
-              ctx.lineWidth = 1;
+              ctx.strokeStyle = entry.active ? 'rgba(200, 255, 0, .55)' : 'rgba(242, 241, 234, .22)';
+              ctx.lineWidth = entry.active ? 1 : .8;
               ctx.stroke();
-              ctx.fillStyle = '#c8ff00';
+              ctx.fillStyle = entry.active ? '#c8ff00' : 'rgba(242, 241, 234, .82)';
               ctx.fillText(entry.text, textX, elbowY);
             } else {
               ctx.lineWidth = 3;
