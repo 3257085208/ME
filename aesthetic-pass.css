@@ -2005,16 +2005,20 @@ body {
   margin-top: 160px;
 }
 
-.work-card-slot:nth-child(1) .work-card {
+#work-card-01 {
   z-index: 1;
 }
 
-.work-card-slot:nth-child(2) .work-card {
+#work-card-02 {
   z-index: 2;
 }
 
-.work-card-slot:nth-child(3) .work-card {
+#work-card-03 {
   z-index: 3;
+}
+
+#work-card-04 {
+  z-index: 4;
 }
 
 .work-card {
@@ -3387,10 +3391,6 @@ body {
   }
 }
 
-/* Four-card stack layering */
-.work-card-slot:nth-child(4) .work-card {
-  z-index: 4;
-}
 
 /* Keep seven imprints inside one screen without crowding the journey marker. */
 .imprints-index {
