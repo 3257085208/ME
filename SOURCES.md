@@ -40,3 +40,8 @@ IDC 系统按用户要求不展示。
 ## Network Footprint 数据
 
 #imprints 的 15 机房坐标与 IATA 命名来自本轮提供的真实网络节点清单：PEK / SHA / HKG / TYO / SIN / FRA / RBX / GRA / TRN / LAX / FMT / PDX / PHX / NYC / BHS；未展示 IP，未添加厂商广告。AS218834 与 NIE-SLA 外链保留。
+
+
+## 矢量海岸线数据
+
+world-coastlines.js 由 Natural Earth 110m land GeoJSON（nvkelso/natural-earth-vector）提取外环，按 0.45° RDP 简化并以 0.01° 量化，共 126 条折线 / 1,821 点 / 20.4KB；保留欧亚、北美、南美、非洲、澳洲、日本与英国轮廓。

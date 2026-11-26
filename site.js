@@ -930,6 +930,7 @@
     element._scrambleFrame = requestAnimationFrame(step);
   }
 
+
   function setupAstrolabe() {
     const section = document.getElementById('imprints');
     const wall = document.getElementById('imprint-wall');
@@ -941,19 +942,12 @@
 
     const TAU = Math.PI * 2;
     const RAD = Math.PI / 180;
-    const INK = '6, 6, 6';
+    const INK = '11, 11, 10';
     const inkCache = {};
-
-    function ink(alpha) {
-      const key = Math.max(0, Math.min(200, Math.round(alpha * 200)));
-      return inkCache[key] || (inkCache[key] = 'rgba(' + INK + ', ' + (key / 200).toFixed(3) + ')');
-    }
-
-    const LIGHT = (() => {
-      const v = { x: -.55, y: .45, z: .70 };
-      const len = Math.hypot(v.x, v.y, v.z) || 1;
-      return { x: v.x / len, y: v.y / len, z: v.z / len };
-    })();
+    const ink = (alpha) => {
+      const key = Math.max(0, Math.min(100, Math.round(alpha * 100)));
+      return inkCache[key] || (inkCache[key] = 'rgba(' + INK + ', ' + (alpha).toFixed(3) + ')');
+    };
 
     const CORE = { lat: 39.90, lon: 116.40, label: 'AS218834' };
     const CORE_VIEW = { lat: 24, lon: 120 };
@@ -974,38 +968,9 @@
       { lat: 40.71, lon: -74.01, label: 'NYC · NEW YORK', code: 'NYC' },
       { lat: 45.32, lon: -73.87, label: 'BHS · BEAUHARNOIS', code: 'BHS' }
     ];
-    const BACKBONE = new Set([0, 2, 5, 9, 13]);
-    const FACING_LUT = new Float32Array(256);
-    for (let i = 0; i < 256; i += 1) FACING_LUT[i] = Math.pow(i / 255, .72);
-    const GRID_LINES = [];
-    for (const latitude of [-35, 0, 35]) {
-      const line = [];
-      const la = latitude * RAD;
-      for (let lon = -180; lon <= 180; lon += 2.5) {
-        const lo = lon * RAD;
-        line.push({
-          x: Math.cos(la) * Math.sin(lo),
-          y: Math.sin(la),
-          z: Math.cos(la) * Math.cos(lo)
-        });
-      }
-      GRID_LINES.push(line);
-    }
-    for (const meridian of [-40, 45]) {
-      const line = [];
-      const lo = meridian * RAD;
-      for (let lat = -86; lat <= 86; lat += 2.5) {
-        const la = lat * RAD;
-        line.push({
-          x: Math.cos(la) * Math.sin(lo),
-          y: Math.sin(la),
-          z: Math.cos(la) * Math.cos(lo)
-        });
-      }
-      GRID_LINES.push(line);
-    }
     const DEGREE_LABELS = ['000°', '090°', '180°', '270°'];
-    const CITY_FONT = '9px -apple-system, "SF Pro Text", sans-serif';
+    const CITY_FONT = '9.5px "JetBrains Mono", ui-monospace, monospace';
+    const ARC_STEPS = 40;
 
     function toVector(latDeg, lonDeg) {
       const lat = latDeg * RAD;
@@ -1016,44 +981,96 @@
 
     const coreVec = toVector(CORE.lat, CORE.lon);
     const cityVecs = CITIES.map((city) => toVector(city.lat, city.lon));
-
-    function decodeWorldDots(payload) {
-      if (!payload || typeof payload.data !== 'string') return new Float32Array(0);
-      try {
-        const bin = atob(payload.data);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
-        const ints = new Int16Array(bytes.buffer);
-        const scale = payload.scale || 1000;
-        const out = new Float32Array(ints.length);
-        for (let i = 0; i < ints.length; i += 1) out[i] = ints[i] / scale;
-        return out;
-      } catch (error) {
-        return new Float32Array(0);
+    const pairAngles = CITIES.map(() => new Float32Array(15));
+    const meshArcs = CITIES.map(() => new Array(15));
+    for (let a = 0; a < 15; a += 1) {
+      for (let b = 0; b < 15; b += 1) {
+        const dot = Math.max(-1, Math.min(1, cityVecs[a].x * cityVecs[b].x + cityVecs[a].y * cityVecs[b].y + cityVecs[a].z * cityVecs[b].z));
+        const omega = Math.acos(dot);
+        pairAngles[a][b] = omega;
+        const arc = new Float32Array(ARC_STEPS * 3);
+        const so = Math.sin(omega) || 1e-6;
+        for (let s = 0; s < ARC_STEPS; s += 1) {
+          const u = s / (ARC_STEPS - 1);
+          const wa = omega < 1e-5 ? 1 - u : Math.sin((1 - u) * omega) / so;
+          const wb = omega < 1e-5 ? u : Math.sin(u * omega) / so;
+          const alt = 1.012 + .042 * Math.sin(Math.PI * u);
+          arc[s * 3] = (cityVecs[a].x * wa + cityVecs[b].x * wb) * alt;
+          arc[s * 3 + 1] = (cityVecs[a].y * wa + cityVecs[b].y * wb) * alt;
+          arc[s * 3 + 2] = (cityVecs[a].z * wa + cityVecs[b].z * wb) * alt;
+        }
+        meshArcs[a][b] = arc;
       }
     }
 
-    const worldDots = decodeWorldDots(window.__QQSG_WORLD_DOTS__);
-    const totalDots = worldDots.length / 3;
-    const dotScreen = new Float32Array(totalDots * 2);
-    const dotBins = new Uint8Array(totalDots);
-
-    const FRONT_ALPHA = [];
-    const FRONT_RADIUS = [];
-    for (let b = 0; b < 10; b += 1) {
-      const t = b / 9;
-      FRONT_ALPHA.push(.12 + .76 * t);
-      FRONT_RADIUS.push(.55 + .90 * t);
+    const gridLines = [];
+    const pushGrid = (points, primary) => {
+      const flat = new Float32Array(points.length * 3);
+      for (let i = 0; i < points.length; i += 1) {
+        const v = toVector(points[i][1], points[i][0]);
+        flat[i * 3] = v.x;
+        flat[i * 3 + 1] = v.y;
+        flat[i * 3 + 2] = v.z;
+      }
+      gridLines.push({ pts: flat, count: points.length, primary });
+    };
+    [-60, -30, 0, 30, 60].forEach((lat) => {
+      const line = [];
+      for (let lon = -180; lon <= 180; lon += 4) line.push([lon, lat]);
+      pushGrid(line, lat === 0);
+    });
+    for (let lon = -180; lon < 180; lon += 30) {
+      const line = [];
+      for (let lat = -90; lat <= 90; lat += 4) line.push([lon, lat]);
+      pushGrid(line, lon === 0);
     }
 
-    const routeMeta = cityVecs.map((node) => {
-      const dot = Math.max(-1, Math.min(1, coreVec.x * node.x + coreVec.y * node.y + coreVec.z * node.z));
-      const angle = Math.acos(dot);
-      return {
-        lift: .14 + .14 * (angle / Math.PI),
-        samples: Array.from({ length: 41 }, () => ({ x: 0, y: 0, z: 0 }))
-      };
-    });
+    function decodeCoastlines(payload) {
+      if (!payload || !Array.isArray(payload.lines)) return [];
+      const q = payload.q || 100;
+      const out = [];
+      payload.lines.forEach((flat) => {
+        const count = flat.length >> 1;
+        if (count < 2) return;
+        const arr = new Float32Array(count * 3);
+        for (let i = 0; i < count; i += 1) {
+          const v = toVector(flat[i * 2 + 1] / q, flat[i * 2] / q);
+          arr[i * 3] = v.x;
+          arr[i * 3 + 1] = v.y;
+          arr[i * 3 + 2] = v.z;
+        }
+        out.push({ pts: arr, count });
+      });
+      return out;
+    }
+
+    const coastlines = decodeCoastlines(window.__QQSG_COASTLINES__);
+    const FLOW_COUNT = 18;
+    const flows = Array.from({ length: FLOW_COUNT }, () => ({
+      phase: 2,
+      src: 0,
+      dst: 1,
+      start: 0,
+      duration: 1,
+      fadeAt: 0,
+      screen: new Float32Array(ARC_STEPS * 2),
+      depth: new Float32Array(ARC_STEPS)
+    }));
+    const pulses = Array.from({ length: 30 }, () => ({ active: false, city: 0, start: 0, focus: false }));
+    const staticFlow = {
+      src: 2,
+      dst: 5,
+      screen: new Float32Array(ARC_STEPS * 2),
+      depth: new Float32Array(ARC_STEPS)
+    };
+    const staticPairs = [[2, 5], [5, 13], [9, 3], [0, 4], [7, 14]];
+    let pulseCursor = 0;
+    let emitCursor = 0;
+    const emitNext = new Float32Array(15);
+    for (let i = 0; i < 15; i += 1) emitNext[i] = .08 + Math.random() * .88;
+    const emittedOnce = new Uint8Array(15);
+    const meshStats = { emits: new Uint16Array(15), total: 0, active: 0, focus: 0 };
+    window.__QQSG_MESH_STATS__ = meshStats;
 
     const state = {
       active: 'core',
@@ -1080,23 +1097,15 @@
       visible: false,
       lastTime: 0,
       ready: false,
-      gradient: null,
-      bodyGradient: null,
-      rimGradient: null,
-      contactGradient: null,
-      glowGreen: null,
-      glowBone: null,
+      sphereGradient: null,
       width: 0,
       height: 0,
       radius: 0,
       dpr: 1,
-      useArcDots: true,
-      dotSprites: [],
-      dotSizes: [],
       labelWidths: [],
       degreeWidths: [],
-      labelFont: '9px -apple-system, "SF Pro Text", sans-serif',
-      degreeFont: '9px "JetBrains Mono", ui-monospace, monospace',
+      labelFont: CITY_FONT,
+      degreeFont: '',
       dragging: false,
       dragMoved: false,
       pointerId: null,
@@ -1107,20 +1116,134 @@
       lastMoveAt: 0,
       spinYaw: 0,
       spinPitch: 0,
-      idleSince: 0
+      idleSince: 0,
+      cyaw: 1,
+      syaw: 0,
+      cp: 1,
+      sp: 0
     };
 
-    let lastHudText = '';
-    let lastOrbitLock = '';
-
-    function setOrbitHint(text) {
-      if (orbitDragHint && orbitDragHint.textContent !== text) orbitDragHint.textContent = text;
+    function cityFocus() {
+      return state.locked && typeof state.active === 'number' ? state.active : -1;
     }
 
-    function formatOrbitCoord(lat, lon) {
-      const ns = lat >= 0 ? 'N' : 'S';
-      const ew = lon >= 0 ? 'E' : 'W';
-      return Math.abs(lat).toFixed(2) + '°' + ns + ' · ' + Math.abs(lon).toFixed(2) + '°' + ew;
+    function randomOther(src) {
+      const value = Math.floor(Math.random() * 14);
+      return value >= src ? value + 1 : value;
+    }
+
+    function addPulse(city, now, focus) {
+      const pulse = pulses[pulseCursor % pulses.length];
+      pulseCursor += 1;
+      pulse.active = true;
+      pulse.city = city;
+      pulse.start = now;
+      pulse.focus = focus;
+    }
+
+    function spawnFlow(flow, src, dst, now) {
+      if (!flow || src === dst) return;
+      const focus = cityFocus();
+      flow.phase = 0;
+      flow.src = src;
+      flow.dst = dst;
+      flow.start = now;
+      flow.duration = 1.35 + (pairAngles[src][dst] / Math.PI) * 1.55 + Math.random() * .25;
+      flow.fadeAt = 0;
+      meshStats.emits[src] += 1;
+      meshStats.total += 1;
+      addPulse(src, now, focus >= 0 && (src === focus || dst === focus));
+    }
+
+    function findIdleFlow() {
+      for (let i = 0; i < flows.length; i += 1) if (flows[i].phase === 2) return flows[i];
+      return null;
+    }
+
+    function countFocusFlows(focus) {
+      if (focus < 0) return 0;
+      let count = 0;
+      for (let i = 0; i < flows.length; i += 1) {
+        const flow = flows[i];
+        if (flow.phase !== 2 && (flow.src === focus || flow.dst === focus)) count += 1;
+      }
+      return count;
+    }
+
+    function activateFocusFlows(now) {
+      const focus = cityFocus();
+      if (focus < 0) return;
+      let count = countFocusFlows(focus);
+      while (count < 3) {
+        let flow = findIdleFlow();
+        if (!flow) {
+          for (let i = 0; i < flows.length; i += 1) {
+            const candidate = flows[i];
+            if (candidate.phase !== 2 && candidate.src !== focus && candidate.dst !== focus) {
+              candidate.phase = 2;
+              flow = candidate;
+              break;
+            }
+          }
+        }
+        if (!flow) break;
+        const other = randomOther(focus);
+        const fromFocus = count % 2 === 0;
+        spawnFlow(flow, fromFocus ? focus : other, fromFocus ? other : focus, now);
+        count += 1;
+      }
+    }
+
+    function updateMesh(now) {
+      const focus = cityFocus();
+      const limit = desktop.matches ? 18 : 11;
+      let activeCount = 0;
+      for (let i = 0; i < flows.length; i += 1) {
+        const flow = flows[i];
+        if (flow.phase === 1 && now - flow.fadeAt > .45) {
+          flow.phase = 2;
+          continue;
+        }
+        if (flow.phase === 0) {
+          const elapsed = (now - flow.start) / flow.duration;
+          if (elapsed >= 1) {
+            flow.phase = 1;
+            flow.fadeAt = now;
+            addPulse(flow.dst, now, focus >= 0 && (flow.src === focus || flow.dst === focus));
+          }
+        }
+        if (flow.phase !== 2) activeCount += 1;
+      }
+
+      activateFocusFlows(now);
+      let focusCount = countFocusFlows(focus);
+      activeCount = flows.reduce((count, flow) => count + (flow.phase !== 2 ? 1 : 0), 0);
+
+      for (let pass = 0; pass < 2; pass += 1) {
+        for (let step = 0; step < 15; step += 1) {
+          const i = (emitCursor + step) % 15;
+          if (now < emitNext[i]) continue;
+          if (pass === 0 ? emittedOnce[i] !== 0 : emittedOnce[i] === 0) continue;
+          if (activeCount >= limit) continue;
+          if (i === focus && focusCount >= 3) continue;
+          const flow = findIdleFlow();
+          if (!flow) continue;
+          let dst = randomOther(i);
+          if (focus >= 0 && dst === focus && focusCount >= 4) {
+            dst = randomOther(focus);
+            if (dst === i) dst = (dst + 1) % 15;
+          }
+          spawnFlow(flow, i, dst, now);
+          emittedOnce[i] = 1;
+          emitNext[i] = now + .75 + Math.random() * .9;
+          emitCursor = (i + 1) % 15;
+          activeCount += 1;
+          if (focus >= 0 && (i === focus || dst === focus)) focusCount += 1;
+        }
+      }
+
+      meshStats.active = activeCount;
+      meshStats.focus = countFocusFlows(focus);
     }
 
     function updateOrbitHud(activeIndex) {
@@ -1140,97 +1263,31 @@
         lon = -(state.yaw + state.tiltYaw) / RAD;
         lon = ((lon + 540) % 360) - 180;
       }
-      const text = formatOrbitCoord(lat, lon);
-      if (text !== lastHudText) {
-        lastHudText = text;
-        orbitCoords.textContent = text;
-      }
+      const ns = lat >= 0 ? 'N' : 'S';
+      const ew = lon >= 0 ? 'E' : 'W';
+      const text = Math.abs(lat).toFixed(2) + '°' + ns + ' · ' + Math.abs(lon).toFixed(2) + '°' + ew;
+      if (orbitCoords.textContent !== text) orbitCoords.textContent = text;
     }
 
     function emitOrbitLock() {
-      const node = state.locked
-        ? (state.active === 'core' ? 'core' : String(state.active + 1))
-        : '';
-      if (node === lastOrbitLock) return;
+      const node = state.locked ? (state.active === 'core' ? 'core' : String(state.active + 1)) : '';
+      if (lastOrbitLock === node) return;
       lastOrbitLock = node;
       window.dispatchEvent(new CustomEvent('nkx:astrolabe-lock', { detail: { node } }));
     }
 
-    function clampPitch(value) {
-      return Math.max(-1.26, Math.min(1.26, value));
-    }
-
-    function shortestDelta(target) {
-      let delta = (target - state.yaw) % TAU;
-      if (delta > Math.PI) delta -= TAU;
-      if (delta < -Math.PI) delta += TAU;
-      return delta;
+    function cacheTextMetrics(R) {
+      ctx.font = CITY_FONT;
+      state.labelFont = CITY_FONT;
+      state.labelWidths = [CORE.label, ...CITIES.map((city) => city.label)].map((text) => ctx.measureText(text).width);
+      const degreeFont = Math.max(8, Math.min(10, R * .042)) + 'px "JetBrains Mono", ui-monospace, monospace';
+      ctx.font = degreeFont;
+      state.degreeFont = degreeFont;
+      state.degreeWidths = DEGREE_LABELS.map((label) => ctx.measureText(label).width);
     }
 
     function sphereRadius(w, h) {
       return Math.min(w * .42, h * .45, (Math.min(w, h) * .5 - 22) / 1.09);
-    }
-
-    function buffGlowSprites(dpr) {
-      function makeGlow(inner, mid) {
-        const size = Math.max(32, Math.round(64 * Math.min(dpr, 2)));
-        const source = document.createElement('canvas');
-        source.width = size;
-        source.height = size;
-        const sctx = source.getContext('2d');
-        const c = size * .5;
-        const g = sctx.createRadialGradient(c, c, 0, c, c, c);
-        g.addColorStop(0, inner);
-        g.addColorStop(.22, mid);
-        g.addColorStop(.56, mid.replace(/[\d.]+\)$/, '.18)'));
-        g.addColorStop(1, 'rgba(242, 241, 234, 0)');
-        sctx.fillStyle = g;
-        sctx.fillRect(0, 0, size, size);
-        return source;
-      }
-      state.glowGreen = makeGlow('rgba(244, 255, 191, 1)', 'rgba(200, 255, 0, .92)');
-      state.glowBone = makeGlow('rgba(255, 255, 255, .7)', 'rgba(242, 241, 234, .55)');
-    }
-
-    function buildDotSprites(dpr) {
-      const sprites = [];
-      const sizes = [];
-      const radii = [.55, ...FRONT_RADIUS];
-      const alphas = [.045, ...FRONT_ALPHA];
-      for (let b = 0; b < radii.length; b += 1) {
-        const radius = radii[b];
-        const alpha = alphas[b];
-        const dim = Math.max(4, Math.ceil((radius * 2 + 1.2) * dpr));
-        const source = document.createElement('canvas');
-        source.width = dim;
-        source.height = dim;
-        const sctx = source.getContext('2d');
-        const center = dim * .5;
-        const gradient = sctx.createRadialGradient(center, center, 0, center, center, dim * .5);
-        gradient.addColorStop(0, 'rgba(248, 249, 250, ' + alpha.toFixed(3) + ')');
-        gradient.addColorStop(.68, 'rgba(242, 241, 234, ' + alpha.toFixed(3) + ')');
-        gradient.addColorStop(.86, 'rgba(242, 241, 234, ' + (alpha * .45).toFixed(3) + ')');
-        gradient.addColorStop(1, 'rgba(242, 241, 234, 0)');
-        sctx.fillStyle = gradient;
-        sctx.fillRect(0, 0, dim, dim);
-        sprites.push(source);
-        sizes.push(dim);
-      }
-      state.dotSprites = sprites;
-      state.dotSizes = sizes;
-    }
-
-    function cacheTextMetrics(R) {
-      const labelFont = CITY_FONT;
-      ctx.font = labelFont;
-      state.labelFont = labelFont;
-      state.labelWidths = [CORE.label, ...CITIES.map((city) => city.label)]
-        .map((text) => ctx.measureText(text).width);
-
-      const degreeFont = Math.max(8, Math.min(9.5, R * .042)) + 'px "JetBrains Mono", ui-monospace, monospace';
-      ctx.font = degreeFont;
-      state.degreeFont = degreeFont;
-      state.degreeWidths = DEGREE_LABELS.map((label) => ctx.measureText(label).width);
     }
 
     function resize() {
@@ -1241,10 +1298,6 @@
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (!state.ready) {
-        state.lockX = w * .5;
-        state.lockY = h * .5;
-      }
       const R = sphereRadius(w, h);
       const cx = w * .5;
       const cy = h * .5;
@@ -1252,29 +1305,126 @@
       state.height = h;
       state.radius = R;
       state.dpr = dpr;
-      state.useArcDots = dpr < 1.25;
-      const bodyGradient = ctx.createRadialGradient(cx - R * .38, cy - R * .42, R * .05, cx, cy, R * 1.02);
-      bodyGradient.addColorStop(0, '#25282e');
-      bodyGradient.addColorStop(.48, '#141619');
-      bodyGradient.addColorStop(1, '#0b0c0e');
-      state.bodyGradient = bodyGradient;
-      const rimGradient = ctx.createRadialGradient(cx, cy, R * .72, cx, cy, R);
-      rimGradient.addColorStop(0, 'rgba(242, 241, 234, 0)');
-      rimGradient.addColorStop(.82, 'rgba(242, 241, 234, .018)');
-      rimGradient.addColorStop(.96, 'rgba(242, 241, 234, .12)');
-      rimGradient.addColorStop(1, 'rgba(242, 241, 234, .2)');
-      state.rimGradient = rimGradient;
-      const contactGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, R * .9);
-      contactGradient.addColorStop(0, 'rgba(8, 9, 10, .22)');
-      contactGradient.addColorStop(.55, 'rgba(8, 9, 10, .11)');
-      contactGradient.addColorStop(1, 'rgba(8, 9, 10, 0)');
-      state.contactGradient = contactGradient;
-      state.useArcDots = false;
-      buildDotSprites(dpr);
-      buffGlowSprites(dpr);
+      const sphereGradient = ctx.createRadialGradient(cx - R * .12, cy - R * .15, R * .04, cx, cy, R * 1.02);
+      sphereGradient.addColorStop(0, 'rgba(255, 255, 255, .35)');
+      sphereGradient.addColorStop(.6, 'rgba(255, 255, 255, .12)');
+      sphereGradient.addColorStop(1, 'rgba(11, 11, 10, .045)');
+      state.sphereGradient = sphereGradient;
       cacheTextMetrics(R);
       state.ready = true;
       draw();
+    }
+
+    function paintArc(flow, head, fade, focus, comet, now) {
+      const arc = meshArcs[flow.src] ? meshArcs[flow.src][flow.dst] : null;
+      if (!arc) return;
+      const count = Math.max(2, Math.min(ARC_STEPS, Math.ceil(head * (ARC_STEPS - 1)) + 1));
+      for (let s = 0; s < count; s += 1) {
+        const b = s * 3;
+        const vx = arc[b];
+        const vy = arc[b + 1];
+        const vz = arc[b + 2];
+        const x1 = vx * state.cyaw + vz * state.syaw;
+        const z1 = -vx * state.syaw + vz * state.cyaw;
+        const y1 = vy * state.cp - z1 * state.sp;
+        const z2 = vy * state.sp + z1 * state.cp;
+        flow.screen[s * 2] = state.width * .5 + x1 * state.radius;
+        flow.screen[s * 2 + 1] = state.height * .5 - y1 * state.radius;
+        flow.depth[s] = z2;
+      }
+      ctx.globalAlpha = fade;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      let pen = false;
+      for (let s = 0; s < count - 1; s += 1) {
+        if ((flow.depth[s] + flow.depth[s + 1]) * .5 >= 0) {
+          pen = false;
+          continue;
+        }
+        if (!pen) ctx.moveTo(flow.screen[s * 2], flow.screen[s * 2 + 1]);
+        ctx.lineTo(flow.screen[(s + 1) * 2], flow.screen[(s + 1) * 2 + 1]);
+        pen = true;
+      }
+      ctx.strokeStyle = focus ? 'rgba(134, 186, 0, .14)' : 'rgba(11, 11, 10, .10)';
+      ctx.lineWidth = .55;
+      ctx.stroke();
+      ctx.beginPath();
+      pen = false;
+      for (let s = 0; s < count - 1; s += 1) {
+        if ((flow.depth[s] + flow.depth[s + 1]) * .5 < 0) {
+          pen = false;
+          continue;
+        }
+        if (!pen) ctx.moveTo(flow.screen[s * 2], flow.screen[s * 2 + 1]);
+        ctx.lineTo(flow.screen[(s + 1) * 2], flow.screen[(s + 1) * 2 + 1]);
+        pen = true;
+      }
+      if (focus) {
+        ctx.strokeStyle = 'rgba(11, 11, 10, .48)';
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(134, 186, 0, .88)';
+        ctx.lineWidth = .75;
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = 'rgba(11, 11, 10, .24)';
+        ctx.lineWidth = .75;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      if (comet) {
+        const focusCity = cityFocus();
+        const isFocus = focusCity >= 0 && (flow.src === focusCity || flow.dst === focusCity);
+        for (let j = 12; j >= 0; j -= 1) {
+          const u = head - j * .024;
+          if (u < 0) continue;
+          const f = Math.min(ARC_STEPS - 1, u * (ARC_STEPS - 1));
+          const si = Math.min(ARC_STEPS - 2, Math.floor(f));
+          const fr = f - si;
+          const ax = arc[si * 3] + (arc[(si + 1) * 3] - arc[si * 3]) * fr;
+          const ay = arc[si * 3 + 1] + (arc[(si + 1) * 3 + 1] - arc[si * 3 + 1]) * fr;
+          const az = arc[si * 3 + 2] + (arc[(si + 1) * 3 + 2] - arc[si * 3 + 2]) * fr;
+          const x1 = ax * state.cyaw + az * state.syaw;
+          const z1 = -ax * state.syaw + az * state.cyaw;
+          const y1 = ay * state.cp - z1 * state.sp;
+          const z2 = ay * state.sp + z1 * state.cp;
+          const px = state.width * .5 + x1 * state.radius;
+          const py = state.height * .5 - y1 * state.radius;
+          const detached = z2 < 0;
+          const fade = Math.pow(1 - j / 13, 1.55);
+          const alpha = detached ? fade * .22 : fade;
+          if (j === 0) {
+            if (isFocus) {
+              ctx.fillStyle = isFocus ? '#0b0b0a' : ink(.95);
+              ctx.beginPath();
+              ctx.arc(px, py, detached ? 2.1 : 3.2, 0, TAU);
+              ctx.fill();
+              ctx.fillStyle = '#c8ff00';
+              ctx.beginPath();
+              ctx.arc(px, py, detached ? 1.1 : 2, 0, TAU);
+              ctx.fill();
+            } else {
+              ctx.fillStyle = ink(detached ? .22 : .95);
+              ctx.beginPath();
+              ctx.arc(px, py, detached ? 1.3 : 2, 0, TAU);
+              ctx.fill();
+              ctx.fillStyle = '#c8ff00';
+              ctx.beginPath();
+              ctx.arc(px, py, detached ? .55 : .9, 0, TAU);
+              ctx.fill();
+            }
+          } else {
+            ctx.fillStyle = isFocus
+              ? 'rgba(134, 186, 0, ' + (alpha * .78).toFixed(3) + ')'
+              : ink(detached ? alpha * .16 : alpha * .34);
+            ctx.beginPath();
+            ctx.arc(px, py, Math.max(.45, (isFocus ? 1.15 : 1.3) * fade), 0, TAU);
+            ctx.fill();
+          }
+        }
+      }
     }
 
     function draw() {
@@ -1283,7 +1433,6 @@
       const h = state.height;
       if (w < 2 || h < 2) return;
       ctx.clearRect(0, 0, w, h);
-
       const cx = w * .5;
       const cy = h * .5;
       const R = state.radius;
@@ -1293,274 +1442,211 @@
       const syaw = Math.sin(yaw);
       const cp = Math.cos(pitch);
       const sp = Math.sin(pitch);
-      const stride = 1;
+      state.cyaw = cyaw;
+      state.syaw = syaw;
+      state.cp = cp;
+      state.sp = sp;
       const t = state.time;
       const reduced = motion.matches;
       const activeIndex = state.active === 'core' ? -1 : state.active;
       updateOrbitHud(activeIndex);
       emitOrbitLock();
 
-      // ---------- floating obsidian sphere: contact shadow, carbon body, Fresnel rim ----------
-      if (state.contactGradient) {
-        ctx.save();
-        ctx.translate(cx, cy + R * .96);
-        ctx.scale(1, .26);
-        ctx.fillStyle = state.contactGradient;
-        ctx.beginPath();
-        ctx.arc(0, 0, R * .9, 0, TAU);
-        ctx.fill();
-        ctx.restore();
-      }
-      if (state.bodyGradient) {
-        ctx.fillStyle = state.bodyGradient;
-        ctx.beginPath();
-        ctx.arc(cx, cy, R, 0, TAU);
-        ctx.fill();
-      }
-      if (state.rimGradient) {
-        ctx.fillStyle = state.rimGradient;
+      if (state.sphereGradient) {
+        ctx.fillStyle = state.sphereGradient;
         ctx.beginPath();
         ctx.arc(cx, cy, R, 0, TAU);
         ctx.fill();
       }
 
-      // Front-only graticule, equator included.
-      ctx.strokeStyle = 'rgba(242, 241, 234, .065)';
-      ctx.lineWidth = .55;
-      ctx.beginPath();
-      for (const line of GRID_LINES) {
-        let pen = false;
-        for (const point of line) {
-          const ux = point.x;
-          const uy = point.y;
-          const uz = point.z;
-          const x1 = ux * cyaw + uz * syaw;
-          const z1 = -ux * syaw + uz * cyaw;
-          const y1 = uy * cp - z1 * sp;
-          const z2 = uy * sp + z1 * cp;
-          if (z2 <= .015) {
-            pen = false;
-            continue;
-          }
+      const gridBack = new Path2D();
+      const gridFront = new Path2D();
+      const gridBackPrime = new Path2D();
+      const gridFrontPrime = new Path2D();
+      gridLines.forEach((line) => {
+        let penBack = false;
+        let penFront = false;
+        for (let i = 0; i < line.count; i += 1) {
+          const b = i * 3;
+          const vx = line.pts[b];
+          const vy = line.pts[b + 1];
+          const vz = line.pts[b + 2];
+          const x1 = vx * cyaw + vz * syaw;
+          const z1 = -vx * syaw + vz * cyaw;
+          const y1 = vy * cp - z1 * sp;
+          const z2 = vy * sp + z1 * cp;
           const px = cx + x1 * R;
           const py = cy - y1 * R;
-          if (!pen) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-          pen = true;
+          if (z2 < 0) {
+            const path = line.primary ? gridBackPrime : gridBack;
+            if (!penBack) path.moveTo(px, py);
+            else path.lineTo(px, py);
+            penBack = true;
+            penFront = false;
+          } else {
+            const path = line.primary ? gridFrontPrime : gridFront;
+            if (!penFront) path.moveTo(px, py);
+            else path.lineTo(px, py);
+            penFront = true;
+            penBack = false;
+          }
         }
-      }
-      ctx.stroke();
+      });
+      const coastBack = new Path2D();
+      const coastFront = new Path2D();
+      coastlines.forEach((line) => {
+        let penBack = false;
+        let penFront = false;
+        for (let i = 0; i < line.count; i += 1) {
+          const b = i * 3;
+          const vx = line.pts[b];
+          const vy = line.pts[b + 1];
+          const vz = line.pts[b + 2];
+          const x1 = vx * cyaw + vz * syaw;
+          const z1 = -vx * syaw + vz * cyaw;
+          const y1 = vy * cp - z1 * sp;
+          const z2 = vy * sp + z1 * cp;
+          const px = cx + x1 * R;
+          const py = cy - y1 * R;
+          if (z2 < 0) {
+            if (!penBack) coastBack.moveTo(px, py);
+            else coastBack.lineTo(px, py);
+            penBack = true;
+            penFront = false;
+          } else {
+            if (!penFront) coastFront.moveTo(px, py);
+            else coastFront.lineTo(px, py);
+            penFront = true;
+            penBack = false;
+          }
+        }
+      });
 
-      ctx.strokeStyle = 'rgba(242, 241, 234, .32)';
-      ctx.lineWidth = .9;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = ink(.06);
+      ctx.lineWidth = .55;
+      ctx.stroke(gridBack);
+      ctx.strokeStyle = ink(.095);
+      ctx.lineWidth = .6;
+      ctx.stroke(coastBack);
+      ctx.strokeStyle = ink(.08);
+      ctx.lineWidth = .55;
+      ctx.stroke(gridBackPrime);
+      ctx.strokeStyle = ink(.16);
+      ctx.lineWidth = .65;
+      ctx.stroke(gridFront);
+      ctx.strokeStyle = ink(.34);
+      ctx.lineWidth = .85;
+      ctx.stroke(gridFrontPrime);
+      ctx.strokeStyle = ink(.62);
+      ctx.lineWidth = 1;
+      ctx.stroke(coastFront);
+      ctx.strokeStyle = ink(.52);
+      ctx.lineWidth = 1.1;
       ctx.beginPath();
       ctx.arc(cx, cy, R, 0, TAU);
       ctx.stroke();
 
-      // ---------- pre-rendered stipple sprites: 3,232 drawImage calls, no arcs ----------
-      const sprites = state.dotSprites;
-      const sizes = state.dotSizes;
-      const pixelRatio = state.dpr;
-      let dotCount = 0;
-      for (let i = 0; i < totalDots; i += stride) {
-        const base = i * 3;
-        const x0 = worldDots[base];
-        const y0 = worldDots[base + 1];
-        const z0 = worldDots[base + 2];
-        const x1 = x0 * cyaw + z0 * syaw;
-        const z1 = -x0 * syaw + z0 * cyaw;
-        const y1 = y0 * cp - z1 * sp;
-        const z2 = y0 * sp + z1 * cp;
-        const sx = cx + x1 * R;
-        const sy = cy - y1 * R;
-        let bin;
-        if (z2 <= 0) {
-          bin = 0;
-        } else {
-          const lit = Math.max(0, Math.min(1, .5 + .5 * (x1 * LIGHT.x + y1 * LIGHT.y + z2 * LIGHT.z)));
-          const facing = FACING_LUT[Math.min(255, Math.max(0, Math.round(z2 * 255)))];
-          const strength = facing * (.72 + .28 * lit);
-          bin = 1 + Math.min(9, Math.floor(strength * 9.999));
-        }
-        dotScreen[dotCount * 2] = sx;
-        dotScreen[dotCount * 2 + 1] = sy;
-        dotBins[dotCount] = bin;
-        dotCount += 1;
-      }
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.imageSmoothingEnabled = false;
-      if (state.useArcDots) {
-        const arcBuckets = [
-          new Path2D(), new Path2D(), new Path2D(), new Path2D(),
-          new Path2D(), new Path2D(), new Path2D(), new Path2D()
-        ];
-        for (let i = 0; i < dotCount; i += 1) {
-          const bin = dotBins[i];
-          const radius = bin === 0 ? .7 : FRONT_RADIUS[bin - 1];
-          const path = arcBuckets[bin];
-          path.moveTo(dotScreen[i * 2] + radius, dotScreen[i * 2 + 1]);
-          path.arc(dotScreen[i * 2], dotScreen[i * 2 + 1], radius, 0, TAU);
-        }
-        ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-        for (let b = 0; b < 8; b += 1) {
-          ctx.fillStyle = b === 0 ? ink(.075) : ink(FRONT_ALPHA[b - 1]);
-          ctx.fill(arcBuckets[b]);
-        }
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+      if (reduced) {
+        staticPairs.forEach((pair) => {
+          staticFlow.src = pair[0];
+          staticFlow.dst = pair[1];
+          const focus = activeIndex >= 0 && (pair[0] === activeIndex || pair[1] === activeIndex);
+          paintArc(staticFlow, 1, 1, focus, false, t);
+        });
       } else {
-        for (let i = 0; i < dotCount; i += 1) {
-          const bin = dotBins[i];
-          const dim = sizes[bin];
-          const dx = Math.round(dotScreen[i * 2] * pixelRatio - dim * .5);
-          const dy = Math.round(dotScreen[i * 2 + 1] * pixelRatio - dim * .5);
-          ctx.drawImage(sprites[bin], dx, dy);
-        }
-      }
-      ctx.imageSmoothingEnabled = true;
-      ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-
-      // ---------- city beacons + BGP geodesic routes ----------
-      function projectUnit(v, out) {
-        const x1 = v.x * cyaw + v.z * syaw;
-        const z1 = -v.x * syaw + v.z * cyaw;
-        const y1 = v.y * cp - z1 * sp;
-        const z2 = v.y * sp + z1 * cp;
-        out.x = cx + x1 * R;
-        out.y = cy - y1 * R;
-        out.z = z2;
-        return out;
-      }
-
-      const coreScreen = projectUnit(coreVec, { x: 0, y: 0, z: 0 });
-      const cityPoints = cityVecs.map((vec) => projectUnit(vec, { x: 0, y: 0, z: 0 }));
-      const activeRoute = state.locked && activeIndex >= 0 ? activeIndex : -1;
-
-      for (let i = 0; i < cityVecs.length; i += 1) {
-        if (i !== activeRoute && !BACKBONE.has(i)) continue;
-        const node = cityVecs[i];
-        const meta = routeMeta[i];
-        const dot = Math.max(-1, Math.min(1, coreVec.x * node.x + coreVec.y * node.y + coreVec.z * node.z));
-        const omega = Math.acos(dot);
-        const so = Math.sin(omega) || 1e-6;
-        for (let s = 0; s <= 40; s += 1) {
-          const u = s / 40;
-          const wa = Math.sin((1 - u) * omega) / so;
-          const wb = Math.sin(u * omega) / so;
-          const gx = coreVec.x * wa + node.x * wb;
-          const gy = coreVec.y * wa + node.y * wb;
-          const gz = coreVec.z * wa + node.z * wb;
-          const alt = 1 + meta.lift * Math.sin(Math.PI * u);
-          const cx1 = gx * cyaw + gz * syaw;
-          const cz1 = -gx * syaw + gz * cyaw;
-          const cy1 = gy * cp - cz1 * sp;
-          const cz2 = gy * sp + cz1 * cp;
-          const sample = meta.samples[s];
-          sample.x = cx + cx1 * R * alt;
-          sample.y = cy + (-cy1) * R * alt;
-          sample.z = cz2;
+        for (let i = 0; i < flows.length; i += 1) {
+          const flow = flows[i];
+          if (flow.phase === 2) continue;
+          const progress = flow.phase === 1 ? 1 : Math.min(1, (t - flow.start) / flow.duration);
+          const fade = flow.phase === 1 ? Math.max(0, 1 - (t - flow.fadeAt) / .45) : 1;
+          const focus = activeIndex >= 0 && (flow.src === activeIndex || flow.dst === activeIndex);
+          paintArc(flow, progress, fade, focus, flow.phase === 0, t);
         }
       }
 
-      function routePointVisible(p) {
-        if (p.z >= 0) return true;
-        return Math.hypot(p.x - cx, p.y - cy) >= R;
-      }
+      const cityScreen = cityVecs.map((vec) => {
+        const x1 = vec.x * cyaw + vec.z * syaw;
+        const z1 = -vec.x * syaw + vec.z * cyaw;
+        const y1 = vec.y * cp - z1 * sp;
+        const z2 = vec.y * sp + z1 * cp;
+        return { x: cx + x1 * R, y: cy - y1 * R, z: z2 };
+      });
 
-      function appendRoute(index, path) {
-        const samples = routeMeta[index].samples;
-        let pen = false;
-        let previous = null;
-        for (let s = 0; s < samples.length; s += 1) {
-          const p = samples[s];
-          if (!routePointVisible(p)) {
-            pen = false;
-            previous = null;
-            continue;
-          }
-          if (previous) {
-            const mx = (previous.x + p.x) * .5;
-            const my = (previous.y + p.y) * .5;
-            const mz = (previous.z + p.z) * .5;
-            if (mz < 0 && Math.hypot(mx - cx, my - cy) < R) {
-              path.moveTo(p.x, p.y);
-              pen = true;
-              previous = p;
-              continue;
-            }
-          }
-          if (!pen) path.moveTo(p.x, p.y);
-          else path.lineTo(p.x, p.y);
-          pen = true;
-          previous = p;
+      for (let i = 0; i < pulses.length; i += 1) {
+        const pulse = pulses[i];
+        if (!pulse.active) continue;
+        const age = t - pulse.start;
+        if (age < 0 || age > .55) {
+          pulse.active = false;
+          continue;
+        }
+        const point = cityScreen[pulse.city];
+        const p = age / .55;
+        const radius = 3 + 10 * p;
+        const alpha = (1 - p) * (point.z < 0 ? .2 : 1);
+        if (pulse.focus) {
+          ctx.strokeStyle = 'rgba(11, 11, 10, ' + (alpha * .7).toFixed(3) + ')';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, radius, 0, TAU);
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(200, 255, 0, ' + (alpha * .9).toFixed(3) + ')';
+          ctx.lineWidth = .8;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, radius * .72, 0, TAU);
+          ctx.stroke();
+        } else {
+          ctx.strokeStyle = ink(alpha * .55);
+          ctx.lineWidth = .75;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, radius, 0, TAU);
+          ctx.stroke();
         }
       }
 
-      const bonePath = new Path2D();
-      for (let i = 0; i < routeMeta.length; i += 1) {
-        if (i === activeRoute || !BACKBONE.has(i)) continue;
-        appendRoute(i, bonePath);
-      }
-      ctx.strokeStyle = 'rgba(242, 241, 234, .16)';
-      ctx.lineWidth = .65;
-      ctx.setLineDash([3, 4]);
-      ctx.stroke(bonePath);
-      ctx.setLineDash([]);
-      if (activeRoute >= 0) {
-        const activePath = new Path2D();
-        appendRoute(activeRoute, activePath);
-        ctx.strokeStyle = 'rgba(200, 255, 0, .18)';
-        ctx.lineWidth = 3.5;
-        ctx.stroke(activePath);
-        ctx.strokeStyle = 'rgba(200, 255, 0, .78)';
-        ctx.lineWidth = 1.25;
-        ctx.stroke(activePath);
-      }
-
-      if (!reduced && state.glowGreen && state.glowBone) {
-        for (let i = 0; i < routeMeta.length; i += 1) {
-          if (i !== activeRoute && !BACKBONE.has(i)) continue;
-          const meta = routeMeta[i];
-          const active = i === activeRoute;
-          const speed = active ? .85 : .14;
-          const head = (t * speed + i * .17 + .12) % 1;
-          const tail = active ? 18 : 3;
-          for (let j = tail; j >= 0; j -= 1) {
-            const u = head - j * (active ? .009 : .006);
-            if (u < 0) continue;
-            const f = u * 40;
-            const si = Math.min(40, Math.floor(f));
-            const frac = f - si;
-            const a = meta.samples[si];
-            const b = meta.samples[Math.min(40, si + 1)];
-            const px = a.x + (b.x - a.x) * frac;
-            const py = a.y + (b.y - a.y) * frac;
-            const pz = a.z + (b.z - a.z) * frac;
-            if (pz < 0 && Math.hypot(px - cx, py - cy) < R) continue;
-            const fade = Math.pow(1 - j / Math.max(1, tail), 1.55);
-            if (active) {
-              if (j === 0) {
-                ctx.globalAlpha = 1;
-                ctx.drawImage(state.glowGreen, px - 6, py - 6, 12, 12);
-                ctx.fillStyle = '#f4ffbf';
-                ctx.beginPath();
-                ctx.arc(px, py, 1.8, 0, TAU);
-                ctx.fill();
-              } else {
-                const size = 1.2 + 4.2 * fade;
-                ctx.globalAlpha = .62 * fade;
-                ctx.drawImage(state.glowGreen, px - size * .5, py - size * .5, size, size);
-              }
-            } else {
-              const size = .9 + 1.2 * fade;
-              ctx.globalAlpha = .12 + .16 * fade;
-              ctx.drawImage(state.glowBone, px - size * .5, py - size * .5, size, size);
-            }
-          }
+      cityScreen.forEach((point, i) => {
+        const front = point.z > 0;
+        const active = state.locked && activeIndex === i;
+        if (active) {
+          const breathe = (Math.sin(t * 2.15) + 1) * .5;
+          ctx.strokeStyle = 'rgba(200, 255, 0, .24)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 8.5 + breathe * 2.2, 0, TAU);
+          ctx.stroke();
+          ctx.strokeStyle = '#0b0b0a';
+          ctx.lineWidth = 1.3;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 5.2, 0, TAU);
+          ctx.stroke();
+          ctx.fillStyle = '#c8ff00';
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 2.4, 0, TAU);
+          ctx.fill();
+          ctx.fillStyle = '#0b0b0a';
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, .8, 0, TAU);
+          ctx.fill();
+        } else if (front) {
+          ctx.strokeStyle = 'rgba(11, 11, 10, .26)';
+          ctx.lineWidth = .65;
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 4.5, 0, TAU);
+          ctx.stroke();
+          ctx.fillStyle = '#0b0b0a';
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 2.1, 0, TAU);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = 'rgba(11, 11, 10, .14)';
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 1.3, 0, TAU);
+          ctx.fill();
         }
-        ctx.globalAlpha = 1;
-      }
+      });
 
-      // ---------- minimal Swiss bezel: 1.09R, 120 ticks, tangent cardinals ----------
       const ringR = R * 1.09;
       const ringAngle = -t * .02;
       ctx.strokeStyle = ink(.12);
@@ -1568,7 +1654,6 @@
       ctx.beginPath();
       ctx.arc(cx, cy, ringR, 0, TAU);
       ctx.stroke();
-
       const majorTicks = new Path2D();
       const microTicks = new Path2D();
       for (let i = 0; i < 120; i += 1) {
@@ -1588,8 +1673,8 @@
       ctx.strokeStyle = ink(.38);
       ctx.stroke(majorTicks);
 
+      const boxes = [];
       const labelRadius = ringR + 10;
-      const occupiedBoxes = [];
       ctx.font = state.degreeFont;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -1598,82 +1683,18 @@
         const lx = cx + Math.cos(a) * labelRadius;
         const ly = cy + Math.sin(a) * labelRadius;
         const half = Math.max(10, state.degreeWidths[i] * .5 + 4);
-        occupiedBoxes.push({ l: lx - half, r: lx + half, t: ly - half, b: ly + half });
+        boxes.push({ l: lx - half, r: lx + half, t: ly - half, b: ly + half });
         ctx.save();
         ctx.translate(lx, ly);
         ctx.rotate(a + Math.PI / 2);
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = 'rgba(244, 243, 238, .92)';
+        ctx.lineWidth = 2.6;
+        ctx.strokeStyle = 'rgba(242, 241, 234, .92)';
         ctx.strokeText(label, 0, 0);
-        ctx.fillStyle = ink(.46);
+        ctx.fillStyle = ink(.5);
         ctx.fillText(label, 0, 0);
         ctx.restore();
       });
 
-      // ---------- beacons + selected-only labels (max 5, 36px de-duped) ----------
-      const beaconEntries = [
-        { x: coreScreen.x, y: coreScreen.y, z: coreScreen.z, core: true, active: activeIndex < 0 && state.locked }
-      ];
-      cityPoints.forEach((point, i) => {
-        beaconEntries.push({ x: point.x, y: point.y, z: point.z, core: false, active: activeIndex === i });
-      });
-
-      beaconEntries.forEach((entry) => {
-        const front = entry.z > 0;
-        const active = entry.active && state.locked;
-        if (active) {
-          const pulse = (Math.sin(t * 2.15) + 1) * .5;
-          if (state.glowGreen) {
-            ctx.globalAlpha = .24 + .1 * pulse;
-            ctx.drawImage(state.glowGreen, entry.x - 9, entry.y - 9, 18, 18);
-            ctx.globalAlpha = 1;
-          }
-          ctx.strokeStyle = 'rgba(200, 255, 0, .18)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.arc(entry.x, entry.y, 8.6 + pulse * 2.2, 0, TAU);
-          ctx.stroke();
-          ctx.strokeStyle = 'rgba(200, 255, 0, .65)';
-          ctx.lineWidth = .85;
-          ctx.beginPath();
-          ctx.arc(entry.x, entry.y, 5.6 + pulse * .7, 0, TAU);
-          ctx.stroke();
-          ctx.fillStyle = '#c8ff00';
-          ctx.beginPath();
-          ctx.arc(entry.x, entry.y, 2.6, 0, TAU);
-          ctx.fill();
-          ctx.fillStyle = '#f7ffd1';
-          ctx.beginPath();
-          ctx.arc(entry.x, entry.y, 1.05, 0, TAU);
-          ctx.fill();
-        } else if (front) {
-          ctx.strokeStyle = 'rgba(242, 241, 234, .22)';
-          ctx.lineWidth = .65;
-          ctx.beginPath();
-          ctx.arc(entry.x, entry.y, 4.2, 0, TAU);
-          ctx.stroke();
-          ctx.fillStyle = 'rgba(242, 241, 234, .75)';
-          ctx.beginPath();
-          ctx.arc(entry.x, entry.y, 1.8, 0, TAU);
-          ctx.fill();
-        } else {
-          ctx.fillStyle = 'rgba(242, 241, 234, .08)';
-          ctx.beginPath();
-          ctx.arc(entry.x, entry.y, 1.2, 0, TAU);
-          ctx.fill();
-        }
-      });
-
-      function overlaps(a, b) {
-        return a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
-      }
-
-      const boxes = occupiedBoxes.slice();
-      cityPoints.forEach((point, i) => {
-        if (point.z > 0) boxes.push({ l: point.x - 9, r: point.x + 9, t: point.y - 9, b: point.y + 9 });
-      });
-      if (coreScreen.z > 0) boxes.push({ l: coreScreen.x - 9, r: coreScreen.x + 9, t: coreScreen.y - 9, b: coreScreen.y + 9 });
-      const placedAnchors = [];
       const focusIndex = state.locked && activeIndex >= 0 ? activeIndex : -1;
       const coreHubs = [0, 2, 5, 9, 13];
       const candidateIndices = focusIndex >= 0
@@ -1681,28 +1702,29 @@
         : coreHubs.slice(0, 5);
       const labelEntries = [];
       candidateIndices.forEach((index) => {
-        const point = cityPoints[index];
+        const point = cityScreen[index];
         if (!point) return;
         const active = state.locked && index === focusIndex;
         if (point.z <= 0 && !active) return;
-        labelEntries.push({
-          x: point.x,
-          y: point.y,
-          z: point.z,
-          text: CITIES[index].label,
-          width: state.labelWidths[index + 1],
-          index,
-          core: false,
-          active
-        });
+        labelEntries.push({ point, index, active });
+      });
+      labelEntries.forEach((entry) => {
+        if (!entry.active) {
+          boxes.push({
+            l: entry.point.x - 9,
+            r: entry.point.x + 9,
+            t: entry.point.y - 9,
+            b: entry.point.y + 9
+          });
+        }
+      });
+      cityScreen.forEach((point) => {
+        if (point.z > 0) boxes.push({ l: point.x - 9, r: point.x + 9, t: point.y - 9, b: point.y + 9 });
       });
 
-      const labelOrder = labelEntries.sort((a, b) => {
-        return (b.active ? 1 : 0) - (a.active ? 1 : 0) || b.z - a.z || a.index - b.index;
-      });
-      ctx.font = state.labelFont;
-      const labelH = 10;
-
+      const labelOrder = labelEntries.sort((a, b) => (b.active ? 1 : 0) - (a.active ? 1 : 0) || b.point.z - a.point.z || a.index - b.index);
+      const placedAnchors = [];
+      const labelH = 14;
       function capsulePath(x, y, cw, ch, radius) {
         const r = Math.min(radius, ch * .5, cw * .5);
         ctx.beginPath();
@@ -1717,125 +1739,96 @@
         ctx.quadraticCurveTo(x, y, x + r, y);
         ctx.closePath();
       }
-
       labelOrder.forEach((entry) => {
-        if (!entry.active && placedAnchors.some((anchor) => Math.hypot(entry.x - anchor.x, entry.y - anchor.y) < 36)) return;
-        const front = entry.z > 0;
-        const dx = entry.x - cx;
-        const dy = entry.y - cy;
+        if (!entry.active && placedAnchors.some((anchor) => Math.hypot(entry.point.x - anchor.x, entry.point.y - anchor.y) < 36)) return;
+        const dx = entry.point.x - cx;
+        const dy = entry.point.y - cy;
         const dist = Math.hypot(dx, dy);
         const ux = dist > 4 ? dx / dist : 1;
         const uy = dist > 4 ? dy / dist : 0;
-        const textW = entry.width;
-        const elbowX = entry.x + ux * 13;
-        const elbowY = Math.max(9, Math.min(h - 9, entry.y + uy * 13));
+        const text = CITIES[entry.index].label;
+        const textW = state.labelWidths[entry.index + 1];
+        const elbowX = entry.point.x + ux * 13;
+        const elbowY = Math.max(9, Math.min(h - 9, entry.point.y + uy * 13));
         const preferred = ux >= 0 ? 1 : -1;
         let placed = false;
         for (const sign of [preferred, -preferred]) {
-          for (let shoulder = 8; shoulder <= 260 && !placed; shoulder += 10) {
+          for (let shoulder = 8; shoulder <= 280 && !placed; shoulder += 10) {
             const rawX = elbowX + sign * shoulder;
             const textX = sign > 0 ? rawX + 3 : rawX - 3;
-            const rawLeft = sign > 0 ? textX : textX - textW;
-            const rawRight = sign > 0 ? textX + textW : textX;
-            const textCenterX = (rawLeft + rawRight) * .5;
-            const touchesSphere = Math.hypot(rawLeft - cx, elbowY - cy) < R + 4
-              || Math.hypot(rawRight - cx, elbowY - cy) < R + 4
-              || Math.hypot(textCenterX - cx, elbowY - cy) < R + 4;
-            const capsule = entry.active || touchesSphere;
-            const padX = capsule ? 5 : 0;
-            const boxH = capsule ? 14 : labelH;
             const box = sign > 0
-              ? { l: textX - padX, r: textX + textW + padX, t: elbowY - boxH * .5, b: elbowY + boxH * .5 }
-              : { l: textX - textW - padX, r: textX + padX, t: elbowY - boxH * .5, b: elbowY + boxH * .5 };
+              ? { l: textX - 5, r: textX + textW + 5, t: elbowY - 7, b: elbowY + 7 }
+              : { l: textX - textW - 5, r: textX + 5, t: elbowY - 7, b: elbowY + 7 };
             if (box.l < 3 || box.r > w - 3 || box.t < 3 || box.b > h - 3) continue;
-            if (boxes.some((other) => overlaps(box, other))) continue;
-            const lineEndX = capsule ? (sign > 0 ? box.l : box.r) : textX;
-            ctx.strokeStyle = entry.active ? 'rgba(200, 255, 0, .68)' : (capsule ? 'rgba(242, 241, 234, .42)' : ink(front ? .22 : .1));
-            ctx.lineWidth = entry.active ? 1 : (capsule ? .7 : .55);
+            if (boxes.some((other) => box.l < other.r && box.r > other.l && box.t < other.b && box.b > other.t)) continue;
+            const lineEndX = sign > 0 ? box.l : box.r;
+            ctx.strokeStyle = entry.active ? 'rgba(200, 255, 0, .75)' : 'rgba(11, 11, 10, .3)';
+            ctx.lineWidth = entry.active ? 1 : .65;
             ctx.beginPath();
-            ctx.moveTo(entry.x, entry.y);
+            ctx.moveTo(entry.point.x, entry.point.y);
             ctx.lineTo(elbowX, elbowY);
             ctx.lineTo(lineEndX, elbowY);
             ctx.stroke();
             ctx.textAlign = sign > 0 ? 'left' : 'right';
             ctx.textBaseline = 'middle';
             ctx.font = state.labelFont;
-            if (capsule) {
-              capsulePath(box.l, box.t, box.r - box.l, boxH, 3);
-              ctx.fillStyle = entry.active ? '#0e0e0d' : 'rgba(14, 14, 13, .82)';
-              ctx.fill();
-              ctx.strokeStyle = entry.active ? 'rgba(200, 255, 0, .55)' : 'rgba(242, 241, 234, .22)';
-              ctx.lineWidth = entry.active ? 1 : .8;
-              ctx.stroke();
-              ctx.fillStyle = entry.active ? '#c8ff00' : 'rgba(242, 241, 234, .82)';
-              ctx.fillText(entry.text, textX, elbowY);
-            } else {
-              ctx.lineWidth = 3;
-              ctx.strokeStyle = 'rgba(242, 241, 234, 0.88)';
-              ctx.strokeText(entry.text, textX, elbowY);
-              ctx.fillStyle = ink(front ? .62 : .2);
-              ctx.fillText(entry.text, textX, elbowY);
-            }
+            capsulePath(box.l, box.t, box.r - box.l, labelH, 3);
+            ctx.fillStyle = entry.active ? '#0e0e0d' : 'rgba(242, 241, 234, .90)';
+            ctx.fill();
+            ctx.strokeStyle = entry.active ? 'rgba(200, 255, 0, .65)' : 'rgba(11, 11, 10, .24)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.fillStyle = entry.active ? '#c8ff00' : '#0b0b0a';
+            ctx.fillText(text, textX, elbowY);
             boxes.push(box);
-            placedAnchors.push({ x: entry.x, y: entry.y });
+            placedAnchors.push({ x: entry.point.x, y: entry.point.y });
             placed = true;
           }
         }
       });
 
-      let targetLockX = coreScreen.x;
-      let targetLockY = coreScreen.y;
-      if (activeIndex >= 0 && cityPoints[activeIndex]) {
-        targetLockX = cityPoints[activeIndex].x;
-        targetLockY = cityPoints[activeIndex].y;
-      }
-      state.targetLockX = targetLockX;
-      state.targetLockY = targetLockY;
-
-      const activeKey = state.locked ? (activeIndex < 0 ? 'core' : String(activeIndex)) : 'free';
-      if (state.locked && state.lastLockKey !== activeKey) {
-        state.lastLockKey = activeKey;
-        state.rippleStart = t;
-        state.rippleX = targetLockX;
-        state.rippleY = targetLockY;
-      } else if (!state.locked) {
-        state.lastLockKey = 'free';
-      }
-
-      const rippleAge = t - state.rippleStart;
-      if (state.locked && !reduced && rippleAge >= 0 && rippleAge < .65) {
-        const progress = rippleAge / .65;
-        ctx.strokeStyle = 'rgba(200, 255, 0, ' + (.92 * (1 - progress)).toFixed(3) + ')';
-        ctx.lineWidth = 1.15;
-        ctx.beginPath();
-        ctx.arc(state.rippleX, state.rippleY, 6 + 22 * progress, 0, TAU);
-        ctx.stroke();
-      }
-
-      if (state.locked) {
+      if (state.locked && activeIndex >= 0) {
+        const point = cityScreen[activeIndex];
+        state.lockX = state.lockX || point.x;
+        state.lockY = state.lockY || point.y;
+        const targetX = point.x;
+        const targetY = point.y;
+        state.targetLockX = targetX;
+        state.targetLockY = targetY;
+        const lock = 1 - Math.exp(-12 * .016);
+        state.lockX += (targetX - state.lockX) * lock;
+        state.lockY += (targetY - state.lockY) * lock;
+        const rippleAge = t - state.rippleStart;
+        if (rippleAge < .65) {
+          const p = Math.max(0, rippleAge / .65);
+          ctx.strokeStyle = 'rgba(200, 255, 0, ' + (.9 * (1 - p)).toFixed(3) + ')';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(targetX, targetY, 4 + 14 * p, 0, TAU);
+          ctx.stroke();
+        }
         ctx.save();
         ctx.translate(state.lockX, state.lockY);
-        ctx.rotate(-t * .35);
-        ctx.strokeStyle = ink(.68);
-        ctx.lineWidth = .9;
+        ctx.rotate(-t * .42);
+        ctx.strokeStyle = '#0b0b0a';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(0, 0, 12, -.61, .61);
+        ctx.arc(0, 0, 12.5, -.62, .62);
         ctx.stroke();
         ctx.beginPath();
-        ctx.arc(0, 0, 12, Math.PI - .61, Math.PI + .61);
+        ctx.arc(0, 0, 12.5, Math.PI - .62, Math.PI + .62);
         ctx.stroke();
         ctx.restore();
-        ctx.strokeStyle = ink(.68);
-        ctx.lineWidth = .85;
+        ctx.strokeStyle = '#c8ff00';
+        ctx.lineWidth = 1;
         for (let k = 0; k < 4; k += 1) {
-          const a = k * Math.PI / 2;
+          const a = k * Math.PI / 2 + t * .42;
           ctx.beginPath();
           ctx.moveTo(state.lockX + Math.cos(a) * 6.5, state.lockY + Math.sin(a) * 6.5);
           ctx.lineTo(state.lockX + Math.cos(a) * 10.5, state.lockY + Math.sin(a) * 10.5);
           ctx.stroke();
         }
       }
-
     }
 
     function step(now) {
@@ -1845,7 +1838,6 @@
       state.lastTime = now;
       state.time += dt;
       const alpha = 1 - Math.exp(-8 * dt);
-
       if (state.mode === 'locked') {
         state.yaw += (state.targetYaw - state.yaw) * alpha;
         state.pitch += (state.targetPitch - state.pitch) * alpha;
@@ -1853,7 +1845,7 @@
         const speed = Math.abs(state.spinYaw) + Math.abs(state.spinPitch);
         if (speed > .003) {
           state.yaw += state.spinYaw * dt;
-          state.pitch = clampPitch(state.pitch + state.spinPitch * dt);
+          state.pitch = Math.max(-1.26, Math.min(1.26, state.pitch + state.spinPitch * dt));
           state.spinYaw *= Math.exp(-3.1 * dt);
           state.spinPitch *= Math.exp(-3.1 * dt);
           state.targetYaw = state.yaw;
@@ -1869,13 +1861,12 @@
         state.targetYaw = state.yaw;
         state.targetPitch = state.pitch;
       }
-
       state.tiltYaw += (state.targetTiltYaw - state.tiltYaw) * alpha;
       state.tiltPitch += (state.targetTiltPitch - state.tiltPitch) * alpha;
       const lockAlpha = 1 - Math.exp(-10 * dt);
       state.lockX += (state.targetLockX - state.lockX) * lockAlpha;
       state.lockY += (state.targetLockY - state.lockY) * lockAlpha;
-
+      updateMesh(state.time);
       draw();
       state.frame = requestAnimationFrame(step);
     }
@@ -1897,10 +1888,10 @@
     }
 
     function targetFor(lat, lon) {
-      return {
-        yaw: state.yaw + shortestDelta(-lon * RAD),
-        pitch: lat * RAD
-      };
+      let delta = (-lon * RAD - state.yaw) % TAU;
+      if (delta > Math.PI) delta -= TAU;
+      if (delta < -Math.PI) delta += TAU;
+      return { yaw: state.yaw + delta, pitch: lat * RAD };
     }
 
     function setEntry(entry) {
@@ -1921,13 +1912,10 @@
       state.targetPitch = target.pitch;
       state.spinYaw = 0;
       state.spinPitch = 0;
-
+      state.rippleStart = state.time;
       if (motion.matches) {
         state.yaw = state.targetYaw;
         state.pitch = state.targetPitch;
-        draw();
-        state.lockX = state.targetLockX;
-        state.lockY = state.targetLockY;
         draw();
       } else {
         start();
@@ -1938,8 +1926,8 @@
       state.active = 'core';
       state.locked = false;
       state.mode = 'locked';
-      state.targetYaw = state.yaw + shortestDelta(-lon * RAD);
-      state.targetPitch = clampPitch(lat * RAD);
+      state.targetYaw = targetFor(lat, lon).yaw;
+      state.targetPitch = Math.max(-1.26, Math.min(1.26, lat * RAD));
       state.spinYaw = 0;
       state.spinPitch = 0;
       if (motion.matches) {
@@ -1968,11 +1956,7 @@
       state.targetTiltYaw = 0;
       state.targetTiltPitch = 0;
       if (event.pointerType !== 'touch') {
-        try {
-          wall.setPointerCapture(event.pointerId);
-        } catch (error) {
-          /* pointer capture is best-effort */
-        }
+        try { wall.setPointerCapture(event.pointerId); } catch (error) {}
       }
       start();
     }
@@ -1996,13 +1980,9 @@
           state.locked = false;
           state.mode = 'drag';
           wall.classList.add('is-dragging');
-          setOrbitHint('ORBITING');
+          if (orbitDragHint) orbitDragHint.textContent = 'ORBITING';
           if (event.pointerType === 'touch') {
-            try {
-              wall.setPointerCapture(event.pointerId);
-            } catch (error) {
-              /* pointer capture is best-effort */
-            }
+            try { wall.setPointerCapture(event.pointerId); } catch (error) {}
           }
         }
         state.lastPX = event.clientX;
@@ -2010,7 +1990,7 @@
         state.lastMoveAt = now;
         if (state.dragMoved) {
           state.yaw += dx * .0055;
-          state.pitch = clampPitch(state.pitch + dy * .0045);
+          state.pitch = Math.max(-1.26, Math.min(1.26, state.pitch + dy * .0045));
           state.targetYaw = state.yaw;
           state.targetPitch = state.pitch;
           state.spinYaw = Math.max(-8, Math.min(8, (dx * .0055) / dt));
@@ -2023,8 +2003,8 @@
       const wallTop = layout.imprintWallTop - window.scrollY;
       const nx = clamp(((event.clientX - layout.imprintWallLeft) / layout.imprintWallWidth - .5) * 2, -1, 1);
       const ny = clamp(((event.clientY - wallTop) / layout.imprintWallHeight - .5) * 2, -1, 1);
-      state.targetTiltYaw = nx * .10;
-      state.targetTiltPitch = -ny * .07;
+      state.targetTiltYaw = nx * .08;
+      state.targetTiltPitch = -ny * .06;
       start();
     }
 
@@ -2033,14 +2013,10 @@
       state.dragging = false;
       wall.classList.remove('is-dragging');
       if (state.pointerId !== null) {
-        try {
-          wall.releasePointerCapture(state.pointerId);
-        } catch (error) {
-          /* pointer capture is best-effort */
-        }
+        try { wall.releasePointerCapture(state.pointerId); } catch (error) {}
       }
       state.pointerId = null;
-      setOrbitHint('[ ⊹ DRAG TO ORBIT ]');
+      if (orbitDragHint) orbitDragHint.textContent = '[ ⊹ DRAG TO ORBIT ]';
       if (state.dragMoved) {
         state.mode = 'free';
         state.locked = false;
@@ -2050,8 +2026,10 @@
         state.locked = true;
       }
       state.dragMoved = false;
+      start();
     }
 
+    let lastOrbitLock = '';
     wall.addEventListener('pointerdown', onPointerDown);
     wall.addEventListener('pointermove', onPointerMove, { passive: true });
     wall.addEventListener('pointerup', endDrag);
@@ -2065,23 +2043,17 @@
     const observer = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         state.visible = entry.isIntersecting;
-        if (state.visible) start();
-        else stop();
+        if (state.visible) start(); else stop();
       });
     }, { threshold: 0.01 }) : null;
-
     if (observer) observer.observe(section);
-    else {
-      state.visible = true;
-      start();
-    }
+    else { state.visible = true; start(); }
 
     window.addEventListener('resize', resize);
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) stop();
       else if (state.visible) start();
     });
-
     const entryObserver = 'ResizeObserver' in window ? new ResizeObserver(() => resize()) : null;
     if (entryObserver) entryObserver.observe(canvas);
     else window.addEventListener('resize', resize);
@@ -2096,12 +2068,8 @@
     }
 
     return {
-      setEntry(entry) {
-        setEntry(entry);
-      },
-      setView(lat, lon) {
-        setView(lat, lon);
-      },
+      setEntry(entry) { setEntry(entry); },
+      setView(lat, lon) { setView(lat, lon); },
       refresh() {
         if (motion.matches) {
           state.locked = true;
@@ -2497,15 +2465,8 @@
     }
   }
 
-  function updateSplitBackdrop(scrollY) {
-    if (!splitBackdrop || !desktop.matches) return;
-    const start = layout.imprintTop - layout.innerHeight;
-    const end = layout.imprintTop - layout.innerHeight * .34;
-    const alpha = clamp((scrollY - start) / Math.max(1, end - start));
-    if (alpha === lastSplitAlpha) return;
-    lastSplitAlpha = alpha;
-    splitBackdrop.style.opacity = alpha.toFixed(3);
-    splitBackdrop.style.visibility = alpha > 0 ? 'visible' : 'hidden';
+  function updateSplitBackdrop() {
+    return;
   }
 
   function updateNavAccent() {
@@ -2587,7 +2548,6 @@
     revealActs(scrollY);
     updateDepthParallax(scrollY);
     updateScrollScrub(scrollY);
-    queueSplit(current, scrollY);
     refreshCursor(scrollY);
   }
 
