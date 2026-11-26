@@ -486,7 +486,6 @@ body {
   clip-path: inset(0 0 0 0);
   transform: perspective(1100px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) scale(var(--stack-scale, 1));
   transition: clip-path .5s var(--page-ease), transform .18s ease-out;
-  will-change: transform, clip-path;
 }
 
 /* Five staggered darkroom blades sweep the new plate clean. */
@@ -558,7 +557,6 @@ body {
   scale: 1.05;
   filter: grayscale(1) contrast(1.06);
   transition: clip-path .85s var(--page-ease), scale .55s var(--page-ease), opacity .3s ease, filter .7s ease;
-  will-change: clip-path, scale;
 }
 
 .plate-img.is-prev {
@@ -1186,7 +1184,7 @@ body {
 
   .plate-img {
     transform: translate3d(var(--plate-px, 0px), var(--plate-py, 0px), 0);
-    will-change: clip-path, scale, transform;
+    will-change: transform;
   }
 }
 
@@ -1235,9 +1233,9 @@ body {
     pointer-events: none;
     mix-blend-mode: difference;
     opacity: 0;
-    transform: translate3d(var(--cursor-x, -100px), var(--cursor-y, -100px), 0) translate(-50%, -50%);
+    transform: translate3d(-100px, -100px, 0) translate(-50%, -50%);
     transition: width .32s var(--page-ease), height .32s var(--page-ease), background-color .3s ease, border-color .3s ease, opacity .25s ease;
-    will-change: transform, width, height;
+    will-change: transform;
   }
 
   .gallery-cursor.is-visible {
@@ -2031,7 +2029,7 @@ body {
   overflow: hidden;
   border: 1px solid rgba(14, 14, 13, .10);
   border-radius: 22px;
-  box-shadow: 0 -16px 48px rgba(0, 0, 0, .42);
+  box-shadow: none;
   transform-origin: center center;
   backface-visibility: hidden;
   will-change: transform;
@@ -4222,7 +4220,7 @@ html.replica-open {
 #works .work-card {
   border-radius: 0;
   border: 1px solid var(--swiss-line-dark);
-  box-shadow: 0 -12px 36px rgba(0, 0, 0, .28);
+  box-shadow: none;
   background: var(--swiss-paper);
   color: var(--swiss-ink);
 }
@@ -4882,9 +4880,9 @@ html.replica-open {
     mix-blend-mode: difference;
     pointer-events: none;
     opacity: 0;
-    transform: translate3d(var(--cursor-x, -100px), var(--cursor-y, -100px), 0) translate(-50%, -50%) scale(var(--cursor-scale, 1));
+    transform: translate3d(-100px, -100px, 0) translate(-50%, -50%) scale(1);
     transition: width .3s var(--page-ease), height .3s var(--page-ease), background-color .3s ease, border-color .3s ease, opacity .22s ease;
-    will-change: transform, width, height;
+    will-change: transform;
   }
 
   .gallery-cursor.is-visible {
@@ -4946,9 +4944,6 @@ html.replica-open {
     opacity: 1;
   }
 
-  .gallery-cursor.is-pressed {
-    --cursor-scale: .98;
-  }
 
   html.replica-open .gallery-cursor {
     display: none;
@@ -6817,4 +6812,24 @@ html.replica-open {
   .about-colophon {
     margin-top: 30px;
   }
+}
+
+
+/* Retina / 120Hz compositor close-out */
+.film-grain {
+  display: none !important;
+}
+
+/* The archival grain is retained only on the first chapter so the home
+   screenshot stays pixel-identical; every other section composites clean. */
+.journey[data-at-home="true"] ~ .film-grain {
+  display: block !important;
+}
+
+#works .work-card {
+  box-shadow: none !important;
+}
+
+.gallery-cursor {
+  will-change: transform !important;
 }

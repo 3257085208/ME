@@ -62,7 +62,7 @@
   };
   const seg = (value, start, end) => smoothstep((value - start) / Math.max(1e-6, end - start));
   const lenis = window.Lenis && !motion.matches && finePointer.matches && desktop.matches ? new window.Lenis({
-    lerp: .078,
+    lerp: .145,
     smoothWheel: true,
     syncTouch: false,
     wheelMultiplier: 1,
@@ -317,7 +317,6 @@
     measureTimer = setTimeout(() => {
       measureTimer = 0;
       measureLayout();
-      if (lenis) updateScrollInertia(performance.now());
       schedule();
     }, 120);
   }
@@ -962,6 +961,17 @@
     const ctx = canvas.getContext('2d');
     if (!ctx) return { setEntry() {}, refresh() {}, releaseLock() {}, setView() {} };
 
+    const mapCacheCanvas = document.createElement('canvas');
+    const mapCacheCtx = mapCacheCanvas.getContext('2d');
+    const globePerf = { cacheHits: 0, cacheMisses: 0, drawCalls: 0, canvasDrawCalls: 0, meshCalls: 0, pulseCalls: 0, jsMs: 0 };
+    window.__QQSG_GLOBE_PERF__ = globePerf;
+    const rawStroke = ctx.stroke.bind(ctx);
+    const rawFill = ctx.fill.bind(ctx);
+    const rawDrawImage = ctx.drawImage.bind(ctx);
+    ctx.stroke = function () { globePerf.canvasDrawCalls += 1; return rawStroke.apply(null, arguments); };
+    ctx.fill = function () { globePerf.canvasDrawCalls += 1; return rawFill.apply(null, arguments); };
+    ctx.drawImage = function () { globePerf.canvasDrawCalls += 1; return rawDrawImage.apply(null, arguments); };
+
     const TAU = Math.PI * 2;
     const RAD = Math.PI / 180;
     const INK = '11, 11, 10';
@@ -1003,6 +1013,7 @@
 
     const coreVec = toVector(CORE.lat, CORE.lon);
     const cityVecs = CITIES.map((city) => toVector(city.lat, city.lon));
+    const cityScreen = CITIES.map(() => ({ x: 0, y: 0, z: 0 }));
     const pairAngles = CITIES.map(() => new Float32Array(15));
     const meshArcs = CITIES.map(() => new Array(15));
     for (let a = 0; a < 15; a += 1) {
@@ -1087,6 +1098,11 @@
       start: 0,
       duration: 1,
       fadeAt: 0,
+      progress: 0,
+      fade: 1,
+      focus: false,
+      head: 0,
+      count: 2,
       screen: new Float32Array(ARC_STEPS * 2),
       depth: new Float32Array(ARC_STEPS)
     }));
@@ -1132,6 +1148,14 @@
       lastTime: 0,
       ready: false,
       sphereGradient: null,
+      mapCacheReady: false,
+      cacheYaw: NaN,
+      cachePitch: NaN,
+      cacheDpr: 0,
+      mapGradient: null,
+      mainGradient: null,
+      mapWarmed: false,
+      warmFrames: 0,
       width: 0,
       height: 0,
       radius: 0,
@@ -1331,7 +1355,15 @@
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
+      mapCacheCanvas.width = canvas.width;
+      mapCacheCanvas.height = canvas.height;
+      state.mapCacheReady = false;
+      state.cacheYaw = NaN;
+      state.cachePitch = NaN;
+      state.cacheDpr = dpr;
+      state.mapWarmed = false;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      mapCacheCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const R = sphereRadius(w, h);
       const cx = w * .5;
       const cy = h * .5;
@@ -1339,14 +1371,180 @@
       state.height = h;
       state.radius = R;
       state.dpr = dpr;
-      const sphereGradient = ctx.createRadialGradient(cx - R * .12, cy - R * .15, R * .04, cx, cy, R * 1.02);
-      sphereGradient.addColorStop(0, 'rgba(255, 255, 255, .35)');
-      sphereGradient.addColorStop(.6, 'rgba(255, 255, 255, .12)');
-      sphereGradient.addColorStop(1, 'rgba(11, 11, 10, .045)');
-      state.sphereGradient = sphereGradient;
+      const makeGradient = (target) => {
+        const g = target.createRadialGradient(cx - R * .12, cy - R * .15, R * .04, cx, cy, R * 1.02);
+        g.addColorStop(0, 'rgba(255, 255, 255, .35)');
+        g.addColorStop(.6, 'rgba(255, 255, 255, .12)');
+        g.addColorStop(1, 'rgba(11, 11, 10, .045)');
+        return g;
+      };
+      state.mainGradient = makeGradient(ctx);
+      state.mapGradient = makeGradient(mapCacheCtx);
       cacheTextMetrics(R);
       state.ready = true;
       draw();
+    }
+
+
+    function paintMapLayer(target, yaw, pitch) {
+      const w = state.width;
+      const h = state.height;
+      const R = state.radius;
+      const cx = w * .5;
+      const cy = h * .5;
+      const cyaw = Math.cos(yaw);
+      const syaw = Math.sin(yaw);
+      const cp = Math.cos(pitch);
+      const sp = Math.sin(pitch);
+      target.lineJoin = 'bevel';
+      target.lineCap = 'butt';
+
+      const sphereGradient = target === mapCacheCtx ? state.mapGradient : state.mainGradient;
+      if (sphereGradient) {
+        target.fillStyle = sphereGradient;
+        target.beginPath();
+        target.arc(cx, cy, R, 0, TAU);
+        target.fill();
+      }
+
+      function strokeGrid(back, primary) {
+        target.beginPath();
+        gridLines.forEach((line) => {
+          if (line.primary !== primary) return;
+          let pen = false;
+          for (let i = 0; i < line.count; i += 1) {
+            const b = i * 3;
+            const vx = line.pts[b];
+            const vy = line.pts[b + 1];
+            const vz = line.pts[b + 2];
+            const x1 = vx * cyaw + vz * syaw;
+            const z1 = -vx * syaw + vz * cyaw;
+            const y1 = vy * cp - z1 * sp;
+            const z2 = vy * sp + z1 * cp;
+            if ((back && z2 >= 0) || (!back && z2 < 0)) {
+              pen = false;
+              continue;
+            }
+            const px = cx + x1 * R;
+            const py = cy - y1 * R;
+            if (!pen) target.moveTo(px, py);
+            else target.lineTo(px, py);
+            pen = true;
+          }
+        });
+        target.stroke();
+      }
+
+      function strokeGeo(source, back, decimate) {
+        target.beginPath();
+        source.forEach((line) => {
+          let pen = false;
+          let hasPrev = false;
+          let prevPx = 0;
+          let prevPy = 0;
+          let prevZ = 0;
+          let lastX = 0;
+          let lastY = 0;
+          for (let i = 0; i < line.count; i += 1) {
+            const b = i * 3;
+            const vx = line.pts[b];
+            const vy = line.pts[b + 1];
+            const vz = line.pts[b + 2];
+            const x1 = vx * cyaw + vz * syaw;
+            const z1 = -vx * syaw + vz * cyaw;
+            const y1 = vy * cp - z1 * sp;
+            const z2 = vy * sp + z1 * cp;
+            const px = cx + x1 * R;
+            const py = cy - y1 * R;
+            if (!hasPrev) {
+              prevPx = px;
+              prevPy = py;
+              prevZ = z2;
+              hasPrev = true;
+              continue;
+            }
+            const prevInside = back ? prevZ < 0 : prevZ >= 0;
+            const curInside = back ? z2 < 0 : z2 >= 0;
+            const crossing = (prevZ < 0) !== (z2 < 0);
+            let ix = 0;
+            let iy = 0;
+            if (crossing) {
+              const c = prevZ / (prevZ - z2);
+              ix = prevPx + (px - prevPx) * c;
+              iy = prevPy + (py - prevPy) * c;
+            }
+            if (prevInside) {
+              if (!pen) {
+                target.moveTo(prevPx, prevPy);
+                pen = true;
+                lastX = prevPx;
+                lastY = prevPy;
+              }
+              const endX = crossing ? ix : px;
+              const endY = crossing ? iy : py;
+              const keep = crossing || i === line.count - 1 || !decimate
+                || (endX - lastX) * (endX - lastX) + (endY - lastY) * (endY - lastY) >= 1.5;
+              if (keep) {
+                target.lineTo(endX, endY);
+                lastX = endX;
+                lastY = endY;
+              }
+              if (crossing) pen = false;
+            } else if (crossing && curInside) {
+              target.moveTo(ix, iy);
+              pen = true;
+              lastX = ix;
+              lastY = iy;
+              const keep = i === line.count - 1 || !decimate
+                || (px - lastX) * (px - lastX) + (py - lastY) * (py - lastY) >= 1.5;
+              if (keep) {
+                target.lineTo(px, py);
+                lastX = px;
+                lastY = py;
+              }
+            } else {
+              pen = false;
+            }
+            prevPx = px;
+            prevPy = py;
+            prevZ = z2;
+          }
+        });
+        target.stroke();
+      }
+
+      target.strokeStyle = ink(.045);
+      target.lineWidth = .5;
+      strokeGrid(true, false);
+      strokeGrid(true, true);
+      target.strokeStyle = ink(.075);
+      target.lineWidth = .55;
+      strokeGeo(coastlines, true, true);
+      target.strokeStyle = ink(.105);
+      target.lineWidth = .55;
+      strokeGrid(false, false);
+      target.strokeStyle = ink(.28);
+      target.lineWidth = .65;
+      strokeGeo(borders, false, true);
+      target.strokeStyle = ink(.24);
+      target.lineWidth = .75;
+      strokeGrid(false, true);
+      target.strokeStyle = ink(.70);
+      target.lineWidth = 1.05;
+      strokeGeo(coastlines, false, true);
+      target.strokeStyle = ink(.52);
+      target.lineWidth = 1.1;
+      target.beginPath();
+      target.arc(cx, cy, R, 0, TAU);
+      target.stroke();
+    }
+
+    function renderMapCache(yaw, pitch) {
+      if (!mapCacheCtx) return;
+      mapCacheCtx.setTransform(1, 0, 0, 1, 0, 0);
+      mapCacheCtx.clearRect(0, 0, mapCacheCanvas.width, mapCacheCanvas.height);
+      mapCacheCtx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+      paintMapLayer(mapCacheCtx, yaw, pitch);
     }
 
     function paintArc(flow, head, fade, focus, comet, now) {
@@ -1461,8 +1659,214 @@
       }
     }
 
+
+    function buildTrackPath(focus, back, phase) {
+      ctx.beginPath();
+      let any = false;
+      for (let f = 0; f < flows.length; f += 1) {
+        const flow = flows[f];
+        if (flow.phase !== phase || flow.focus !== focus) continue;
+        let pen = false;
+        for (let s = 0; s < flow.count - 1; s += 1) {
+          const midZ = (flow.depth[s] + flow.depth[s + 1]) * .5;
+          if (back ? midZ >= 0 : midZ < 0) {
+            pen = false;
+            continue;
+          }
+          if (!pen) ctx.moveTo(flow.screen[s * 2], flow.screen[s * 2 + 1]);
+          ctx.lineTo(flow.screen[(s + 1) * 2], flow.screen[(s + 1) * 2 + 1]);
+          pen = true;
+          any = true;
+        }
+      }
+      return any;
+    }
+
+    function fillTailBucket(focus, layer, from, to) {
+      const mid = (from + to) * .5;
+      const alpha = Math.pow(1 - mid / 13, 1.55);
+      const fill = focus
+        ? 'rgba(134, 186, 0, ' + (alpha * .78).toFixed(3) + ')'
+        : ink(alpha * (layer === 2 ? .16 : .52));
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      let any = false;
+      for (let f = 0; f < flows.length; f += 1) {
+        const flow = flows[f];
+        if (flow.phase !== 0 || flow.focus !== focus) continue;
+        const arc = meshArcs[flow.src][flow.dst];
+        for (let j = from; j <= to; j += 1) {
+          const u = flow.head - j * .024;
+          if (u < 0) continue;
+          const p = Math.min(ARC_STEPS - 1, u * (ARC_STEPS - 1));
+          const si = Math.min(ARC_STEPS - 2, Math.floor(p));
+          const fr = p - si;
+          const ax = arc[si * 3] + (arc[(si + 1) * 3] - arc[si * 3]) * fr;
+          const ay = arc[si * 3 + 1] + (arc[(si + 1) * 3 + 1] - arc[si * 3 + 1]) * fr;
+          const az = arc[si * 3 + 2] + (arc[(si + 1) * 3 + 2] - arc[si * 3 + 2]) * fr;
+          const x1 = ax * state.cyaw + az * state.syaw;
+          const z1 = -ax * state.syaw + az * state.cyaw;
+          const y1 = ay * state.cp - z1 * state.sp;
+          const z2 = ay * state.sp + z1 * state.cp;
+          if (focus ? false : (layer === 0 ? z2 < 0 : z2 >= 0)) continue;
+          const px = state.width * .5 + x1 * state.radius;
+          const py = state.height * .5 - y1 * state.radius;
+          const fade = Math.pow(1 - j / 13, 1.55);
+          const r = Math.max(.45, (focus ? 1.15 : 1.3) * fade);
+          ctx.moveTo(px + r, py);
+          ctx.arc(px, py, r, 0, TAU);
+          any = true;
+        }
+      }
+      if (any) ctx.fill();
+    }
+
+    function fillHeads(back, focus, acid) {
+      ctx.beginPath();
+      let any = false;
+      for (let f = 0; f < flows.length; f += 1) {
+        const flow = flows[f];
+        if (flow.phase !== 0 || (focus >= 0 && flow.focus !== focus)) continue;
+        const arc = meshArcs[flow.src][flow.dst];
+        const p = Math.min(ARC_STEPS - 1, flow.head * (ARC_STEPS - 1));
+        const si = Math.min(ARC_STEPS - 2, Math.floor(p));
+        const fr = p - si;
+        const ax = arc[si * 3] + (arc[(si + 1) * 3] - arc[si * 3]) * fr;
+        const ay = arc[si * 3 + 1] + (arc[(si + 1) * 3 + 1] - arc[si * 3 + 1]) * fr;
+        const az = arc[si * 3 + 2] + (arc[(si + 1) * 3 + 2] - arc[si * 3 + 2]) * fr;
+        const x1 = ax * state.cyaw + az * state.syaw;
+        const z1 = -ax * state.syaw + az * state.cyaw;
+        const y1 = ay * state.cp - z1 * state.sp;
+        const z2 = ay * state.sp + z1 * state.cp;
+        if (back ? z2 >= 0 : z2 < 0) continue;
+        const px = state.width * .5 + x1 * state.radius;
+        const py = state.height * .5 - y1 * state.radius;
+        const r = acid
+          ? (focus ? (back ? 1.1 : 2) : (back ? .55 : 1.05))
+          : (focus ? (back ? 2.1 : 3.2) : (back ? 1.3 : 2.3));
+        ctx.moveTo(px + r, py);
+        ctx.arc(px, py, r, 0, TAU);
+        any = true;
+      }
+      if (!any) return;
+      ctx.fill();
+    }
+
+    function drawDynamicMesh(activeIndex, now) {
+      for (let i = 0; i < flows.length; i += 1) {
+        const flow = flows[i];
+        if (flow.phase === 2) continue;
+        const progress = flow.phase === 1 ? 1 : Math.min(1, (now - flow.start) / flow.duration);
+        flow.progress = progress;
+        flow.head = progress;
+        flow.fade = flow.phase === 1 ? Math.max(0, 1 - (now - flow.fadeAt) / .45) : 1;
+        flow.focus = activeIndex >= 0 && (flow.src === activeIndex || flow.dst === activeIndex);
+        flow.count = Math.max(2, Math.min(ARC_STEPS, Math.ceil(progress * (ARC_STEPS - 1)) + 1));
+        const arc = meshArcs[flow.src][flow.dst];
+        for (let s = 0; s < flow.count; s += 1) {
+          const b = s * 3;
+          const vx = arc[b];
+          const vy = arc[b + 1];
+          const vz = arc[b + 2];
+          const x1 = vx * state.cyaw + vz * state.syaw;
+          const z1 = -vx * state.syaw + vz * state.cyaw;
+          const y1 = vy * state.cp - z1 * state.sp;
+          const z2 = vy * state.sp + z1 * state.cp;
+          flow.screen[s * 2] = state.width * .5 + x1 * state.radius;
+          flow.screen[s * 2 + 1] = state.height * .5 - y1 * state.radius;
+          flow.depth[s] = z2;
+        }
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      if (buildTrackPath(false, true, 0)) {
+        ctx.strokeStyle = ink(.10);
+        ctx.lineWidth = .55;
+        ctx.stroke();
+      }
+      if (buildTrackPath(true, true, 0)) {
+        ctx.strokeStyle = 'rgba(134, 186, 0, .14)';
+        ctx.lineWidth = .55;
+        ctx.stroke();
+      }
+      if (buildTrackPath(false, false, 0)) {
+        ctx.strokeStyle = ink(.30);
+        ctx.lineWidth = .85;
+        ctx.stroke();
+      }
+      if (buildTrackPath(true, false, 0)) {
+        ctx.strokeStyle = ink(.48);
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(134, 186, 0, .88)';
+        ctx.lineWidth = .75;
+        ctx.stroke();
+      }
+
+      fillTailBucket(false, 0, 1, 4);
+      fillTailBucket(false, 0, 5, 8);
+      fillTailBucket(false, 0, 9, 12);
+      fillTailBucket(false, 1, 1, 4);
+      fillTailBucket(false, 1, 5, 8);
+      fillTailBucket(false, 1, 9, 12);
+      fillTailBucket(true, 2, 1, 4);
+      fillTailBucket(true, 2, 5, 8);
+      fillTailBucket(true, 2, 9, 12);
+
+      // Opaque heads share colours regardless of focus; detached heads stay dim.
+      ctx.fillStyle = '#0b0b0a';
+      fillHeads(false, -1, false);
+      ctx.fillStyle = '#c8ff00';
+      fillHeads(false, -1, true);
+      ctx.fillStyle = ink(.22);
+      fillHeads(true, false, false);
+      ctx.fillStyle = ink(.95);
+      fillHeads(true, true, false);
+      ctx.fillStyle = 'rgba(200, 255, 0, .26)';
+      fillHeads(true, -1, true);
+
+      let phase1Count = 0;
+      let phase1Fade = 0;
+      for (let i = 0; i < flows.length; i += 1) {
+        const flow = flows[i];
+        if (flow.phase !== 1) continue;
+        phase1Fade += flow.fade;
+        phase1Count += 1;
+      }
+      if (phase1Count) {
+        ctx.globalAlpha = phase1Fade / phase1Count;
+        if (buildTrackPath(false, true, 1)) {
+          ctx.strokeStyle = ink(.10);
+          ctx.lineWidth = .55;
+          ctx.stroke();
+        }
+        if (buildTrackPath(true, true, 1)) {
+          ctx.strokeStyle = 'rgba(134, 186, 0, .14)';
+          ctx.lineWidth = .55;
+          ctx.stroke();
+        }
+        if (buildTrackPath(false, false, 1)) {
+          ctx.strokeStyle = ink(.30);
+          ctx.lineWidth = .85;
+          ctx.stroke();
+        }
+        if (buildTrackPath(true, false, 1)) {
+          ctx.strokeStyle = ink(.48);
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(134, 186, 0, .88)';
+          ctx.lineWidth = .75;
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+
     function draw() {
       if (!state.ready) return;
+      const drawStarted = performance.now();
       const w = state.width;
       const h = state.height;
       if (w < 2 || h < 2) return;
@@ -1486,194 +1890,43 @@
       updateOrbitHud(activeIndex);
       emitOrbitLock();
 
-      if (state.sphereGradient) {
-        ctx.fillStyle = state.sphereGradient;
-        ctx.beginPath();
-        ctx.arc(cx, cy, R, 0, TAU);
-        ctx.fill();
+      globePerf.canvasDrawCalls = 0;
+      const cacheStale = !state.mapCacheReady
+        || state.cacheDpr !== state.dpr
+        || Math.abs(yaw - state.cacheYaw) > .00018
+        || Math.abs(pitch - state.cachePitch) > .00018;
+      const cameraMoving = state.dragging
+        || state.mode === 'free'
+        || state.mode === 'auto'
+        || Math.abs(state.targetYaw - state.yaw) > .0005
+        || Math.abs(state.targetPitch - state.pitch) > .0005;
+      ctx.globalAlpha = 1;
+      let directWarmFrame = false;
+      if (cacheStale && cameraMoving) {
+        paintMapLayer(ctx, yaw, pitch);
+        state.mapWarmed = true;
+        state.mapCacheReady = false;
+      } else {
+        if (cacheStale) {
+          renderMapCache(yaw, pitch);
+          if (!state.mapWarmed || state.warmFrames > 0) {
+            paintMapLayer(ctx, yaw, pitch);
+            state.mapWarmed = true;
+            if (state.warmFrames > 0) state.warmFrames -= 1;
+            directWarmFrame = true;
+          }
+          state.cacheYaw = yaw;
+          state.cachePitch = pitch;
+          state.cacheDpr = state.dpr;
+          state.mapCacheReady = true;
+          globePerf.cacheMisses += 1;
+        } else {
+          globePerf.cacheHits += 1;
+        }
+        if (!directWarmFrame) ctx.drawImage(mapCacheCanvas, 0, 0, w, h);
       }
 
-      const gridBack = new Path2D();
-      const gridFront = new Path2D();
-      const gridBackPrime = new Path2D();
-      const gridFrontPrime = new Path2D();
-      gridLines.forEach((line) => {
-        let penBack = false;
-        let penFront = false;
-        for (let i = 0; i < line.count; i += 1) {
-          const b = i * 3;
-          const vx = line.pts[b];
-          const vy = line.pts[b + 1];
-          const vz = line.pts[b + 2];
-          const x1 = vx * cyaw + vz * syaw;
-          const z1 = -vx * syaw + vz * cyaw;
-          const y1 = vy * cp - z1 * sp;
-          const z2 = vy * sp + z1 * cp;
-          const px = cx + x1 * R;
-          const py = cy - y1 * R;
-          if (z2 < 0) {
-            const path = line.primary ? gridBackPrime : gridBack;
-            if (!penBack) path.moveTo(px, py);
-            else path.lineTo(px, py);
-            penBack = true;
-            penFront = false;
-          } else {
-            const path = line.primary ? gridFrontPrime : gridFront;
-            if (!penFront) path.moveTo(px, py);
-            else path.lineTo(px, py);
-            penFront = true;
-            penBack = false;
-          }
-        }
-      });
-
-      const coastBack = new Path2D();
-      const coastFront = new Path2D();
-      coastlines.forEach((line) => {
-        let penBack = false;
-        let penFront = false;
-        let hasPrev = false;
-        let prevPx = 0;
-        let prevPy = 0;
-        let prevZ = 0;
-        for (let i = 0; i < line.count; i += 1) {
-          const b = i * 3;
-          const vx = line.pts[b];
-          const vy = line.pts[b + 1];
-          const vz = line.pts[b + 2];
-          const x1 = vx * cyaw + vz * syaw;
-          const z1 = -vx * syaw + vz * cyaw;
-          const y1 = vy * cp - z1 * sp;
-          const z2 = vy * sp + z1 * cp;
-          const px = cx + x1 * R;
-          const py = cy - y1 * R;
-          if (!hasPrev) {
-            prevPx = px;
-            prevPy = py;
-            prevZ = z2;
-            hasPrev = true;
-            continue;
-          }
-          if (z2 < 0) {
-            if (prevZ < 0) {
-              if (!penBack) coastBack.moveTo(prevPx, prevPy);
-              coastBack.lineTo(px, py);
-              penBack = true;
-              penFront = false;
-            } else {
-              const t = prevZ / (prevZ - z2);
-              const ix = prevPx + (px - prevPx) * t;
-              const iy = prevPy + (py - prevPy) * t;
-              if (!penFront) coastFront.moveTo(prevPx, prevPy);
-              coastFront.lineTo(ix, iy);
-              coastBack.moveTo(ix, iy);
-              coastBack.lineTo(px, py);
-              penBack = true;
-              penFront = false;
-            }
-          } else if (prevZ >= 0) {
-            if (!penFront) coastFront.moveTo(prevPx, prevPy);
-            coastFront.lineTo(px, py);
-            penFront = true;
-            penBack = false;
-          } else {
-            const t = prevZ / (prevZ - z2);
-            const ix = prevPx + (px - prevPx) * t;
-            const iy = prevPy + (py - prevPy) * t;
-            if (!penBack) coastBack.moveTo(prevPx, prevPy);
-            coastBack.lineTo(ix, iy);
-            coastFront.moveTo(ix, iy);
-            coastFront.lineTo(px, py);
-            penFront = true;
-            penBack = false;
-          }
-          prevPx = px;
-          prevPy = py;
-          prevZ = z2;
-        }
-      });
-
-      const borderFront = new Path2D();
-      borders.forEach((line) => {
-        let penFront = false;
-        let hasPrev = false;
-        let prevPx = 0;
-        let prevPy = 0;
-        let prevZ = 0;
-        for (let i = 0; i < line.count; i += 1) {
-          const b = i * 3;
-          const vx = line.pts[b];
-          const vy = line.pts[b + 1];
-          const vz = line.pts[b + 2];
-          const x1 = vx * cyaw + vz * syaw;
-          const z1 = -vx * syaw + vz * cyaw;
-          const y1 = vy * cp - z1 * sp;
-          const z2 = vy * sp + z1 * cp;
-          const px = cx + x1 * R;
-          const py = cy - y1 * R;
-          if (!hasPrev) {
-            prevPx = px;
-            prevPy = py;
-            prevZ = z2;
-            hasPrev = true;
-            continue;
-          }
-          if (z2 >= 0) {
-            if (prevZ >= 0) {
-              if (!penFront) borderFront.moveTo(prevPx, prevPy);
-              borderFront.lineTo(px, py);
-              penFront = true;
-            } else {
-              const t = prevZ / (prevZ - z2);
-              const ix = prevPx + (px - prevPx) * t;
-              const iy = prevPy + (py - prevPy) * t;
-              borderFront.moveTo(ix, iy);
-              borderFront.lineTo(px, py);
-              penFront = true;
-            }
-          } else if (prevZ >= 0) {
-            const t = prevZ / (prevZ - z2);
-            const ix = prevPx + (px - prevPx) * t;
-            const iy = prevPy + (py - prevPy) * t;
-            if (!penFront) borderFront.moveTo(prevPx, prevPy);
-            borderFront.lineTo(ix, iy);
-            penFront = false;
-          } else {
-            penFront = false;
-          }
-          prevPx = px;
-          prevPy = py;
-          prevZ = z2;
-        }
-      });
-
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = ink(.045);
-      ctx.lineWidth = .5;
-      ctx.stroke(gridBack);
-      ctx.stroke(gridBackPrime);
-      ctx.strokeStyle = ink(.075);
-      ctx.lineWidth = .55;
-      ctx.stroke(coastBack);
-      ctx.strokeStyle = ink(.105);
-      ctx.lineWidth = .55;
-      ctx.stroke(gridFront);
-      ctx.strokeStyle = ink(.24);
-      ctx.lineWidth = .75;
-      ctx.stroke(gridFrontPrime);
-      ctx.strokeStyle = ink(.28);
-      ctx.lineWidth = .65;
-      ctx.stroke(borderFront);
-      ctx.strokeStyle = ink(.70);
-      ctx.lineWidth = 1.05;
-      ctx.stroke(coastFront);
-      ctx.strokeStyle = ink(.52);
-      ctx.lineWidth = 1.1;
-      ctx.beginPath();
-      ctx.arc(cx, cy, R, 0, TAU);
-      ctx.stroke();
-
+      const meshStart = globePerf.canvasDrawCalls;
       if (reduced) {
         staticPairs.forEach((pair) => {
           staticFlow.src = pair[0];
@@ -1682,55 +1935,103 @@
           paintArc(staticFlow, 1, 1, focus, false, t);
         });
       } else {
-        for (let i = 0; i < flows.length; i += 1) {
-          const flow = flows[i];
-          if (flow.phase === 2) continue;
-          const progress = flow.phase === 1 ? 1 : Math.min(1, (t - flow.start) / flow.duration);
-          const fade = flow.phase === 1 ? Math.max(0, 1 - (t - flow.fadeAt) / .45) : 1;
-          const focus = activeIndex >= 0 && (flow.src === activeIndex || flow.dst === activeIndex);
-          paintArc(flow, progress, fade, focus, flow.phase === 0, t);
-        }
+        drawDynamicMesh(activeIndex, t);
       }
 
-      const cityScreen = cityVecs.map((vec) => {
+      globePerf.meshCalls = globePerf.canvasDrawCalls - meshStart;
+      for (let i = 0; i < cityVecs.length; i += 1) {
+        const vec = cityVecs[i];
         const x1 = vec.x * cyaw + vec.z * syaw;
         const z1 = -vec.x * syaw + vec.z * cyaw;
         const y1 = vec.y * cp - z1 * sp;
         const z2 = vec.y * sp + z1 * cp;
-        return { x: cx + x1 * R, y: cy - y1 * R, z: z2 };
-      });
+        cityScreen[i].x = cx + x1 * R;
+        cityScreen[i].y = cy - y1 * R;
+        cityScreen[i].z = z2;
+      }
 
+      for (let bucket = 0; bucket < 2; bucket += 1) {
+        ctx.beginPath();
+        let any = false;
+        for (let i = 0; i < pulses.length; i += 1) {
+          const pulse = pulses[i];
+          if (!pulse.active || pulse.focus) continue;
+          const age = t - pulse.start;
+          if (age < 0 || age > .55) {
+            pulse.active = false;
+            continue;
+          }
+          const point = cityScreen[pulse.city];
+          const p = age / .55;
+          const alpha = (1 - p) * (point.z < 0 ? .2 : 1);
+          if ((alpha >= .22 ? 1 : 0) !== bucket) continue;
+          ctx.moveTo(point.x + 3 + 10 * p, point.y);
+          ctx.arc(point.x, point.y, 3 + 10 * p, 0, TAU);
+          any = true;
+        }
+        if (!any) continue;
+        ctx.strokeStyle = ink(bucket === 0 ? .16 : .4);
+        ctx.lineWidth = .75;
+        ctx.stroke();
+      }
+
+      let focusAlpha = 0;
+      let focusCount = 0;
       for (let i = 0; i < pulses.length; i += 1) {
         const pulse = pulses[i];
-        if (!pulse.active) continue;
+        if (!pulse.active || !pulse.focus) continue;
         const age = t - pulse.start;
         if (age < 0 || age > .55) {
           pulse.active = false;
           continue;
         }
         const point = cityScreen[pulse.city];
-        const p = age / .55;
-        const radius = 3 + 10 * p;
-        const alpha = (1 - p) * (point.z < 0 ? .2 : 1);
-        if (pulse.focus) {
+        focusAlpha += (1 - age / .55) * (point.z < 0 ? .2 : 1);
+        focusCount += 1;
+      }
+      if (focusCount) {
+        const alpha = focusAlpha / focusCount;
+        ctx.beginPath();
+        let any = false;
+        for (let i = 0; i < pulses.length; i += 1) {
+          const pulse = pulses[i];
+          if (!pulse.active || !pulse.focus) continue;
+          const age = t - pulse.start;
+          if (age < 0 || age > .55) continue;
+          const point = cityScreen[pulse.city];
+          const p = age / .55;
+          const radius = 3 + 10 * p;
+          ctx.moveTo(point.x + radius, point.y);
+          ctx.arc(point.x, point.y, radius, 0, TAU);
+          any = true;
+        }
+        if (any) {
           ctx.strokeStyle = 'rgba(11, 11, 10, ' + (alpha * .7).toFixed(3) + ')';
           ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          ctx.arc(point.x, point.y, radius, 0, TAU);
           ctx.stroke();
+        }
+        ctx.beginPath();
+        any = false;
+        for (let i = 0; i < pulses.length; i += 1) {
+          const pulse = pulses[i];
+          if (!pulse.active || !pulse.focus) continue;
+          const age = t - pulse.start;
+          if (age < 0 || age > .55) continue;
+          const point = cityScreen[pulse.city];
+          const p = age / .55;
+          const radius = (3 + 10 * p) * .72;
+          ctx.moveTo(point.x + radius, point.y);
+          ctx.arc(point.x, point.y, radius, 0, TAU);
+          any = true;
+        }
+        if (any) {
           ctx.strokeStyle = 'rgba(200, 255, 0, ' + (alpha * .9).toFixed(3) + ')';
           ctx.lineWidth = .8;
-          ctx.beginPath();
-          ctx.arc(point.x, point.y, radius * .72, 0, TAU);
-          ctx.stroke();
-        } else {
-          ctx.strokeStyle = ink(alpha * .55);
-          ctx.lineWidth = .75;
-          ctx.beginPath();
-          ctx.arc(point.x, point.y, radius, 0, TAU);
           ctx.stroke();
         }
       }
+      globePerf.pulseCalls = globePerf.canvasDrawCalls - meshStart - globePerf.meshCalls;
+      globePerf.drawCalls = globePerf.canvasDrawCalls - meshStart;
 
       cityScreen.forEach((point, i) => {
         const front = point.z > 0;
@@ -1780,24 +2081,29 @@
       ctx.beginPath();
       ctx.arc(cx, cy, ringR, 0, TAU);
       ctx.stroke();
-      const majorTicks = new Path2D();
-      const microTicks = new Path2D();
+      ctx.beginPath();
       for (let i = 0; i < 120; i += 1) {
+        if (i % 10 === 0) continue;
         const a = ringAngle + (i / 120) * TAU;
         const ca = Math.cos(a);
         const sa = Math.sin(a);
-        const major = i % 10 === 0;
-        const len = major ? 8 : 3.2;
-        const path = major ? majorTicks : microTicks;
-        path.moveTo(cx + ca * ringR, cy + sa * ringR);
-        path.lineTo(cx + ca * (ringR - len), cy + sa * (ringR - len));
+        ctx.moveTo(cx + ca * ringR, cy + sa * ringR);
+        ctx.lineTo(cx + ca * (ringR - 3.2), cy + sa * (ringR - 3.2));
       }
       ctx.lineWidth = .5;
       ctx.strokeStyle = ink(.12);
-      ctx.stroke(microTicks);
+      ctx.stroke();
+      ctx.beginPath();
+      for (let i = 0; i < 120; i += 10) {
+        const a = ringAngle + (i / 120) * TAU;
+        const ca = Math.cos(a);
+        const sa = Math.sin(a);
+        ctx.moveTo(cx + ca * ringR, cy + sa * ringR);
+        ctx.lineTo(cx + ca * (ringR - 8), cy + sa * (ringR - 8));
+      }
       ctx.lineWidth = .85;
       ctx.strokeStyle = ink(.38);
-      ctx.stroke(majorTicks);
+      ctx.stroke();
 
       const boxes = [];
       const labelRadius = ringR + 10;
@@ -1955,6 +2261,7 @@
           ctx.stroke();
         }
       }
+      globePerf.jsMs = performance.now() - drawStarted;
     }
 
     function step(now) {
@@ -1967,6 +2274,8 @@
       if (state.mode === 'locked') {
         state.yaw += (state.targetYaw - state.yaw) * alpha;
         state.pitch += (state.targetPitch - state.pitch) * alpha;
+        if (Math.abs(state.targetYaw - state.yaw) < .0008) state.yaw = state.targetYaw;
+        if (Math.abs(state.targetPitch - state.pitch) < .0008) state.pitch = state.targetPitch;
       } else if (state.mode === 'free') {
         const speed = Math.abs(state.spinYaw) + Math.abs(state.spinPitch);
         if (speed > .003) {
@@ -1989,6 +2298,8 @@
       }
       state.tiltYaw += (state.targetTiltYaw - state.tiltYaw) * alpha;
       state.tiltPitch += (state.targetTiltPitch - state.tiltPitch) * alpha;
+      if (Math.abs(state.targetTiltYaw - state.tiltYaw) < .0005) state.tiltYaw = state.targetTiltYaw;
+      if (Math.abs(state.targetTiltPitch - state.tiltPitch) < .0005) state.tiltPitch = state.targetTiltPitch;
       const lockAlpha = 1 - Math.exp(-10 * dt);
       state.lockX += (state.targetLockX - state.lockX) * lockAlpha;
       state.lockY += (state.targetLockY - state.lockY) * lockAlpha;
@@ -2175,7 +2486,13 @@
     const observer = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         state.visible = entry.isIntersecting;
-        if (state.visible) start(); else stop();
+        if (state.visible) {
+          state.mapWarmed = false;
+          state.warmFrames = 0;
+          start();
+        } else {
+          stop();
+        }
       });
     }, { threshold: 0.01 }) : null;
     if (observer) observer.observe(section);
@@ -2296,6 +2613,12 @@
     if (label) label.textContent = plate ? 'LAUNCH' : (orbit ? 'ORBIT' : '');
   }
 
+  function applyCursorTransform() {
+    if (!galleryCursor) return;
+    const scale = galleryCursor.classList.contains('is-pressed') ? .98 : 1;
+    galleryCursor.style.transform = 'translate3d(' + cursorX.toFixed(1) + 'px, ' + cursorY.toFixed(1) + 'px, 0) translate(-50%, -50%) scale(' + scale + ')';
+  }
+
   function cursorStep(now) {
     cursorFrame = 0;
     if (!galleryCursor) return;
@@ -2304,8 +2627,7 @@
     const alpha = 1 - Math.exp(-16 * dt);
     cursorX += (cursorTargetX - cursorX) * alpha;
     cursorY += (cursorTargetY - cursorY) * alpha;
-    galleryCursor.style.setProperty('--cursor-x', cursorX.toFixed(2) + 'px');
-    galleryCursor.style.setProperty('--cursor-y', cursorY.toFixed(2) + 'px');
+    applyCursorTransform();
     if (Math.abs(cursorTargetX - cursorX) > 0.2 || Math.abs(cursorTargetY - cursorY) > 0.2) {
       cursorFrame = requestAnimationFrame(cursorStep);
     } else {
@@ -2330,8 +2652,7 @@
       if (firstMove) {
         cursorX = event.clientX;
         cursorY = event.clientY;
-        galleryCursor.style.setProperty('--cursor-x', cursorX.toFixed(2) + 'px');
-        galleryCursor.style.setProperty('--cursor-y', cursorY.toFixed(2) + 'px');
+        applyCursorTransform();
       }
       setCursorMode(event.target, event.clientX, event.clientY);
       startCursor();
@@ -2344,9 +2665,13 @@
     };
     document.documentElement.addEventListener('pointerleave', hideCursor);
     window.addEventListener('blur', hideCursor);
-    window.addEventListener('pointerdown', () => galleryCursor.classList.add('is-pressed'), { passive: true });
-    window.addEventListener('pointerup', () => galleryCursor.classList.remove('is-pressed'), { passive: true });
-    window.addEventListener('pointercancel', () => galleryCursor.classList.remove('is-pressed'), { passive: true });
+    const setCursorPressed = (pressed) => {
+      galleryCursor.classList.toggle('is-pressed', pressed);
+      if (pointerX >= 0) applyCursorTransform();
+    };
+    window.addEventListener('pointerdown', () => setCursorPressed(true), { passive: true });
+    window.addEventListener('pointerup', () => setCursorPressed(false), { passive: true });
+    window.addEventListener('pointercancel', () => setCursorPressed(false), { passive: true });
   }
 
   function refreshCursor(scrollY) {
@@ -2744,7 +3069,6 @@
   if (lenis) {
     lenis.on('scroll', (payload) => {
       update(payload.scroll);
-      updateScrollInertia(performance.now());
     });
   } else {
     window.addEventListener('scroll', schedule, { passive: true });
@@ -2887,8 +3211,6 @@
   if (lenis) {
     function raf(time) {
       lenis.raf(time);
-      if (inertiaActive || inertiaSkew !== 0 || inertiaLag !== 0) updateScrollInertia(time);
-      advanceSplit(time);
       updateManifestoSkew(time);
       requestAnimationFrame(raf);
     }
