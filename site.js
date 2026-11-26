@@ -1368,8 +1368,8 @@
         ctx.lineWidth = .75;
         ctx.stroke();
       } else {
-        ctx.strokeStyle = 'rgba(11, 11, 10, .24)';
-        ctx.lineWidth = .75;
+        ctx.strokeStyle = 'rgba(11, 11, 10, .30)';
+        ctx.lineWidth = .85;
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
@@ -1401,24 +1401,24 @@
               ctx.beginPath();
               ctx.arc(px, py, detached ? 2.1 : 3.2, 0, TAU);
               ctx.fill();
-              ctx.fillStyle = '#c8ff00';
+              ctx.fillStyle = detached ? 'rgba(200, 255, 0, .26)' : '#c8ff00';
               ctx.beginPath();
               ctx.arc(px, py, detached ? 1.1 : 2, 0, TAU);
               ctx.fill();
             } else {
               ctx.fillStyle = ink(detached ? .22 : .95);
               ctx.beginPath();
-              ctx.arc(px, py, detached ? 1.3 : 2, 0, TAU);
+              ctx.arc(px, py, detached ? 1.3 : 2.3, 0, TAU);
               ctx.fill();
-              ctx.fillStyle = '#c8ff00';
+              ctx.fillStyle = detached ? 'rgba(200, 255, 0, .26)' : '#c8ff00';
               ctx.beginPath();
-              ctx.arc(px, py, detached ? .55 : .9, 0, TAU);
+              ctx.arc(px, py, detached ? .55 : 1.05, 0, TAU);
               ctx.fill();
             }
           } else {
             ctx.fillStyle = isFocus
               ? 'rgba(134, 186, 0, ' + (alpha * .78).toFixed(3) + ')'
-              : ink(detached ? alpha * .16 : alpha * .34);
+              : ink(detached ? alpha * .16 : alpha * .52);
             ctx.beginPath();
             ctx.arc(px, py, Math.max(.45, (isFocus ? 1.15 : 1.3) * fade), 0, TAU);
             ctx.fill();

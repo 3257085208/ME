@@ -127,9 +127,11 @@ manifesto / works 为不透明炭黑舞台；imprints / about 透明浮在分割
 - 版本升级为 20261126b；Home 与阶段 1 全屏剧场、Preloader、机械光标、Inter/JetBrains Mono token 全部保留。
 
 
-## 无缝章节与矢量地球（20261126e）
+## 无缝章节与矢量地球（20261126f）
 
 - 删除 split-backdrop 的 36px 羽化带与滚动淡入；桌面 ii 在 #imprints / #about 使用自身 36/64 实色平面：左 #0b0b0a、右 #f2f1ea，margin 归零，右侧仅保留 1px rgba(11,11,10,.08) 刀锋细线；章节间用 100% 宽、左明右暗的 1px 分界。about-visual 回到纯黑底、肖像 contain 居中。
 - #imprints 地球由 3,232 暗色点阵改为 Natural Earth 110m 衍生海岸线线框球（world-coastlines.js，20.4KB / 126 条折线 / 1,821 点）：骨白纸面上绘制正/背双层经纬网与海岸线、球体轮廓、1.09R 120 格表圈与 36px 防重叠标签胶囊；DPR 上限提升到 2。
 - 15 城 P2P 池：桌面 18 条 / 移动 11 条预分配流，15 城独立随机发射；按球面角距 1.35–3.2s 飞行；选中城市保证 3 条双向高亮流；深墨/酸柠双色彗星、12 节尾迹、TX/RX 双环脉冲；reduced-motion 下静态弧线。
 - 版本统一为 20261126e；Fullscreen Theater、Archive 预解码堆叠、Preloader、机械光标保持不变。
+
+- 20261126f：Work 顶部安全条移入 work-stack，并在 work-chapter / work-stack 加 overflow: clip，彻底阻断 68px 黑条溢出到 Imprints；P2P 普通轨线与彗星头在骨白底上加深，背面酸柠核降至 .26；Archive 条目文案同步为 3D 矢量地球。

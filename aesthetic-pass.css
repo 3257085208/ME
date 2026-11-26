@@ -1975,6 +1975,7 @@ body {
 .work-chapter {
   position: relative;
   z-index: 3;
+  overflow: clip;
   background: var(--page-ink);
   color: var(--page-paper);
 }
@@ -1990,6 +1991,7 @@ body {
 .work-stack {
   position: relative;
   z-index: 1;
+  overflow: clip;
   padding-top: 76px;
   padding-bottom: 18svh;
 }
