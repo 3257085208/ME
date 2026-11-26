@@ -474,34 +474,51 @@
 
     const replicas = {
       lowendcloud: {
-        domain: 'LOWEND.CLOUD · 1:1 INTERACTIVE REPLICA',
-        src: 'demos/lowendcloud.html?v=20261126b',
+        domain: 'LOWEND.CLOUD · LIVE PREVIEW',
+        src: 'https://lowend.cloud',
         live: 'https://lowend.cloud',
-        title: 'LowEndCloud 1:1 interactive replica'
+        title: 'LowEndCloud live site preview'
       },
       '1kbpage': {
-        domain: '1KB.PAGE · 1:1 INTERACTIVE REPLICA',
-        src: 'demos/1kbpage.html?v=20261126b',
+        domain: '1KB.PAGE · LIVE PREVIEW',
+        src: 'https://1kb.page',
         live: 'https://1kb.page',
-        title: '1Kb.Page 1:1 interactive replica'
+        title: '1Kb.Page live site preview'
       },
       blog: {
-        domain: 'NIEKAIXIANG.COM · 1:1 INTERACTIVE REPLICA',
-        src: 'demos/blog.html?v=20261126b',
+        domain: 'NIEKAIXIANG.COM · LIVE PREVIEW',
+        src: 'https://www.niekaixiang.com',
         live: 'https://www.niekaixiang.com',
-        title: '聶.NET 1:1 interactive replica'
+        title: '聶.NET live site preview'
       },
       sla: {
-        domain: 'SLA.NIEKAIXIANG.COM · 1:1 INTERACTIVE REPLICA',
-        src: 'demos/sla.html?v=20261126b',
+        domain: 'SLA.NIEKAIXIANG.COM · LIVE PREVIEW',
+        src: 'https://sla.niekaixiang.com',
         live: 'https://sla.niekaixiang.com',
-        title: 'NIE-SLA 1:1 interactive replica'
+        title: 'NIE-SLA live site preview'
       }
     };
     let activeReplica = '';
     let frame = null;
     let lastFocus = null;
     let inertTargets = [];
+    let loadingTimer = 0;
+
+    function clearLoadingTimer() {
+      if (!loadingTimer) return;
+      clearTimeout(loadingTimer);
+      loadingTimer = 0;
+    }
+
+    function showLoading() {
+      if (!loading) return;
+      clearLoadingTimer();
+      loading.classList.remove('is-hidden');
+      loadingTimer = window.setTimeout(() => {
+        loadingTimer = 0;
+        loading.classList.add('is-hidden');
+      }, 4500);
+    }
 
     function syncChrome(id) {
       const item = replicas[id];
@@ -522,13 +539,16 @@
       if (!item) return;
       activeReplica = id;
       syncChrome(id);
-      if (loading) loading.classList.remove('is-hidden');
+      showLoading();
       if (!frame) {
         frame = document.createElement('iframe');
         frame.className = 'replica-frame';
         frame.setAttribute('title', item.title);
         frame.setAttribute('loading', 'eager');
+        frame.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+        frame.setAttribute('allow', 'fullscreen; clipboard-write');
         frame.addEventListener('load', () => {
+          clearLoadingTimer();
           if (loading) loading.classList.add('is-hidden');
           try {
             const doc = frame.contentDocument;
@@ -539,11 +559,12 @@
             }
           } catch (error) {}
         });
+        frame.src = item.src;
         stage.appendChild(frame);
       } else {
         frame.setAttribute('title', item.title);
+        frame.src = item.src;
       }
-      frame.src = item.src;
     }
 
     function openReplica(id) {
@@ -569,6 +590,7 @@
       document.documentElement.classList.remove('replica-open');
       inertTargets.forEach((el) => { el.inert = false; });
       inertTargets = [];
+      clearLoadingTimer();
       if (frame) {
         frame.src = 'about:blank';
         frame.remove();
@@ -1846,12 +1868,12 @@
         if (speed > .003) {
           state.yaw += state.spinYaw * dt;
           state.pitch = Math.max(-1.26, Math.min(1.26, state.pitch + state.spinPitch * dt));
-          state.spinYaw *= Math.exp(-3.1 * dt);
-          state.spinPitch *= Math.exp(-3.1 * dt);
+          state.spinYaw *= Math.exp(-2.2 * dt);
+          state.spinPitch *= Math.exp(-2.2 * dt);
           state.targetYaw = state.yaw;
           state.targetPitch = state.pitch;
-          state.idleSince = state.time;
-        } else if (state.time - state.idleSince > 2.5) {
+        }
+        if (state.time - state.idleSince > 2.5) {
           state.mode = 'auto';
           state.spinYaw = 0;
           state.spinPitch = 0;
@@ -1943,6 +1965,7 @@
       if (motion.matches || event.button !== 0) return;
       if (!finePointer.matches && event.pointerType !== 'touch') return;
       if (event.target.closest && event.target.closest('.imprint-cities, .imprint-node, .imprint-links, .imprint-asn, .orbit-hud')) return;
+      if (event.pointerType !== 'touch') event.preventDefault();
       state.dragging = true;
       state.dragMoved = false;
       state.pointerId = event.pointerId;
@@ -1969,19 +1992,24 @@
         const totalY = event.clientY - state.startPY;
         const now = performance.now();
         const dt = Math.max(8, now - state.lastMoveAt) / 1000;
-        if (!state.dragMoved && event.pointerType === 'touch' && Math.abs(totalY) > Math.abs(totalX) && Math.abs(totalY) > 5) {
-          state.dragging = false;
-          state.pointerId = null;
-          return;
+        const isTouch = event.pointerType === 'touch';
+        if (!state.dragMoved && isTouch) {
+          if (Math.abs(totalY) > Math.abs(totalX) && Math.abs(totalY) > 5) {
+            state.dragging = false;
+            state.pointerId = null;
+            return;
+          }
+          if (Math.abs(totalX) < 4 || Math.abs(totalX) <= Math.abs(totalY)) return;
         }
         if (!state.dragMoved) {
-          if (Math.abs(totalX) < 4 || Math.abs(totalX) <= Math.abs(totalY)) return;
+          const threshold = isTouch ? 4 : 2;
+          if (Math.hypot(totalX, totalY) < threshold) return;
           state.dragMoved = true;
           state.locked = false;
           state.mode = 'drag';
           wall.classList.add('is-dragging');
           if (orbitDragHint) orbitDragHint.textContent = 'ORBITING';
-          if (event.pointerType === 'touch') {
+          if (isTouch) {
             try { wall.setPointerCapture(event.pointerId); } catch (error) {}
           }
         }
@@ -1989,12 +2017,12 @@
         state.lastPY = event.clientY;
         state.lastMoveAt = now;
         if (state.dragMoved) {
-          state.yaw += dx * .0055;
-          state.pitch = Math.max(-1.26, Math.min(1.26, state.pitch + dy * .0045));
+          state.yaw += dx * .0085;
+          state.pitch = Math.max(-1.26, Math.min(1.26, state.pitch + dy * .0075));
           state.targetYaw = state.yaw;
           state.targetPitch = state.pitch;
-          state.spinYaw = Math.max(-8, Math.min(8, (dx * .0055) / dt));
-          state.spinPitch = Math.max(-6, Math.min(6, (dy * .0045) / dt));
+          state.spinYaw = Math.max(-11, Math.min(11, (dx * .0085) / dt));
+          state.spinPitch = Math.max(-8, Math.min(8, (dy * .0075) / dt));
           start();
         }
         return;

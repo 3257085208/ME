@@ -135,3 +135,10 @@ manifesto / works 为不透明炭黑舞台；imprints / about 透明浮在分割
 - 版本统一为 20261126e；Fullscreen Theater、Archive 预解码堆叠、Preloader、机械光标保持不变。
 
 - 20261126f：Work 顶部安全条移入 work-stack，并在 work-chapter / work-stack 加 overflow: clip，彻底阻断 68px 黑条溢出到 Imprints；P2P 普通轨线与彗星头在骨白底上加深，背面酸柠核降至 .26；Archive 条目文案同步为 3D 矢量地球。
+
+
+## 轨道拖拽与 Live Theater（20261126g）
+
+- 桌面鼠标 / 触控笔解除横向方向锁，2px 位移即进入 360° 拖拽；灵敏度 0.0085 / 0.0075，惯性限幅 11 / 8、阻尼 exp(-2.2dt)；触屏仍保留竖滑让路、横滑捕获。松手自由停驻，2.5s 后恢复自转。
+- Works 剧场改为 4 个真实站点 iframe：lowend.cloud、1kb.page、www.niekaixiang.com、sla.niekaixiang.com；无 sandbox，允许 fullscreen / clipboard-write，referrerpolicy=no-referrer-when-downgrade；4.5s 加载兜底与 OPEN SITE 提示。
+- 顶部 / 展板文案统一为 LIVE 语义；缓存版本 20261126g。
