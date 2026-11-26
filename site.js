@@ -1047,16 +1047,26 @@
       pushGrid(line, lon === 0);
     }
 
-    function decodeCoastlines(payload) {
-      if (!payload || !Array.isArray(payload.lines)) return [];
+    function decodeLines(source, delta) {
+      if (!Array.isArray(source)) return [];
+      const payload = window.__QQSG_COASTLINES__ || {};
       const q = payload.q || 100;
       const out = [];
-      payload.lines.forEach((flat) => {
+      source.forEach((flat) => {
         const count = flat.length >> 1;
         if (count < 2) return;
         const arr = new Float32Array(count * 3);
+        let x = 0;
+        let y = 0;
         for (let i = 0; i < count; i += 1) {
-          const v = toVector(flat[i * 2 + 1] / q, flat[i * 2] / q);
+          if (delta) {
+            x += flat[i * 2];
+            y += flat[i * 2 + 1];
+          } else {
+            x = flat[i * 2];
+            y = flat[i * 2 + 1];
+          }
+          const v = toVector(y / q, x / q);
           arr[i * 3] = v.x;
           arr[i * 3 + 1] = v.y;
           arr[i * 3 + 2] = v.z;
@@ -1066,7 +1076,9 @@
       return out;
     }
 
-    const coastlines = decodeCoastlines(window.__QQSG_COASTLINES__);
+    const geoPayload = window.__QQSG_COASTLINES__ || {};
+    const coastlines = decodeLines(geoPayload.lines, Boolean(geoPayload.delta));
+    const borders = decodeLines(geoPayload.borders, Boolean(geoPayload.delta));
     const FLOW_COUNT = 18;
     const flows = Array.from({ length: FLOW_COUNT }, () => ({
       phase: 2,
@@ -1514,11 +1526,16 @@
           }
         }
       });
+
       const coastBack = new Path2D();
       const coastFront = new Path2D();
       coastlines.forEach((line) => {
         let penBack = false;
         let penFront = false;
+        let hasPrev = false;
+        let prevPx = 0;
+        let prevPy = 0;
+        let prevZ = 0;
         for (let i = 0; i < line.count; i += 1) {
           const b = i * 3;
           const vx = line.pts[b];
@@ -1530,39 +1547,124 @@
           const z2 = vy * sp + z1 * cp;
           const px = cx + x1 * R;
           const py = cy - y1 * R;
+          if (!hasPrev) {
+            prevPx = px;
+            prevPy = py;
+            prevZ = z2;
+            hasPrev = true;
+            continue;
+          }
           if (z2 < 0) {
-            if (!penBack) coastBack.moveTo(px, py);
-            else coastBack.lineTo(px, py);
-            penBack = true;
-            penFront = false;
+            if (prevZ < 0) {
+              if (!penBack) coastBack.moveTo(prevPx, prevPy);
+              coastBack.lineTo(px, py);
+              penBack = true;
+              penFront = false;
+            } else {
+              const t = prevZ / (prevZ - z2);
+              const ix = prevPx + (px - prevPx) * t;
+              const iy = prevPy + (py - prevPy) * t;
+              coastFront.lineTo(ix, iy);
+              coastBack.moveTo(ix, iy);
+              coastBack.lineTo(px, py);
+              penBack = true;
+              penFront = false;
+            }
+          } else if (prevZ >= 0) {
+            if (!penFront) coastFront.moveTo(prevPx, prevPy);
+            coastFront.lineTo(px, py);
+            penFront = true;
+            penBack = false;
           } else {
-            if (!penFront) coastFront.moveTo(px, py);
-            else coastFront.lineTo(px, py);
+            const t = prevZ / (prevZ - z2);
+            const ix = prevPx + (px - prevPx) * t;
+            const iy = prevPy + (py - prevPy) * t;
+            coastBack.lineTo(ix, iy);
+            coastFront.moveTo(ix, iy);
+            coastFront.lineTo(px, py);
             penFront = true;
             penBack = false;
           }
+          prevPx = px;
+          prevPy = py;
+          prevZ = z2;
+        }
+      });
+
+      const borderFront = new Path2D();
+      borders.forEach((line) => {
+        let penFront = false;
+        let hasPrev = false;
+        let prevPx = 0;
+        let prevPy = 0;
+        let prevZ = 0;
+        for (let i = 0; i < line.count; i += 1) {
+          const b = i * 3;
+          const vx = line.pts[b];
+          const vy = line.pts[b + 1];
+          const vz = line.pts[b + 2];
+          const x1 = vx * cyaw + vz * syaw;
+          const z1 = -vx * syaw + vz * cyaw;
+          const y1 = vy * cp - z1 * sp;
+          const z2 = vy * sp + z1 * cp;
+          const px = cx + x1 * R;
+          const py = cy - y1 * R;
+          if (!hasPrev) {
+            prevPx = px;
+            prevPy = py;
+            prevZ = z2;
+            hasPrev = true;
+            continue;
+          }
+          if (z2 >= 0) {
+            if (prevZ >= 0) {
+              if (!penFront) borderFront.moveTo(prevPx, prevPy);
+              borderFront.lineTo(px, py);
+              penFront = true;
+            } else {
+              const t = prevZ / (prevZ - z2);
+              const ix = prevPx + (px - prevPx) * t;
+              const iy = prevPy + (py - prevPy) * t;
+              borderFront.moveTo(ix, iy);
+              borderFront.lineTo(px, py);
+              penFront = true;
+            }
+          } else if (prevZ >= 0) {
+            const t = prevZ / (prevZ - z2);
+            const ix = prevPx + (px - prevPx) * t;
+            const iy = prevPy + (py - prevPy) * t;
+            if (!penFront) borderFront.moveTo(prevPx, prevPy);
+            borderFront.lineTo(ix, iy);
+            penFront = false;
+          } else {
+            penFront = false;
+          }
+          prevPx = px;
+          prevPy = py;
+          prevZ = z2;
         }
       });
 
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
-      ctx.strokeStyle = ink(.06);
-      ctx.lineWidth = .55;
+      ctx.strokeStyle = ink(.045);
+      ctx.lineWidth = .5;
       ctx.stroke(gridBack);
-      ctx.strokeStyle = ink(.095);
-      ctx.lineWidth = .6;
-      ctx.stroke(coastBack);
-      ctx.strokeStyle = ink(.08);
-      ctx.lineWidth = .55;
       ctx.stroke(gridBackPrime);
-      ctx.strokeStyle = ink(.16);
-      ctx.lineWidth = .65;
+      ctx.strokeStyle = ink(.075);
+      ctx.lineWidth = .55;
+      ctx.stroke(coastBack);
+      ctx.strokeStyle = ink(.105);
+      ctx.lineWidth = .55;
       ctx.stroke(gridFront);
-      ctx.strokeStyle = ink(.34);
-      ctx.lineWidth = .85;
+      ctx.strokeStyle = ink(.24);
+      ctx.lineWidth = .75;
       ctx.stroke(gridFrontPrime);
-      ctx.strokeStyle = ink(.62);
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = ink(.28);
+      ctx.lineWidth = .65;
+      ctx.stroke(borderFront);
+      ctx.strokeStyle = ink(.70);
+      ctx.lineWidth = 1.05;
       ctx.stroke(coastFront);
       ctx.strokeStyle = ink(.52);
       ctx.lineWidth = 1.1;

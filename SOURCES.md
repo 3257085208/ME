@@ -42,6 +42,12 @@ IDC 系统按用户要求不展示。
 #imprints 的 15 机房坐标与 IATA 命名来自本轮提供的真实网络节点清单：PEK / SHA / HKG / TYO / SIN / FRA / RBX / GRA / TRN / LAX / FMT / PDX / PHX / NYC / BHS；未展示 IP，未添加厂商广告。AS218834 与 NIE-SLA 外链保留。
 
 
-## 矢量海岸线数据
+## 矢量地理数据（20261126i）
 
-world-coastlines.js 由 Natural Earth 110m land GeoJSON（nvkelso/natural-earth-vector）提取外环，按 0.45° RDP 简化并以 0.01° 量化，共 126 条折线 / 1,821 点 / 20.4KB；保留欧亚、北美、南美、非洲、澳洲、日本与英国轮廓。
+world-coastlines.js 升级为 Natural Earth 50m 数据（nvkelso/natural-earth-vector）：
+
+- ne_50m_coastline：RDP 0.18°、0.01° 量化，过滤短于 1.0° 的碎片后保留 533 条海岸折线 / 7,500 点；中国、台湾、海南、日本、朝鲜半岛、新加坡、东南亚、英伦、意大利、北欧与北美海岸均为 50m 细节。
+- 主要湖泊：ne_50m_lakes 面积前 14 大湖 + ne_10m_geography_marine_polys 的 Caspian Sea，RDP 0.18°，15 条闭环 / 283 点；包含五大湖、贝加尔湖、维多利亚湖等。
+- lines 合计 548 条折线 / 7,783 点。
+- ne_50m_admin_0_boundary_lines_land：仅保留 FEATURECLA = International boundary (verify)，剔除争议/临时控制线；RDP 0.20°，358 条陆地国界线 / 2,009 点。
+- 总计 9,792 点；坐标整型 0.01°、线内 delta 编码，未压缩 74,713 bytes，gzip 30,118 bytes。

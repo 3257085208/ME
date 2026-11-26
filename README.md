@@ -142,3 +142,10 @@ manifesto / works 为不透明炭黑舞台；imprints / about 透明浮在分割
 - 桌面鼠标 / 触控笔解除横向方向锁，2px 位移即进入 360° 拖拽；灵敏度 0.0085 / 0.0075，惯性限幅 11 / 8、阻尼 exp(-2.2dt)；触屏仍保留竖滑让路、横滑捕获。松手自由停驻，2.5s 后恢复自转。
 - Works 剧场改为 4 个真实站点 iframe：lowend.cloud、1kb.page、www.niekaixiang.com、sla.niekaixiang.com；无 sandbox，允许 fullscreen / clipboard-write，referrerpolicy=no-referrer-when-downgrade；4.5s 加载兜底与 OPEN SITE 提示。
 - 顶部 / 展板文案统一为 LIVE 语义；缓存版本 20261126g。
+
+
+## 50m 地理与 About 收口（20261126i）
+
+- 地球升级 Natural Earth 50m：548 条海岸/湖泊线 / 7,783 点 + 358 条陆地国界 / 2,009 点；国界仅正面绘制，海岸/国界在 z=0 做线性插值贴边；三级墨色与 50m 轮廓在 DPR2 下保持 <1ms 中位绘制。
+- About 右侧新增 about-lower 双栏：签名与三枚机械链接收进左列，右列加入真实 Colophon 技术铭牌（域名、ASN、CRAFT、字体、四角 +、ONLINE 与标尺）；1440/1280 单屏内完成收口，移动端单列且所有铭牌文字 ≥10px。
+- 版本升级 20261126i。
