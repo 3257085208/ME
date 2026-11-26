@@ -1564,6 +1564,7 @@
               const t = prevZ / (prevZ - z2);
               const ix = prevPx + (px - prevPx) * t;
               const iy = prevPy + (py - prevPy) * t;
+              if (!penFront) coastFront.moveTo(prevPx, prevPy);
               coastFront.lineTo(ix, iy);
               coastBack.moveTo(ix, iy);
               coastBack.lineTo(px, py);
@@ -1579,6 +1580,7 @@
             const t = prevZ / (prevZ - z2);
             const ix = prevPx + (px - prevPx) * t;
             const iy = prevPy + (py - prevPy) * t;
+            if (!penBack) coastBack.moveTo(prevPx, prevPy);
             coastBack.lineTo(ix, iy);
             coastFront.moveTo(ix, iy);
             coastFront.lineTo(px, py);
